@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include "macros.hpp"
 
 namespace wheels {
@@ -73,5 +74,34 @@ namespace wheels {
     constexpr void traverse(const FunT & fun, const T & v, const Ts & ... vs) {
         fun(v); traverse(fun, vs ...);
     }
+
+
+    // print
+    inline std::ostream & print(std::ostream & os) { return os; }
+    template <class T, class ... Ts>
+    inline std::ostream & print(std::ostream & os, const T & arg, const Ts & ... args) {
+        os << arg;
+        return print(os, args ...);
+    }
+    template <class SepT>
+    inline std::ostream & print(SepT && sep, std::ostream & os) { return os; }
+    template <class SepT, class T>
+    inline std::ostream & print(SepT && sep, std::ostream & os, const T & arg) { return os << arg; }
+    template <class SepT, class T, class ... Ts>
+    inline std::ostream & print(SepT && sep, std::ostream & os, const T & arg, const Ts & ... args) { 
+        os << arg << sep;
+        return print(sep, os, args ...);
+    }
+
+    // println
+    template <class ... Ts>
+    inline std::ostream & println(std::ostream & os, const Ts & ... args) {
+        return print(os, args...) << std::endl;
+    }
+    template <class SepT, class ... Ts>
+    inline std::ostream & println(SepT && sep, std::ostream & os, const Ts & ... args) {
+        return print(std::forward<SepT>(sep), os, args...) << std::endl;
+    }
+   
 
 }

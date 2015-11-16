@@ -136,6 +136,13 @@ namespace wheels {
     }
 
 
+    // stream
+    template <class T, T ... Vals>
+    inline std::ostream & operator << (std::ostream & os, const const_ints<T, Vals...> &) {
+        return print(os, Vals ...);
+    }
+
+
     namespace literals {
         namespace details {
             template <class T, char ... Cs> struct _parse_int {};
@@ -267,6 +274,11 @@ namespace wheels {
         return static_cast<ElseT &&>(elsev);
     }
 
+    // make_const_int_sequence
+    template <class T, T Size>
+    constexpr auto make_const_int_sequence(const const_ints<T, Size> &) {
+        return to_const_ints(std::make_integer_sequence<T, Size>());
+    }
 
 
 }

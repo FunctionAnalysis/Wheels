@@ -1,3 +1,5 @@
+#include <numeric>
+#include <algorithm>
 #include <gtest/gtest.h>
 #include "tensor_shape.hpp"
 
@@ -8,6 +10,7 @@ TEST(math, tensor_shape) {
     using namespace wheels::literals;
 
     auto s1 = make_tensor_shape(1_c, 2_c, 4, 5);
+    std::cout << s1 << std::endl;
     auto test = s1.at(0_c) == 1_c && s1.at(1_c) == 2_c;
     static_assert(test, "");
     
@@ -20,8 +23,17 @@ TEST(math, tensor_shape) {
     ASSERT_TRUE(s1.magnitude() == 50);
 
     auto s2 = make_tensor_shape(cat(1_c, 2_c, 5_c, 5_c));
+    std::cout << s2 << std::endl;
+
     ASSERT_TRUE(s1 == s2);
 
+    std::vector<size_t> inds;
+    s2.for_each_subscript([&s2, &inds](auto ... subs) {
+        inds.push_back(s2.sub2ind(subs...));
+    });
+    std::vector<size_t> inds2(inds.size());
+    std::iota(inds2.begin(), inds2.end(), 0);
 
+    ASSERT_TRUE(inds == inds2);
 
 }

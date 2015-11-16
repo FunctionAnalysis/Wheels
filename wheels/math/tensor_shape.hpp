@@ -352,4 +352,18 @@ namespace wheels {
         return tensor_shape<const_ints<size_t, Sizes>...>();
     }
 
+
+    // stream
+    namespace details {
+        template <class ShapeT, size_t ... Is>
+        inline std::ostream & _stream_seq(std::ostream & os, const ShapeT & shape, std::index_sequence<Is...>) {
+            return print(" ", os << "[", shape.at(const_index<Is>()) ...) << "]";
+        }
+    }
+    template <class ... SizeTs>
+    inline std::ostream & operator << (std::ostream & os, const tensor_shape<SizeTs...> & shape) {
+        return details::_stream_seq(os, shape, std::make_index_sequence<sizeof...(SizeTs)>());
+    }   
+
+
 }

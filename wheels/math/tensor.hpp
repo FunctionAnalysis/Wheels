@@ -1,6 +1,10 @@
 #pragma once
 
+#include "tensor_shape.hpp"
+
 namespace wheels {
+
+    
 	
     struct tensor_concept {
         // using value_type;
@@ -10,6 +14,7 @@ namespace wheels {
     };
 
 
+    
 
 
 
