@@ -9,19 +9,16 @@ TEST(core, utility) {
     using namespace wheels::literals;
     
     auto s = conditional(false_c, 1_c, 2_c);
+    static_assert(s == 2, "");
     auto s2 = conditional(true_c, 1_c, 2_c);
+    static_assert(s2 == 1, "");
     constexpr int s3 = conditional(false, 1, 2);
+    static_assert(s3 == 2, "");
     
-    auto b1 = sum(1_c, 2_c, 3_c, 4_c, 5_sizec) == 15_c;
-    auto b2 = prod(1_uc, 2_c, 3_c, 4_c, 5_uc) == 120_sizec;
-    static_assert(b1, "");
-    static_assert(b2, "");
-
-    auto b3 = min(5_c, 6_sizec, 34_c, 1_c, 2_uc);
-    static_assert(b3.value == 1, "");
-
-    auto b4 = max(5_c, 6_sizec, 34_c, 1_c, 2_uc);
-    static_assert(b4.value == 34, "");
+    static_assert(sum(1_c, 2_c, 3_c, 4_c, 5_sizec) == 15_c, "");
+    static_assert(prod(1_uc, 2_c, 3_c, 4_c, 5_uc) == 120_sizec, "");
+    static_assert(min(5_c, 6_sizec, 34_c, 1_c, 2_uc) == 1, "");
+    static_assert(max(5_c, 6_sizec, 34_c, 1_c, 2_uc) == 34, "");
 
     wheels::traverse([](auto v) {std::cout << v << std::endl; }, 1_c, 2_c);
 

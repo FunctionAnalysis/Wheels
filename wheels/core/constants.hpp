@@ -10,8 +10,8 @@
 
 namespace wheels {
 
-    // reduction
     namespace details {
+        // reduction helper
         template <class T, T ... Vals> struct _reduction {};
         template <class T>
         struct _reduction<T> {
@@ -28,6 +28,16 @@ namespace wheels {
             static constexpr bool all = Val && _rest_reduction_t::all;
             static constexpr bool any = Val || _rest_reduction_t::any;
         };
+        // element helper
+        template <size_t Idx, class T, T ... Vals> struct _element {};
+        template <class T, T Val, T ... Vals>
+        struct _element<0, T, Val, Vals ...> {
+            static constexpr T value = Val;
+        };
+        template <size_t Idx, class T, T Val, T ... Vals>
+        struct _element<Idx, T, Val, Vals ...> {
+            static constexpr T value = _element<Idx - 1, T, Vals ...>::value;
+        };
     }
 
 
@@ -36,20 +46,21 @@ namespace wheels {
     struct const_ints {
         using type = T;
         static constexpr size_t length = sizeof...(Vals);
+
         constexpr auto to_array() const { return std::array<T, length>{ Vals ... }; }
         constexpr auto to_tuple() const { return std::make_tuple(Vals...); }
         constexpr auto sum() const { return const_ints<T, details::_reduction<T, Vals...>::sum>(); }
         constexpr auto prod() const { return const_ints<T, details::_reduction<T, Vals...>::prod>(); }
         constexpr auto all() const { return const_ints<bool, details::_reduction<T, Vals...>::all>(); }
         constexpr auto any() const { return const_ints<bool, details::_reduction<T, Vals...>::any>(); }
+        template <class K, K Idx>
+        constexpr auto operator[](const const_ints<K, Idx> &) const {
+            return const_ints<T, details::_element<Idx, T, Vals ...>::value>();
+        }
+
         template <class Archive> void serialize(Archive &) {}
     };
 
-    // is_const_ints
-    template <class T>
-    struct is_const_ints : no {};
-    template <class T, T ... Vals>
-    struct is_const_ints<const_ints<T, Vals ...>> : yes {};
 
 	
     // single value
@@ -58,18 +69,60 @@ namespace wheels {
         using type = T;
         static constexpr size_t length = 1;
         static constexpr T value = Val;
+        
         constexpr auto to_array() const { return std::array<T, length>{ Val }; }
         constexpr auto to_tuple() const { return std::make_tuple(Val); }
         constexpr auto sum() const { return const_ints<T, Val>(); }
         constexpr auto prod() const { return const_ints<T, Val>(); }
         constexpr auto all() const { return const_ints<bool, (bool)Val>(); }
         constexpr auto any() const { return const_ints<bool, (bool)Val>(); }
+        template <class K>
+        constexpr auto operator[](const const_ints<K, 0> &) const { return const_ints<T, Val>(); }
+
         constexpr operator T() const { return value; }
         template <class Archive> void serialize(Archive &) {}
     };
-    using yes = const_ints<bool, true>;
-    using no = const_ints<bool, false>;
 
+
+    template <bool Val> using const_bool = const_ints<bool, Val>;
+    template <int Val> using const_int = const_ints<int, Val>;
+    template <size_t Val> using const_size = const_ints<size_t, Val>;
+    template <size_t Val> using const_index = const_ints<size_t, Val>;
+
+    using yes = const_bool<true>;
+    using no = const_bool<false>;
+
+
+
+
+
+    // is_const_ints
+    template <class T>
+    struct is_const_ints : no {};
+    template <class T, T ... Vals>
+    struct is_const_ints<const_ints<T, Vals ...>> : yes {};
+
+    // is_const_int
+    template <class T>
+    struct is_const_int : no {};
+    template <class T, T Val>
+    struct is_const_int<const_ints<T, Val>> : yes {};
+
+    // is_int
+    template <class T>
+    struct is_int : const_bool<(std::is_integral<T>::value || is_const_int<T>::value)> {};
+
+
+
+    // conversion with std::integer_sequence
+    template <class T, T ... Vals>
+    constexpr auto to_const_ints(const std::integer_sequence<T, Vals ...> &) {
+        return const_ints<T, Vals ...>();
+    }
+    template <class T, T ... Vals>
+    constexpr auto to_integer_sequence(const const_ints<T, Vals ...> &) {
+        return std::integer_sequence<T, Vals ...>();
+    }
 
 
     // conversion with std::integral_constant
@@ -155,7 +208,7 @@ namespace wheels {
     template <class T1, T1 ... Val1s, class T2, T2 ... Val2s, \
         class = std::enable_if_t<(sizeof...(Val1s) > 1 && sizeof...(Val2s) > 1)>> \
     constexpr auto operator op (const const_ints<T1, Val1s ...> &, const const_ints<T2, Val2s ...> &) { \
-        static_assert(sizeof...(Val1s) == sizeof...(Val2s), ""); \
+        static_assert(sizeof...(Val1s) == sizeof...(Val2s), "lengths of the two const_ints do not match"); \
         return const_ints<decltype(std::declval<T1>() op std::declval<T2>()), (Val1s op Val2s) ...>();\
     }
 
@@ -213,35 +266,6 @@ namespace wheels {
         ThenT && thenv, ElseT && elsev) {
         return static_cast<ElseT &&>(elsev);
     }
-
-
-
-    // range
-
-
-
-
-
-    //// times
-    //template <class T, class FunT>
-    //constexpr void times(const const_ints<T, 0> &, FunT && fun) {}
-    //template <class T, T Val, class FunT>
-    //constexpr void times(const const_ints<T, Val> &, FunT && fun) {
-    //    fun();
-    //    times(const_ints<T, Val - 1>(), std::forward<FunT>(fun));
-    //}
-
-
-
-    //// const_dynamic
-    //template <class T>
-    //struct const_dynamic {
-    //    static_assert(std::is_integral<T>::value, "");
-    //    using type = T;
-    //    T value;
-    //    operator T() const { return value; }
-    //    template <class Archive> void serialize(Archive & ar) { ar(value); }
-    //};
 
 
 
