@@ -11,14 +11,14 @@ TEST(math, tensor_shape) {
 
     auto s1 = make_tensor_shape(1_c, 2_c, 4, 5);
     std::cout << s1 << std::endl;
-    auto test = s1.at(0_c) == 1_c && s1.at(1_c) == 2_c;
+    auto test = s1[0_c] == 1_c && s1.at(1_c) == 2_c;
     static_assert(test, "");
     
     ASSERT_TRUE(s1.at(2_c) == 4);
     ASSERT_TRUE(s1.magnitude() == 40);
 
     s1.resize(2_c, 5);
-    ASSERT_TRUE(s1.at(2_c) == 5);
+    ASSERT_TRUE(s1[2_c] == 5);
 
     ASSERT_TRUE(s1.magnitude() == 50);
 
@@ -35,5 +35,8 @@ TEST(math, tensor_shape) {
     std::iota(inds2.begin(), inds2.end(), 0);
 
     ASSERT_TRUE(inds == inds2);
+
+    constexpr auto s3 = make_tensor_shape(1_sizec, 5_c);
+    auto m3 = s3.magnitude();
 
 }

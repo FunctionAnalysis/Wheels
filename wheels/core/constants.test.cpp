@@ -17,7 +17,7 @@ TEST(core, constants) {
     auto b5 = 10_c * 100_c == 1000_c;
     auto b6 = 100_c / 10_c == 10_c;
     auto b7 = 101_c % 10_c == 1_uc;
-    static_assert((b3 && b4 && b5 && b6 && b7), "");
+    static_assert(b3 && b4 && b5 && b6 && b7, "");
 
     auto seq1 = cat(1_c, 2_c, 5_c);
     static_assert(seq1[0_uc] == 1_c, "");
@@ -27,5 +27,6 @@ TEST(core, constants) {
     static_assert(cat(seq1, seq1)[3_c] == 1_c, "");
 
     ASSERT_EQ(1_c * 5, 5);
+       
 
 }

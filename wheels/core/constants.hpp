@@ -47,6 +47,8 @@ namespace wheels {
         using type = T;
         static constexpr size_t length = sizeof...(Vals);
 
+        constexpr const_ints() {}
+
         constexpr auto to_array() const { return std::array<T, length>{ Vals ... }; }
         constexpr auto to_tuple() const { return std::make_tuple(Vals...); }
         constexpr auto sum() const { return const_ints<T, details::_reduction<T, Vals...>::sum>(); }
@@ -69,6 +71,8 @@ namespace wheels {
         using type = T;
         static constexpr size_t length = 1;
         static constexpr T value = Val;
+
+        constexpr const_ints() {}
         
         constexpr auto to_array() const { return std::array<T, length>{ Val }; }
         constexpr auto to_tuple() const { return std::make_tuple(Val); }
@@ -139,7 +143,7 @@ namespace wheels {
     // stream
     template <class T, T ... Vals>
     inline std::ostream & operator << (std::ostream & os, const const_ints<T, Vals...> &) {
-        return print(os, Vals ...);
+        return print(" ", os, Vals ...);
     }
 
 

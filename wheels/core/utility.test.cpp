@@ -15,10 +15,10 @@ TEST(core, utility) {
     constexpr int s3 = conditional(false, 1, 2);
     static_assert(s3 == 2, "");
     
-    static_assert(sum(1_c, 2_c, 3_c, 4_c, 5_sizec) == 15_c, "");
-    static_assert(prod(1_uc, 2_c, 3_c, 4_c, 5_uc) == 120_sizec, "");
-    static_assert(min(5_c, 6_sizec, 34_c, 1_c, 2_uc) == 1, "");
-    static_assert(max(5_c, 6_sizec, 34_c, 1_c, 2_uc) == 34, "");
+    static_assert(decltype(sum(1_c, 2_c, 3_c, 4_c, 5_sizec) == 15_c)::value, "");
+    static_assert(decltype(prod(1_uc, 2_c, 3_c, 4_c, 5_uc) == 120_sizec)::value, "");
+    static_assert(decltype(min(5_c, 6_sizec, 34_c, 1_c, 2_uc))::value == 1, "");
+    static_assert(decltype(max(5_c, 6_sizec, 34_c, 1_c, 2_uc))::value == 34, "");
 
     wheels::traverse([](auto v) {std::cout << v << std::endl; }, 1_c, 2_c);
 

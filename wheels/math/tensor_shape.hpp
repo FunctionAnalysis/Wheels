@@ -12,7 +12,9 @@ namespace wheels {
     template <>
     class tensor_shape<> {
     public:
-        constexpr auto degree() const { return const_size<0>(); }
+        static constexpr const_size<0> degree() { return const_size<0>(); }
+        static constexpr yes is_static() { return yes(); }
+
         constexpr auto magnitude() const { return const_size<1>(); }
 
         constexpr tensor_shape() {}
@@ -48,11 +50,13 @@ namespace wheels {
         using rest_tensor_shape_t = tensor_shape<SizeTs ...>;
 
     public:
-        constexpr const rest_tensor_shape_t & rest() const { return (const rest_tensor_shape_t &)(*this); }
+        const rest_tensor_shape_t & rest() const { return (const rest_tensor_shape_t &)(*this); }
         rest_tensor_shape_t & rest() { return (rest_tensor_shape_t &)(*this); }
         rest_tensor_shape_t && rest_rref() { return (rest_tensor_shape_t &&)(*this); }
 
-        constexpr auto degree() const { return const_size<sizeof...(SizeTs) + 1>(); }
+        static constexpr auto degree() { return const_size<sizeof...(SizeTs) + 1>(); }
+        static constexpr auto is_static() { return rest_tensor_shape_t::is_static(); }
+
         constexpr auto value() const { return const_size<S>(); }
         constexpr auto magnitude() const { return value() * rest().magnitude(); }
 
@@ -61,22 +65,19 @@ namespace wheels {
 
         // ctor from vals
         template <class ... Ts>
-        constexpr explicit tensor_shape(const_size<S>, Ts ... vals) : rest_tensor_shape_t(vals ...) {}
+        constexpr explicit tensor_shape(const const_size<S> &, const Ts & ... vals) : rest_tensor_shape_t(vals ...) {}
         template <class T, class ... Ts>
-        constexpr explicit tensor_shape(T v, Ts ... vals) : rest_tensor_shape_t(vals ...) {
-            assert(v == S);
+        constexpr explicit tensor_shape(const T & v, const Ts & ... vals) : rest_tensor_shape_t(vals ...) {
             static_assert(is_int<T>::value, "T must be an integer type");
         }
         template <class ... Ts>
-        constexpr explicit tensor_shape(ignore_t, Ts ... vals) : rest_tensor_shape_t(vals ...) {}
+        constexpr explicit tensor_shape(ignore_t, const Ts & ... vals) : rest_tensor_shape_t(vals ...) {}
       
         // ctor from tensor_shape
         template <class ... SizeT2s, class = std::enable_if_t<sizeof...(SizeT2s) == sizeof...(SizeTs)>>
         constexpr tensor_shape(const tensor_shape<const_size<S>, SizeT2s...> & t) : rest_tensor_shape_t(t.rest()) {}
         template <class ... SizeT2s, class = std::enable_if_t<sizeof...(SizeT2s) == sizeof...(SizeTs)>>
-        constexpr tensor_shape(const tensor_shape<size_t, SizeT2s...> & t) : rest_tensor_shape_t(t.rest()) {
-            assert(t.value() == S);
-        }
+        constexpr tensor_shape(const tensor_shape<size_t, SizeT2s...> & t) : rest_tensor_shape_t(t.rest()) {}
 
         // =
         template <class ... SizeT2s, class = std::enable_if_t<sizeof...(SizeT2s) == sizeof...(SizeTs)>>
@@ -93,7 +94,7 @@ namespace wheels {
 
 
         // copy ctor
-        tensor_shape(const tensor_shape &) = default;
+        constexpr tensor_shape(const tensor_shape &) = default;
         tensor_shape(tensor_shape &&) = default;
         tensor_shape & operator = (const tensor_shape &) = default;
         tensor_shape & operator = (tensor_shape &&) = default;
@@ -136,6 +137,8 @@ namespace wheels {
         constexpr auto at(const const_index<0u> &) const { return value(); }
         template <class T, T Idx, bool _B = std::is_same<T, size_t>::value, wheels_enable_if(!_B)>
         constexpr auto at(const const_ints<T, Idx> &) const { return at(const_index<Idx>()); }
+        template <class T, T Idx>
+        constexpr auto operator[](const const_ints<T, Idx> & i) const { return at(i); }
 
         template <size_t Idx> 
         void resize(const const_index<Idx> &, size_t ns) { rest().resize(const_index<Idx - 1>(), ns); }
@@ -179,7 +182,7 @@ namespace wheels {
             return rest() == b.rest();
         }
         template <class ... SizeT2s>
-        bool operator == (const tensor_shape<size_t, SizeT2s...> & b) const {
+        constexpr bool operator == (const tensor_shape<size_t, SizeT2s...> & b) const {
             return value() == b.value() && rest() == b.rest();
         }
         
@@ -197,22 +200,27 @@ namespace wheels {
         rest_tensor_shape_t & rest() { return (rest_tensor_shape_t &)(*this); }
         rest_tensor_shape_t && rest_rref() { return (rest_tensor_shape_t &&)(*this); }
 
-        constexpr auto degree() const { return const_size<sizeof...(SizeTs)+1>(); }
-        size_t value() const { return _val; }
-        size_t magnitude() const { return _mag; }
+        static constexpr auto degree() { return const_size<sizeof...(SizeTs)+1>(); }
+        static constexpr auto is_static() { return no(); }
+
+        constexpr size_t value() const { return _val; }
+        constexpr size_t magnitude() const { return _mag; }
 
         // ctor
-        tensor_shape() : rest_tensor_shape_t(), _val(0), _mag(0) {}
+        constexpr tensor_shape() : rest_tensor_shape_t(), _val(0), _mag(0) {}
 
         // ctor from vals
         template <class T, class ... Ts>
-        explicit tensor_shape(T v, Ts ... vals) : rest_tensor_shape_t(vals ...), _val(v), _mag(v * rest().magnitude()) {
+        constexpr explicit tensor_shape(const T & v, const Ts & ... vals) 
+            : rest_tensor_shape_t(vals ...), _val(v), _mag(v * rest().magnitude()) {
             static_assert(is_int<T>::value, "T must be an integer type");
         }
 
         // ctor from tensor_shape
         template <class ST, class ... SizeT2s, class = std::enable_if_t<sizeof...(SizeT2s) == sizeof...(SizeTs)>>
-        tensor_shape(const tensor_shape<ST, SizeT2s...> & t) : rest_tensor_shape_t(t.rest()), _val(t.value()), _mag(t.magnitude()) {}
+        constexpr tensor_shape(const tensor_shape<ST, SizeT2s...> & t) 
+            : rest_tensor_shape_t(t.rest()), _val(t.value()), _mag(t.magnitude()) {
+        }
 
         // =
         template <class ST, class ... SizeT2s, class = std::enable_if_t<sizeof...(SizeT2s) == sizeof...(SizeTs)>>
@@ -223,7 +231,7 @@ namespace wheels {
         }
 
         // copy ctor
-        tensor_shape(const tensor_shape &) = default;
+        constexpr tensor_shape(const tensor_shape &) = default;
         tensor_shape(tensor_shape &&) = default;
         tensor_shape & operator = (const tensor_shape &) = default;
         tensor_shape & operator = (tensor_shape &&) = default;
@@ -265,6 +273,8 @@ namespace wheels {
         constexpr size_t at(const const_index<0u>) const { return _val; }
         template <class T, T Idx, bool _B = std::is_same<T, size_t>::value, wheels_enable_if(!_B)>
         constexpr auto at(const const_ints<T, Idx> &) const { return at(const_index<Idx>()); }
+        template <class T, T Idx>
+        constexpr auto operator[](const const_ints<T, Idx> & i) const { return at(i); }
 
         template <size_t Idx> 
         void resize(const const_index<Idx> &, size_t ns) { 
@@ -329,10 +339,18 @@ namespace wheels {
     }
 
 
+    // is_tensor_shape
+    template <class T> 
+    struct is_tensor_shape : no {};
+    template <class ... SizeTs>
+    struct is_tensor_shape<tensor_shape<SizeTs...>> : yes {};
+
+
+
     namespace details {
         template <class T, class = std::enable_if_t<std::is_integral<T>::value>>
         constexpr size_t _to_size(const T & s) {
-            return (size_t)s;
+            return s;
         }
         template <class T, T Val>
         constexpr auto _to_size(const const_ints<T, Val> &) {
