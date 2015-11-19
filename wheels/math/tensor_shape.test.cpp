@@ -9,7 +9,7 @@ TEST(math, tensor_shape) {
 
     using namespace wheels::literals;
 
-    auto s1 = make_tensor_shape(1_c, 2_c, 4, 5);
+    auto s1 = make_tensor_shape<int>(1_c, 2_c, 4, 5);
     std::cout << s1 << std::endl;
     auto test = s1[0_c] == 1_c && s1.at(1_c) == 2_c;
     static_assert(test, "");
@@ -36,7 +36,14 @@ TEST(math, tensor_shape) {
 
     ASSERT_TRUE(inds == inds2);
 
-    constexpr auto s3 = make_tensor_shape(1_sizec, 5_c);
+    constexpr auto s3 = make_tensor_shape<size_t>(1_sizec, 5_c);
     auto m3 = s3.magnitude();
+
+
+    auto ss1 = make_tensor_shape<int>(1_c, 2_c, 3);
+    tensor_shape<size_t, size_t, size_t, size_t> ss2;
+    ss2 = ss1;
+
+    ASSERT_TRUE(ss1 == ss2);
 
 }

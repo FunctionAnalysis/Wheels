@@ -77,6 +77,13 @@ namespace wheels {
 
 
 
+    // always
+    template <class T, T Val, class ... ArgTs> 
+    struct always {
+        static constexpr T value = Val;
+    };
+
+
 
 
     // print

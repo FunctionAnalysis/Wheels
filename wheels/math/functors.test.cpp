@@ -2,9 +2,11 @@
 #include "functors.hpp"
 
 using namespace wheels;
-namespace con = concurrency;
 
-TEST(math, platform_test) {
+
+TEST(DISABLED_math, platform_test) {
+    
+    namespace con = concurrency;
 
     con::accelerator default_acc;
     std::wcout << default_acc.device_path << "\n";
@@ -42,11 +44,13 @@ TEST(math, platform_test) {
         sum.extent,
         // Define the code to run on each thread on the accelerator.
         [=](con::index<1> idx) restrict(amp) {
-        functor_plus<processor::gpu> plus;
-        functor_minus<processor::gpu> minus;
-        sum[idx] = minus(plus(a[idx], b[idx]), b[idx]);
+        sum[idx] = platform_gpu::minus(platform_gpu::plus(a[idx], b[idx]), b[idx]);
     });
 
+    auto shape = make_tensor_shape<int>(size);
+    platform_gpu::for_each(shape, [=](int idx) restrict(amp) {
+        sum[idx] = platform_gpu::minus(platform_gpu::plus(a[idx], b[idx]), b[idx]);
+    });
 
     // Print the results. The expected output is "7, 9, 11, 13, 15".
     for (int i = 0; i < size; i++) {

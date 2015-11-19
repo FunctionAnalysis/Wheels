@@ -147,28 +147,28 @@ namespace wheels {
     }
 
 
-    namespace literals {
-        namespace details {
-            template <class T, char ... Cs> struct _parse_int {};
-            template <class T, char C>
-            struct _parse_int<T, C> {
-                static_assert(C >= '0' && C <= '9', "invalid character");
-                enum : T {
-                    value = C - '0',
-                    magnitude = (T)1
-                };
+    namespace details {
+        template <class T, char ... Cs> struct _parse_int {};
+        template <class T, char C>
+        struct _parse_int<T, C> {
+            static_assert(C >= '0' && C <= '9', "invalid character");
+            enum : T {
+                value = C - '0',
+                magnitude = (T)1
             };
-            template <class T, char C, char ... Cs>
-            struct _parse_int<T, C, Cs...> {
-                static_assert(C >= '0' && C <= '9', "invalid character");
-                enum : T {
-                    magnitude = _parse_int<T, Cs...>::magnitude * (T)10,
-                    rest_value = _parse_int<T, Cs...>::value,
-                    value = magnitude * (C - '0') + rest_value
-                };
+        };
+        template <class T, char C, char ... Cs>
+        struct _parse_int<T, C, Cs...> {
+            static_assert(C >= '0' && C <= '9', "invalid character");
+            enum : T {
+                magnitude = _parse_int<T, Cs...>::magnitude * (T)10,
+                rest_value = _parse_int<T, Cs...>::value,
+                value = magnitude * (C - '0') + rest_value
             };
-        }
+        };
+    }
 
+    namespace literals {       
         // ""_c
         template <char ... Cs>
         constexpr auto operator "" _c() {

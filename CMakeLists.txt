@@ -71,9 +71,9 @@ endif()
 
 
 get_filename_component(wheels_data_dir "${CMAKE_CURRENT_SOURCE_DIR}/data/" REALPATH)
-get_filename_component(wheels_cache_dir "${CMAKE_CURRENT_SOURCE_DIR}/cache/" REALPATH)
 message (STATUS "data directory: " ${wheels_data_dir})
 if (MSVC)
+	add_definitions ( "/DNOMINMAX")
 	add_definitions ( "/Dwheels_data_dir_str=\"${wheels_data_dir}\"" )
 else ()
 	add_definitions ( "-Dwheels_data_dir_str=\"${wheels_data_dir}\"" )
