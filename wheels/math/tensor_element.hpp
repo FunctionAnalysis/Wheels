@@ -33,6 +33,21 @@ namespace wheels {
         constexpr decltype(auto) element_at_index(T && storage, const IndexT & index) {
             return forward<T>(storage)[index];
         }
+        template <class T, class IndexT>
+        constexpr decltype(auto) element_at_index(T && storage, const IndexT & index) restrict(amp) {
+            return forward<T>(storage)[index];
+        }
+        template <class T, class ... SubTs>
+        constexpr decltype(auto) element_at_subs(T && storage, const SubTs & ... subs) {
+            static_assert(always<bool, false, T>::value, "not implemented");
+        }
+        template <class T, class ... SubTs>
+        constexpr decltype(auto) element_at_subs(T && storage, const SubTs & ... subs) restrict(amp) {
+            static_assert(always<bool, false, T>::value, "not implemented");
+        }
+
+
+
 
     }
 
