@@ -14,35 +14,63 @@ namespace wheels {
         static_assert(std::is_integral<T>::value, "T should be an integral type");
     public:
         static constexpr const_size<0> degree() { return const_size<0>(); }
+        static constexpr const_size<0> degree() restrict(amp) { return const_size<0>(); }
+
         static constexpr yes is_static() { return yes(); }
+        static constexpr yes is_static() restrict(amp) { return yes(); }
 
         constexpr const_ints<T, 1> magnitude() const { return const_ints<T, 1>(); }
+        constexpr const_ints<T, 1> magnitude() const restrict(amp) { return const_ints<T, 1>(); }
 
         constexpr tensor_shape() {}
         template <class K> 
         constexpr tensor_shape(const tensor_shape<K> &) {}
 
         constexpr T sub2ind() const { return 0; }
+        template <wheels_enable_if(is_int_supported_by_amp<T>::value)>
+        constexpr T sub2ind() const restrict(amp) { return 0; }
+        
         void ind2sub(T ind) const {}
+        template <wheels_enable_if(is_int_supported_by_amp<T>::value)>
+        void ind2sub(T ind) const restrict(amp) {}
+
 
         template <class SubsIterT> constexpr T sub2ind_by_iter(SubsIterT subs_iter) const { return 0; }
+        template <class SubsIterT> constexpr T sub2ind_by_iter(SubsIterT subs_iter) const restrict(amp) { return 0; }
         template <class SubsIterT> void ind2sub_by_iter(T ind, SubsIterT subs_iter) const {}
+        template <class SubsIterT> void ind2sub_by_iter(T ind, SubsIterT subs_iter) const restrict(amp) {}
 
         template <class FunT, class ... Ts>
         void for_each_subscript(FunT && fun, Ts && ... args) const {
             fun(args ...);
         }
         template <class FunT, class ... Ts>
+        void for_each_subscript(FunT && fun, Ts && ... args) const restrict(amp) {
+            fun(args ...);
+        }
+
+        template <class FunT, class ... Ts>
         constexpr bool for_each_subscript_if(FunT && fun, Ts && ... args) const {
             return fun(args ...);
         }
+        template <class FunT, class ... Ts>
+        constexpr bool for_each_subscript_if(FunT && fun, Ts && ... args) const restrict(amp) {
+            return fun(args ...);
+        }
+
         template <T Idx, class FunT, class ... Ts>
         std::enable_if_t<Idx == 0> for_each_subscript_until(const const_ints<T, Idx> &, FunT && fun, Ts && ... args) const {
+            fun(args ...);
+        }
+        template <T Idx, class FunT, class ... Ts>
+        std::enable_if_t<Idx == 0> for_each_subscript_until(const const_ints<T, Idx> &, FunT && fun, Ts && ... args) const restrict(amp) {
             fun(args ...);
         }
 
         template <class K>
         constexpr bool operator == (const tensor_shape<K> &) const { return true; }
+        template <class K>
+        constexpr bool operator == (const tensor_shape<K> &) const restrict(amp) { return true; }
 
         template <class Archive> void serialize(Archive & ar) {}
     };
@@ -59,11 +87,26 @@ namespace wheels {
         rest_tensor_shape_t & rest() { return (rest_tensor_shape_t &)(*this); }
         rest_tensor_shape_t && rest_rref() { return (rest_tensor_shape_t &&)(*this); }
 
+        template <wheels_enable_if(is_int_supported_by_amp<T>::value)>
+        constexpr const rest_tensor_shape_t & rest() const restrict(amp) { return (const rest_tensor_shape_t &)(*this); }
+        template <wheels_enable_if(is_int_supported_by_amp<T>::value)>
+        rest_tensor_shape_t & rest() restrict(amp) { return (rest_tensor_shape_t &)(*this); }
+        template <wheels_enable_if(is_int_supported_by_amp<T>::value)>
+        rest_tensor_shape_t && rest_rref() restrict(amp) { return (rest_tensor_shape_t &&)(*this); }
+
         static constexpr auto degree() { return const_size<sizeof...(SizeTs) + 1>(); }
+        static constexpr auto degree() restrict(amp) { return const_size<sizeof...(SizeTs)+1>(); }
+
         static constexpr auto is_static() { return rest_tensor_shape_t::is_static(); }
+        static constexpr auto is_static() restrict(amp) { return rest_tensor_shape_t::is_static(); }
 
         constexpr const_ints<T, S> value() const { return const_ints<T, S>(); }
+        template <wheels_enable_if(is_int_supported_by_amp<T>::value)>
+        constexpr const_ints<T, S> value() const restrict(amp) { return const_ints<T, S>(); }
+
         constexpr auto magnitude() const { return value() * rest().magnitude(); }
+        template <wheels_enable_if(is_int_supported_by_amp<T>::value)>
+        constexpr auto magnitude() const restrict(amp) { return value() * rest().magnitude(); }
 
         // ctor
         constexpr tensor_shape() : rest_tensor_shape_t() {}
@@ -111,6 +154,13 @@ namespace wheels {
         constexpr T sub2ind(K sub, Ks ... subs) const {
             return sub * rest().magnitude() + rest().sub2ind(subs...);
         }
+        template <wheels_enable_if(is_int_supported_by_amp<T>::value)>
+        constexpr T sub2ind() const restrict(amp) { return 0; }
+        template <class K, class ... Ks>
+        constexpr T sub2ind(K sub, Ks ... subs) const restrict(amp) {
+            return sub * rest().magnitude() + rest().sub2ind(subs...);
+        }
+
 
         // ind2sub
         void ind2sub(T ind) const {}
@@ -121,6 +171,16 @@ namespace wheels {
             rest().ind2sub(ind % lm, subs ...);
         }
 
+        template <wheels_enable_if(is_int_supported_by_amp<T>::value)>
+        void ind2sub(T ind) const restrict(amp) {}
+        template <class K, class ... Ks>
+        void ind2sub(T ind, K & sub, Ks & ... subs) const restrict(amp) {
+            const auto lm = rest().magnitude();
+            sub = ind / lm;
+            rest().ind2sub(ind % lm, subs ...);
+        }
+
+
         // sub2ind_by_iter
         template <class SubsIterT>
         T sub2ind_by_iter(SubsIterT subs_iter) const {
@@ -128,6 +188,13 @@ namespace wheels {
             ++subs_iter;
             return cur_sub * rest().magnitude() + rest().sub2ind_by_iter(subs_iter);
         }
+        template <class SubsIterT>
+        T sub2ind_by_iter(SubsIterT subs_iter) const restrict(amp) {
+            const auto cur_sub = *subs_iter;
+            ++subs_iter;
+            return cur_sub * rest().magnitude() + rest().sub2ind_by_iter(subs_iter);
+        }
+
 
         // ind2sub_by_iter
         template <class SubsIterT>
@@ -136,21 +203,67 @@ namespace wheels {
             *subs_iter = ind / lm;
             rest().ind2sub_by_iter(ind % lm, ++subs_iter);
         }
+        template <class SubsIterT>
+        void ind2sub_by_iter(T ind, SubsIterT subs_iter) const restrict(amp) {
+            const auto lm = rest().magnitude();
+            *subs_iter = ind / lm;
+            rest().ind2sub_by_iter(ind % lm, ++subs_iter);
+        }
 
+        // at
         template <size_t Idx> 
-        constexpr auto at(const const_index<Idx> &) const { return rest().at(const_index<Idx - 1>()); }
+        constexpr auto at(const const_index<Idx> &) const { 
+            return rest().at(const_index<Idx - 1>()); 
+        }
         constexpr auto at(const const_index<0> &) const { return value(); }
         template <class K, K Idx, bool _B = std::is_same<K, size_t>::value, wheels_enable_if(!_B)>
-        constexpr auto at(const const_ints<K, Idx> &) const { return at(const_index<Idx>()); }
+        constexpr auto at(const const_ints<K, Idx> &) const { 
+            return at(const_index<Idx>()); 
+        }
         template <class K, K Idx>
         constexpr auto operator[](const const_ints<K, Idx> & i) const { return at(i); }
 
-        template <size_t Idx> 
-        void resize(const const_index<Idx> &, T ns) { rest().resize(const_index<Idx - 1>(), ns); }
-        void resize(const const_index<0u> &, T ns) { assert(ns == S); }
+        template <size_t Idx>
+        constexpr auto at(const const_index<Idx> &) const restrict(amp) {
+            return rest().at(const_index<Idx - 1>());
+        }
+        template <wheels_enable_if(is_int_supported_by_amp<T>::value)>
+        constexpr auto at(const const_index<0> &) const restrict(amp) { return value(); }
         template <class K, K Idx, bool _B = std::is_same<K, size_t>::value, wheels_enable_if(!_B)>
-        void resize(const const_ints<K, Idx> &, T ns) { resize(const_index<Idx>(), ns); }
+        constexpr auto at(const const_ints<K, Idx> &) const restrict(amp) {
+            return at(const_index<Idx>());
+        }
+        template <class K, K Idx>
+        constexpr auto operator[](const const_ints<K, Idx> & i) const restrict(amp) { return at(i); }
 
+
+        // resize
+        template <size_t Idx> 
+        void resize(const const_index<Idx> &, T ns) { 
+            rest().resize(const_index<Idx - 1>(), ns);
+        }
+        void resize(const const_index<0u> &, T ns) { 
+            assert(ns == S); 
+        }
+        template <class K, K Idx, bool _B = std::is_same<K, size_t>::value, wheels_enable_if(!_B)>
+        void resize(const const_ints<K, Idx> &, T ns) { 
+            resize(const_index<Idx>(), ns);
+        }
+        template <size_t Idx>
+        void resize(const const_index<Idx> &, T ns) restrict(amp) {
+            rest().resize(const_index<Idx - 1>(), ns);
+        }
+        template <wheels_enable_if(is_int_supported_by_amp<T>::value)>
+        void resize(const const_index<0u> &, T ns) restrict(amp) {
+            assert(ns == S);
+        }
+        template <class K, K Idx, bool _B = std::is_same<K, size_t>::value, wheels_enable_if(!_B)>
+        void resize(const const_ints<K, Idx> &, T ns) restrict(amp) {
+            resize(const_index<Idx>(), ns);
+        }
+
+
+        // for_each_subscript
         template <class FunT, class ... Ts>
         void for_each_subscript(FunT && fun, Ts && ... args) const {
             const auto n = value();
@@ -158,7 +271,15 @@ namespace wheels {
                 rest().for_each_subscript(fun, args ..., i);
             }
         }
+        template <class FunT, class ... Ts>
+        void for_each_subscript(FunT && fun, Ts && ... args) const restrict(amp) {
+            const T n = value();
+            for (T i = 0; i < n; i++) {
+                rest().for_each_subscript(fun, args ..., i);
+            }
+        }
 
+        // for_each_subscript_if
         template <class FunT, class ... Ts>
         bool for_each_subscript_if(FunT && fun, Ts && ... args) const {
             const auto n = value();
@@ -169,7 +290,18 @@ namespace wheels {
             }
             return i == n;
         }
+        template <class FunT, class ... Ts>
+        bool for_each_subscript_if(FunT && fun, Ts && ... args) const restrict(amp) {
+            const auto n = value();
+            T i = 0;
+            for (; i < n; i++) {
+                if (!rest().for_each_subscript_if(fun, args ..., i))
+                    break;
+            }
+            return i == n;
+        }
 
+        // for_each_subscript_until
         template <size_t Idx, class FunT, class ... Ts>
         std::enable_if_t<Idx == sizeof...(SizeTs)+1> 
             for_each_subscript_until(const const_index<Idx> &, FunT && fun, Ts && ... args) const {
@@ -184,8 +316,28 @@ namespace wheels {
             }
         }
 
+        template <size_t Idx, class FunT, class ... Ts>
+        std::enable_if_t<Idx == sizeof...(SizeTs)+1>
+            for_each_subscript_until(const const_index<Idx> &, FunT && fun, Ts && ... args) const restrict(amp) {
+            fun(args ...);
+        }
+        template <size_t Idx, class FunT, class ... Ts>
+        std::enable_if_t<(Idx < sizeof...(SizeTs)+1)>
+            for_each_subscript_until(const const_index<Idx> & idx, FunT && fun, Ts && ... args) const restrict(amp) {
+            const T n = value();
+            for (T i = 0; i < n; i++) {
+                rest().for_each_subscript_until(idx, fun, args ..., i);
+            }
+        }
+
+
+        // ==
         template <class K, class ... SizeT2s>
         constexpr bool operator == (const tensor_shape<K, SizeT2s...> & b) const {
+            return value() == b.value() && rest() == b.rest();
+        }
+        template <class K, class ... SizeT2s>
+        bool operator == (const tensor_shape<K, SizeT2s ...> & b) const restrict(amp) {
             return value() == b.value() && rest() == b.rest();
         }
         
@@ -204,11 +356,26 @@ namespace wheels {
         rest_tensor_shape_t & rest() { return (rest_tensor_shape_t &)(*this); }
         rest_tensor_shape_t && rest_rref() { return (rest_tensor_shape_t &&)(*this); }
 
+        template <wheels_enable_if(is_int_supported_by_amp<T>::value)>
+        constexpr const rest_tensor_shape_t & rest() const restrict(amp) { return (const rest_tensor_shape_t &)(*this); }
+        template <wheels_enable_if(is_int_supported_by_amp<T>::value)>
+        rest_tensor_shape_t & rest() restrict(amp) { return (rest_tensor_shape_t &)(*this); }
+        template <wheels_enable_if(is_int_supported_by_amp<T>::value)>
+        rest_tensor_shape_t && rest_rref() restrict(amp) { return (rest_tensor_shape_t &&)(*this); }
+
         static constexpr auto degree() { return const_size<sizeof...(SizeTs)+1>(); }
+        static constexpr auto degree() restrict(amp) { return const_size<sizeof...(SizeTs)+1>(); }
+
         static constexpr auto is_static() { return no(); }
+        static constexpr auto is_static() restrict(amp) { return no(); }
 
         constexpr T value() const { return _val; }
+        template <wheels_enable_if(is_int_supported_by_amp<T>::value)>
+        constexpr T value() const restrict(amp) { return _val; }
+
         constexpr T magnitude() const { return _mag; }
+        template <wheels_enable_if(is_int_supported_by_amp<T>::value)>
+        constexpr T magnitude() const restrict(amp) { return _mag; }
 
         // ctor
         constexpr tensor_shape() : rest_tensor_shape_t(), _val(0), _mag(0) {}
@@ -247,10 +414,26 @@ namespace wheels {
             return sub * rest().magnitude() + rest().sub2ind(subs...);
         }
 
+        template <wheels_enable_if(is_int_supported_by_amp<T>::value)>
+        constexpr T sub2ind() const restrict(amp) { return 0; }
+        template <class K, class ... Ks>
+        constexpr T sub2ind(K sub, Ks ... subs) const restrict(amp) {
+            return sub * rest().magnitude() + rest().sub2ind(subs...);
+        }
+
         // ind2sub
         void ind2sub(T ind) const {}
         template <class K, class ... Ks>
         void ind2sub(T ind, K & sub, Ks & ... subs) const {
+            const auto lm = rest().magnitude();
+            sub = ind / lm;
+            rest().ind2sub(ind % lm, subs ...);
+        }
+
+        template <wheels_enable_if(is_int_supported_by_amp<T>::value)>
+        void ind2sub(T ind) const restrict(amp) {}
+        template <class K, class ... Ks>
+        void ind2sub(T ind, K & sub, Ks & ... subs) const restrict(amp) {
             const auto lm = rest().magnitude();
             sub = ind / lm;
             rest().ind2sub(ind % lm, subs ...);
@@ -263,6 +446,12 @@ namespace wheels {
             ++subs_iter;
             return cur_sub * rest().magnitude() + rest().sub2ind_by_iter(subs_iter);
         }
+        template <class SubsIterT>
+        T sub2ind_by_iter(SubsIterT subs_iter) const restrict(amp) {
+            const auto cur_sub = *subs_iter;
+            ++subs_iter;
+            return cur_sub * rest().magnitude() + rest().sub2ind_by_iter(subs_iter);
+        }
 
         // ind2sub_by_iter
         template <class SubsIterT>
@@ -271,15 +460,41 @@ namespace wheels {
             *subs_iter = ind / lm;
             rest().ind2sub_by_iter(ind % lm, ++subs_iter);
         }
+        template <class SubsIterT>
+        void ind2sub_by_iter(T ind, SubsIterT subs_iter) const restrict(amp) {
+            const auto lm = rest().magnitude();
+            *subs_iter = ind / lm;
+            rest().ind2sub_by_iter(ind % lm, ++subs_iter);
+        }
 
+        // at
         template <size_t Idx>
-        constexpr auto at(const const_index<Idx> &) const { return rest().at(const_index<Idx - 1>()); }
+        constexpr auto at(const const_index<Idx> &) const { 
+            return rest().at(const_index<Idx - 1>());
+        }
         constexpr T at(const const_index<0u>) const { return _val; }
         template <class K, K Idx, bool _B = std::is_same<K, size_t>::value, wheels_enable_if(!_B)>
-        constexpr auto at(const const_ints<K, Idx> &) const { return at(const_index<Idx>()); }
+        constexpr auto at(const const_ints<K, Idx> &) const { 
+            return at(const_index<Idx>());
+        }
         template <class K, K Idx>
         constexpr auto operator[](const const_ints<K, Idx> & i) const { return at(i); }
 
+        template <size_t Idx>
+        constexpr auto at(const const_index<Idx> &) const restrict(amp) {
+            return rest().at(const_index<Idx - 1>());
+        }
+        template <wheels_enable_if(is_int_supported_by_amp<T>::value)>
+        constexpr T at(const const_index<0u>) const restrict(amp) { return _val; }
+        template <class K, K Idx, bool _B = std::is_same<K, size_t>::value, wheels_enable_if(!_B)>
+        constexpr auto at(const const_ints<K, Idx> &) const restrict(amp) {
+            return at(const_index<Idx>());
+        }
+        template <class K, K Idx>
+        constexpr auto operator[](const const_ints<K, Idx> & i) const restrict(amp) { return at(i); }
+
+
+        // resize
         template <size_t Idx> 
         void resize(const const_index<Idx> &, T ns) { 
             rest().resize(const_index<Idx - 1>(), ns); 
@@ -290,9 +505,27 @@ namespace wheels {
             _mag = _val * rest().magnitude();
         }
         template <class K, K Idx, bool _B = std::is_same<K, size_t>::value, wheels_enable_if(!_B)>
-        void resize(const const_ints<K, Idx> &, size_t ns) { resize(const_index<Idx>(), ns); }
+        void resize(const const_ints<K, Idx> &, size_t ns) { 
+            resize(const_index<Idx>(), ns); 
+        }
+
+        template <size_t Idx>
+        void resize(const const_index<Idx> &, T ns) restrict(amp) {
+            rest().resize(const_index<Idx - 1>(), ns);
+            _mag = _val * rest().magnitude();
+        }
+        template <wheels_enable_if(is_int_supported_by_amp<T>::value)>
+        void resize(const const_index<0u> &, T ns) restrict(amp) {
+            _val = ns;
+            _mag = _val * rest().magnitude();
+        }
+        template <class K, K Idx, bool _B = std::is_same<K, size_t>::value, wheels_enable_if(!_B)>
+        void resize(const const_ints<K, Idx> &, size_t ns) restrict(amp) { 
+            resize(const_index<Idx>(), ns);
+        }
 
 
+        // for_each_subscript
         template <class FunT, class ... Ts>
         void for_each_subscript(FunT && fun, Ts && ... args) const {
             const T n = value();
@@ -300,7 +533,15 @@ namespace wheels {
                 rest().for_each_subscript(fun, args ..., i);
             }
         }
+        template <class FunT, class ... Ts>
+        void for_each_subscript(FunT && fun, Ts && ... args) const restrict(amp) {
+            const T n = value();
+            for (T i = 0; i < n; i++) {
+                rest().for_each_subscript(fun, args ..., i);
+            }
+        }
 
+        // for_each_subscript_if
         template <class FunT, class ... Ts>
         bool for_each_subscript_if(FunT && fun, Ts && ... args) const {
             const T n = value();
@@ -311,21 +552,54 @@ namespace wheels {
             }
             return i == n;
         }
+        template <class FunT, class ... Ts>
+        bool for_each_subscript_if(FunT && fun, Ts && ... args) const restrict(amp) {
+            const T n = value();
+            T i = 0;
+            for (; i < n; i++) {
+                if (!rest().for_each_subscript_if(fun, args ..., i))
+                    break;
+            }
+            return i == n;
+        }
 
+        // for_each_subscript_until
         template <size_t Idx, class FunT, class ... Ts>
-        std::enable_if_t<Idx == sizeof...(SizeTs)+1> for_each_subscript_until(const const_index<Idx> &, FunT && fun, Ts && ... args) const {
+        std::enable_if_t<Idx == sizeof...(SizeTs)+1> 
+            for_each_subscript_until(const const_index<Idx> &, FunT && fun, Ts && ... args) const {
             fun(args ...);
         }
         template <size_t Idx, class FunT, class ... Ts>
-        std::enable_if_t<(Idx < sizeof...(SizeTs)+1)> for_each_subscript_until(const const_index<Idx> & idx, FunT && fun, Ts && ... args) const {
+        std::enable_if_t<(Idx < sizeof...(SizeTs)+1)> 
+            for_each_subscript_until(const const_index<Idx> & idx, FunT && fun, Ts && ... args) const {
             const T n = value();
             for (T i = 0; i < n; i++) {
                 rest().for_each_subscript_until(idx, fun, args ..., i);
             }
         }
 
+        template <size_t Idx, class FunT, class ... Ts>
+        std::enable_if_t<Idx == sizeof...(SizeTs)+1> 
+            for_each_subscript_until(const const_index<Idx> &, FunT && fun, Ts && ... args) const restrict(amp) {
+            fun(args ...);
+        }
+        template <size_t Idx, class FunT, class ... Ts>
+        std::enable_if_t<(Idx < sizeof...(SizeTs)+1)>
+            for_each_subscript_until(const const_index<Idx> & idx, FunT && fun, Ts && ... args) const restrict(amp) {
+            const T n = value();
+            for (T i = 0; i < n; i++) {
+                rest().for_each_subscript_until(idx, fun, args ..., i);
+            }
+        }
+
+
+        // ==
         template <class K, class ... SizeT2s>
         bool operator == (const tensor_shape<K, SizeT2s ...> & b) const {
+            return value() == b.value() && rest() == b.rest();
+        }
+        template <class K, class ... SizeT2s>
+        bool operator == (const tensor_shape<K, SizeT2s ...> & b) const restrict(amp) {
             return value() == b.value() && rest() == b.rest();
         }
 
@@ -339,6 +613,10 @@ namespace wheels {
 
     template <class T1, class T2, class ... SizeT1s, class ... SizeT2s>
     constexpr bool operator != (const tensor_shape<T1, SizeT1s...> & s1, const tensor_shape<T2, SizeT2s...> & s2) {
+        return !(s1 == s2);
+    }
+    template <class T1, class T2, class ... SizeT1s, class ... SizeT2s>
+    constexpr bool operator != (const tensor_shape<T1, SizeT1s...> & s1, const tensor_shape<T2, SizeT2s...> & s2) restrict(amp) {
         return !(s1 == s2);
     }
 
@@ -358,6 +636,15 @@ namespace wheels {
         }
         template <class T, class K, K Val>
         constexpr auto _to_size(const const_ints<K, Val> &) {
+            return const_ints<T, Val>();
+        }
+
+        template <class T, class K, class = std::enable_if_t<std::is_integral<K>::value>>
+        constexpr T _to_size(const K & s) restrict(amp) {
+            return s;
+        }
+        template <class T, class K, K Val>
+        constexpr auto _to_size(const const_ints<K, Val> &) restrict(amp) {
             return const_ints<T, Val>();
         }
     }

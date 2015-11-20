@@ -20,19 +20,6 @@
 #define wheels_enable_else_if(B) bool _B=(B),class=std::enable_if_t<_B>,class=void
 #endif
 
-#if (defined _AMP_H)
-#define wheels_amp
-#define wheels_cpu_code
-#define wheels_gpu_code restrict(amp)
-#define wheels_cpu_gpu_code restrict(amp, cpu)
-#define wheels_align_for_gpu alignas(4)
-namespace wheels { namespace con = concurrency; }
-#else
-#define wheels_cpu_code
-#define wheels_gpu_code
-#define wheels_cpu_gpu_code
-#define wheels_align_for_gpu
-#endif
 
 #if (defined _PPL_H)
 #define wheels_ppl

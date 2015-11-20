@@ -52,6 +52,19 @@ IF(WIN32)
       OR ("${MATLAB_ROOT}" STREQUAL "")
       OR ("${MATLAB_ROOT}" STREQUAL "/registry"))
   ENDFOREACH(MATVER)
+
+  FOREACH(MATSERVERVER "2.3" "2.2" "2.1" "2.0")
+    IF((NOT DEFINED MATLAB_ROOT) 
+        OR ("${MATLAB_ROOT}" STREQUAL "")
+        OR ("${MATLAB_ROOT}" STREQUAL "/registry"))
+      GET_FILENAME_COMPONENT(MATLAB_ROOT
+        "[HKEY_LOCAL_MACHINE\\SOFTWARE\\MathWorks\\MATLAB Production Server\\${MATSERVERVER};MATLABROOT]"
+        ABSOLUTE)
+      SET(MATLAB_PRODUCTION_SERVER_VERSION ${MATSERVERVER})
+    ENDIF((NOT DEFINED MATLAB_ROOT) 
+      OR ("${MATLAB_ROOT}" STREQUAL "")
+      OR ("${MATLAB_ROOT}" STREQUAL "/registry"))
+  ENDFOREACH(MATVER)
   
   # Directory name depending on whether the Windows architecture is 32
   # bit or 64 bit

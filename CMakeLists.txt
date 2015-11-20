@@ -96,7 +96,6 @@ macro(wheels_add_library BIN_NAME)
 endmacro()
 
 
-
 include_directories (".")
 
 add_subdirectory (wheels)

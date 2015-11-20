@@ -57,7 +57,7 @@ namespace wheels {
     };
 
     // single type
-	template <class T>
+    template <class T>
     struct types<T> {
         using type = T;
         static constexpr size_t length = 1;
@@ -90,7 +90,7 @@ namespace wheels {
 
         template <class ... ArgTs>
         static constexpr auto construct(ArgTs && ... args) {
-            return T(std::forward<ArgTs>(args) ...);
+            return T(forward<ArgTs>(args) ...);
         }
 
         template <class Archive> void serialize(Archive &) {}

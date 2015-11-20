@@ -6,7 +6,7 @@
 #include "../core/const_expr.hpp"
 #include "../core/types.hpp"
 
-#include "functors.hpp"
+#include "platform.hpp"
 #include "tensor_shape.hpp"
 #include "storage_traits.hpp"
 
@@ -65,7 +65,7 @@ namespace wheels {
         // at_subs related
         template <class ... SubTs>
         constexpr decltype(auto) at_subs(const SubTs & ... subs) const {
-            static_assert(const_ints<bool, is_int<SubTs>::value ...>().all(),
+            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
                 "at_subs(...) requires all subs should be integral or const_ints");
             return derived().at_subs_impl(subs ...); 
         }
@@ -75,7 +75,7 @@ namespace wheels {
         }
         template <class ... SubTs>
         decltype(auto) at_subs(const SubTs & ... subs) {
-            static_assert(const_ints<bool, is_int<SubTs>::value ...>().all(),
+            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
                 "at_subs(...) requires all subs should be integral or const_ints");
             return derived().at_subs_impl(subs ...);
         }
@@ -95,94 +95,115 @@ namespace wheels {
     };
 
 
+    namespace details {
+        template <class Name> 
+        struct _constexpr_struct {
+            constexpr _constexpr_struct() {}
+        };       
+    }
+    struct _with_shape {};
+    constexpr details::_constexpr_struct<_with_shape> with_shape;
+    struct _with_elements {};
+    constexpr details::_constexpr_struct<_with_elements> with_elements;
+    struct _with_args {};
+    constexpr details::_constexpr_struct<_with_args> with_args;
 
 
-    template <class ShapeT, class StorageT, bool ShapeIsStatic = ShapeT::is_static()>
-    class tensor : public tensor_base<tensor<ShapeT, StorageT, ShapeIsStatic>> {
-    public:        
+    // tensor with non-static shape
+    template <class ShapeT, class StorageT, class PlatformT, bool ShapeIsStatic = ShapeT::is_static()>
+    class tensor : public tensor_base<tensor<ShapeT, StorageT, PlatformT, ShapeIsStatic>> {
+    public:  
+        friend class tensor_base<tensor<ShapeT, StorageT, PlatformT, ShapeIsStatic>>;
         using shape_type = ShapeT;
         using storage_type = StorageT;
+        using platform_type = PlatformT;
+        static constexpr platform_type platform() { return platform_type(); }
 
         static_assert(is_tensor_shape<shape_type>::value, "ShapeT should be a tensor_shape");
         
-        using _stt = storage_traits<storage_type>;
-        using value_type = typename _stt::value_type;
+        using _st_native_construct = storage_native_construct_traits<storage_type>;
+        using _st_construct = storage_construct_traits<storage_type>;
+        using value_type = typename storage_type::value_type;
         
     public:
-        template <wheels_enable_if(_stt::is_default_constructible())>
-        constexpr explicit tensor() {}
+        template <wheels_enable_if(_st_native_construct::is_default_constructible)>
+        constexpr tensor() {}
+
+        template <wheels_enable_if(_st_native_construct::is_copy_constructible)>
+        constexpr explicit tensor(const ShapeT & s, const StorageT & stg)
+            : _shape(s), _storage(stg) {}
         
+        template <wheels_enable_if(_st_construct::is_constructible_with_shape)>
+        constexpr explicit tensor(const ShapeT & s)
+            : _shape(s), _storage(_st_construct::construct_with_shape(s)) {}
+
+        template <wheels_enable_if(_st_construct::is_constructible_with_shape), class ... SizeTs>
+        constexpr explicit tensor(details::_constexpr_struct<_with_shape>, const SizeTs & ... ss)
+            : _shape(ss ...), _storage(_st_construct::construct_with_shape(_shape)) {}
+
+        template <wheels_enable_if(_st_construct::is_constructible_with_shape_elements), class ... EleTs>
+        constexpr tensor(const ShapeT & s, details::_constexpr_struct<_with_elements>, EleTs && ... eles)
+            : _shape(s), _storage(_st_construct::construct_with_shape_elements(_shape, forward<EleTs>(eles) ...)) {}
+
+        template <wheels_enable_if(_st_construct::is_constructible_with_shape_args), class ... ArgTs>
+        constexpr tensor(const ShapeT & s, details::_constexpr_struct<_with_args>, ArgTs && ... args)
+            : _shape(s), _storage(_st_construct::construct_with_shape_args(_shape, forward<ArgTs>(args) ...)) {}
 
         constexpr const StorageT & storage() const { return _storage; }
         constexpr const ShapeT & shape_impl() const {
             return _shape;
         }
-        
-        constexpr decltype(auto) at_index_impl(size_t index) const {
-            return _stt::element(_storage, index);
-        }
-        template <class ... SubTs>
-        constexpr decltype(auto) at_subs_impl(const SubTs & ... subs) const {
-            return _stt::element(_storage, _shape.sub2ind(subs ...));
-        }
 
-        decltype(auto) at_index_impl(size_t index) {
-            return _stt::element(_storage, index);
-        }
-        template <class ... SubTs>
-        decltype(auto) at_subs_impl(const SubTs & ... subs) {
-            return _stt::element(_storage, _shape.sub2ind(subs ...));
-        }
-
+    private:
+        StorageT & storage() { return _storage; }     
     private:
         ShapeT _shape;
         StorageT _storage;
     };
 
 
-
-    template <class ShapeT, class StorageT>
-    class tensor<ShapeT, StorageT, true> : public tensor_base<tensor<ShapeT, StorageT, true>> {
+    // tensor with static shape
+    template <class ShapeT, class StorageT, class PlatformT>
+    class tensor<ShapeT, StorageT, PlatformT, true> : public tensor_base<tensor<ShapeT, StorageT, PlatformT, true>> {
     public:
+        friend class tensor_base<tensor<ShapeT, StorageT, PlatformT, true>>;
         using shape_type = ShapeT;
         using storage_type = StorageT;
+        using platform_type = PlatformT;
+        static constexpr platform_type platform() { return platform_type(); }
 
         static_assert(is_tensor_shape<shape_type>::value, "ShapeT should be a tensor_shape");
 
-        using _stt = storage_traits<storage_type>;
-        using value_type = typename _stt::value_type;
+        using _st_native_construct = storage_native_construct_traits<storage_type>;
+        using _st_construct = storage_construct_traits<storage_type>;
+        using value_type = typename storage_type::value_type;
 
     public:
-        template <class ... ArgTs>
-        constexpr tensor(ArgTs && ... args) 
-            : _storage(_stt::construct_with_size(ShapeT().magnitude(), 
-                std::forward<ArgTs>(args) ...)) {
-        }
+        template <wheels_enable_if(_st_construct::is_constructible_with_shape)>
+        constexpr tensor() : _storage(_st_construct::construct_with_shape(ShapeT())) {}
+
+        template <wheels_enable_if(_st_construct::is_constructible_with_shape_elements), class ... EleTs>
+        constexpr tensor(const details::_constexpr_struct<_with_elements> &, EleTs && ... eles)
+            : _storage(_st_construct::construct_with_shape_elements(ShapeT(), forward<EleTs>(eles) ...)) {}
+
+        template <wheels_enable_if(_st_construct::is_constructible_with_shape_args), class ... ArgTs>
+        constexpr tensor(details::_constexpr_struct<_with_args>, ArgTs && ... args)
+            : _storage(_st_construct::construct_with_shape_args(ShapeT(), forward<ArgTs>(args) ...)) {}
 
         constexpr const StorageT & storage() const { return _storage; }
         constexpr ShapeT shape_impl() const {
             return ShapeT();
         }
 
-        constexpr decltype(auto) at_index_impl(size_t index) const {
-            return _storage[index];
-        }
-        template <class ... SubTs>
-        constexpr decltype(auto) at_subs_impl(const SubTs & ... subs) const {
-            return _storage[ShapeT().sub2ind(subs ...)];
-        }
-
-        decltype(auto) at_index_impl(size_t index) {
-            return _storage[index];
-        }
-        template <class ... SubTs>
-        decltype(auto) at_subs_impl(const SubTs & ... subs) {
-            return _storage[ShapeT().sub2ind(subs ...)];
-        }
-
+    private:
+        StorageT & storage() { return _storage; }
     private:
         StorageT _storage;
     };
+
+
+
+
 
 
 }

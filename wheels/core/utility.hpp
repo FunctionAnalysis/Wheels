@@ -1,14 +1,36 @@
 #pragma once
 
 #include <iostream>
+
 #include "macros.hpp"
+#include "platforms.hpp"
+
 
 namespace wheels {
+
+    // forward
+    using std::forward;
+
+    template <class T>
+    constexpr T && forward(std::remove_reference_t<T> & arg) restrict(amp) {
+        return (static_cast<T &&>(arg));
+    }
+    template <class T>
+    constexpr T && forward(std::remove_reference_t<T> && arg) restrict(amp) {
+        static_assert(!std::is_lvalue_reference<T>::value, "bad forward call");
+        return (static_cast<T &&>(arg));
+    }
+
+
 
     // if_then_else for enumulating ?:
     template <class ThenT, class ElseT>
     constexpr auto conditional(bool b, ThenT && thenv, ElseT && elsev) {
-        return b ? std::forward<ThenT>(thenv) : std::forward<ElseT>(elsev);
+        return b ? forward<ThenT>(thenv) : forward<ElseT>(elsev);
+    }
+    template <class ThenT, class ElseT>
+    constexpr auto conditional(bool b, ThenT && thenv, ElseT && elsev) restrict(amp) {
+        return b ? forward<ThenT>(thenv) : forward<ElseT>(elsev);
     }
 
 
@@ -17,25 +39,49 @@ namespace wheels {
     template <class T>
     constexpr T && all(T && v) { return static_cast<T &&>(v); }
     template <class T, class ... Ts>
-    constexpr auto all(T && v, Ts && ... vs) { return std::forward<T>(v) && all(std::forward<Ts>(vs)...); }
+    constexpr auto all(T && v, Ts && ... vs) { return forward<T>(v) && all(forward<Ts>(vs)...); }
+
+    template <class T>
+    constexpr T && all(T && v) restrict(amp) { return static_cast<T &&>(v); }
+    template <class T, class ... Ts>
+    constexpr auto all(T && v, Ts && ... vs) restrict(amp) { return forward<T>(v) && all(forward<Ts>(vs)...); }
+
 
     // any(...)
     template <class T>
     constexpr T && any(T && v) { return static_cast<T &&>(v); }
     template <class T, class ... Ts>
-    constexpr auto any(T && v, Ts && ... vs) { return std::forward<T>(v) || any(std::forward<Ts>(vs)...); }
+    constexpr auto any(T && v, Ts && ... vs) { return forward<T>(v) || any(forward<Ts>(vs)...); }
+
+    template <class T>
+    constexpr T && any(T && v) restrict(amp) { return static_cast<T &&>(v); }
+    template <class T, class ... Ts>
+    constexpr auto any(T && v, Ts && ... vs) restrict(amp) { return forward<T>(v) || any(forward<Ts>(vs)...); }
+
     
     // sum(...)
     template <class T>
     constexpr T && sum(T && v) { return static_cast<T &&>(v); }
     template <class T, class ... Ts>
-    constexpr auto sum(T && v, Ts && ... vs) { return std::forward<T>(v) + sum(std::forward<Ts>(vs)...); }
+    constexpr auto sum(T && v, Ts && ... vs) { return forward<T>(v) + sum(forward<Ts>(vs)...); }
+
+    template <class T>
+    constexpr T && sum(T && v) restrict(amp) { return static_cast<T &&>(v); }
+    template <class T, class ... Ts>
+    constexpr auto sum(T && v, Ts && ... vs) restrict(amp) { return forward<T>(v) + sum(forward<Ts>(vs)...); }
+
 
     // prod(...)
     template <class T>
     constexpr T && prod(T && v) { return static_cast<T &&>(v); }
     template <class T, class ... Ts>
-    constexpr auto prod(T && v, Ts && ... vs) { return std::forward<T>(v) * prod(std::forward<Ts>(vs)...); }
+    constexpr auto prod(T && v, Ts && ... vs) { return forward<T>(v) * prod(forward<Ts>(vs)...); }
+
+    template <class T>
+    constexpr T && prod(T && v) restrict(amp) { return static_cast<T &&>(v); }
+    template <class T, class ... Ts>
+    constexpr auto prod(T && v, Ts && ... vs) restrict(amp) { return forward<T>(v) * prod(forward<Ts>(vs)...); }
+
 
     // min(...)
     template <class T>
@@ -43,13 +89,27 @@ namespace wheels {
     namespace details {
         template <class T1, class T2>
         constexpr auto _min2(T1 && a, T2 && b) {
-            return conditional(a < b, std::forward<T1>(a), std::forward<T2>(b));
+            return conditional(a < b, forward<T1>(a), forward<T2>(b));
         }
     }
     template <class T, class ... Ts>
     constexpr auto min(T && v, Ts && ... vs) {
-        return details::_min2(std::forward<T>(v), min(std::forward<Ts>(vs)...));
+        return details::_min2(forward<T>(v), min(forward<Ts>(vs)...));
     }
+
+    template <class T>
+    constexpr T && min(T && v) restrict(amp) { return static_cast<T &&>(v); }
+    namespace details {
+        template <class T1, class T2>
+        constexpr auto _min2(T1 && a, T2 && b) restrict(amp) {
+            return conditional(a < b, forward<T1>(a), forward<T2>(b));
+        }
+    }
+    template <class T, class ... Ts>
+    constexpr auto min(T && v, Ts && ... vs) restrict(amp) {
+        return details::_min2(forward<T>(v), min(forward<Ts>(vs)...));
+    }
+
 
     // max(...)
     template <class T>
@@ -57,23 +117,44 @@ namespace wheels {
     namespace details {
         template <class T1, class T2>
         constexpr auto _max2(T1 && a, T2 && b) {
-            return conditional(a < b, std::forward<T2>(b), std::forward<T1>(a));
+            return conditional(a < b, forward<T2>(b), forward<T1>(a));
         }
     }
     template <class T, class ... Ts>
     constexpr auto max(T && v, Ts && ... vs) {
-        return details::_max2(std::forward<T>(v), max(std::forward<Ts>(vs)...));
+        return details::_max2(forward<T>(v), max(forward<Ts>(vs)...));
+    }
+
+    template <class T>
+    constexpr T && max(T && v) restrict(amp) { return static_cast<T &&>(v); }
+    namespace details {
+        template <class T1, class T2>
+        constexpr auto _max2(T1 && a, T2 && b) restrict(amp) {
+            return conditional(a < b, forward<T2>(b), forward<T1>(a));
+        }
+    }
+    template <class T, class ... Ts>
+    constexpr auto max(T && v, Ts && ... vs) restrict(amp) {
+        return details::_max2(forward<T>(v), max(forward<Ts>(vs)...));
     }
 
     
 
     // traverse(fun, ...)
     template <class FunT, class T>
-    constexpr void traverse(const FunT & fun, const T & v) { fun(v); }
+    constexpr void traverse(const FunT & fun, T && v) { fun(forward<T>(v)); }
     template <class FunT, class T, class ... Ts>
-    constexpr void traverse(const FunT & fun, const T & v, const Ts & ... vs) {
-        fun(v); traverse(fun, vs ...);
+    constexpr void traverse(const FunT & fun, T && v, Ts && ... vs) {
+        fun(forward<T>(v)); traverse(fun, forward<Ts>(vs) ...);
     }
+
+    template <class FunT, class T>
+    constexpr void traverse(const FunT & fun, T && v) restrict(amp) { fun(forward<T>(v)); }
+    template <class FunT, class T, class ... Ts>
+    constexpr void traverse(const FunT & fun, T && v, Ts && ... vs) restrict(amp) {
+        fun(forward<T>(v)); traverse(fun, forward<Ts>(vs) ...);
+    }
+
 
 
 
@@ -110,7 +191,7 @@ namespace wheels {
     }
     template <class SepT, class ... Ts>
     inline std::ostream & println(SepT && sep, std::ostream & os, const Ts & ... args) {
-        return print(std::forward<SepT>(sep), os, args...) << std::endl;
+        return print(forward<SepT>(sep), os, args...) << std::endl;
     }
    
 

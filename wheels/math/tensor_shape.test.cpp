@@ -47,3 +47,12 @@ TEST(math, tensor_shape) {
     ASSERT_TRUE(ss1 == ss2);
 
 }
+
+
+void test(const tensor_shape<int, int> & s) restrict(amp) {
+
+    int ind = 5;
+    int sub = 0;
+    s.ind2sub(ind, sub);
+
+}

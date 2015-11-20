@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include "constants.hpp"
 
 using namespace wheels;
@@ -27,6 +28,32 @@ TEST(core, constants) {
     static_assert(cat(seq1, seq1)[3_c] == 1_c, "");
 
     ASSERT_EQ(1_c * 5, 5);
-       
+
+}
+
+
+template <char C>
+void foo() restrict(amp) {
+
+}
+
+void test() restrict(amp) {
+
+    using namespace wheels::literals;
+
+    constexpr const_ints<int, 8> a;
+    const_ints<int, 1, 2, 3>::sum();
+    const_ints<int, 1, 2, 3> aa;
+    constexpr bool iszero = aa.length == 0;
+    aa[const_ints<int, 2>()];
+
+    constexpr auto s = make_const_sequence(const_int<10>());
+    constexpr auto r = make_const_range(const_int<3>(), const_int<8>());
+
+    constexpr auto s_r = cat(s, r);
+
+    constexpr auto v = conditional(yes(), const_int<1>(), const_int<2>());
+    constexpr auto v2 = conditional(no(), const_int<1>(), const_int<2>());
+    constexpr auto v3 = v2 * (v2 + v);
 
 }

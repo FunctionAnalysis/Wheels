@@ -1,7 +1,7 @@
 #pragma once
 
 namespace wheels {
-	
+    
     struct vec_concept {
         // using value_type;
         // static constexpr size_t dimension;
