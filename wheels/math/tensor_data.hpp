@@ -12,8 +12,9 @@
 namespace wheels {
 
     // constructors
-    // constexpr T construct
     using std::is_default_constructible;
+    using std::is_copy_constructible;
+    using std::is_move_constructible;
     
     template <class T, class ... ArgTs>
     constexpr T construct_with_args(types<T>, ArgTs && ... args) {
@@ -24,149 +25,21 @@ namespace wheels {
         return T(forward<ArgTs>(args) ...);
     }
 
-
-
-    // template <class T, class ShapeEleT, class ... ShapeSizeTs>
-    // constexpr T construct_with_shape(types<T>, const tensor_shape<ShapeEleT, ShapeSizeTs ...> & shape);
-    namespace details {
-        template <class T, class ShapeT>
-        struct _is_constructible_with_shape {
-            template <class TT, class ShapeTT>
-            static auto test(int) -> decltype(construct_with_shape(types<TT>(), std::declval<ShapeTT>()), yes()) {
-                return yes();
-            }
-            template <class, class>
-            static no test(...) { return no(); }
-            static constexpr bool value = decltype(test<T, ShapeT>(0))::value;
-        };
-    }
-    template <class T, class ShapeT>
-    struct is_constructible_with_shape 
-        : const_bool<details::_is_constructible_with_shape<T, ShapeT>::value> {};
-
-
-    // template <class T, class ... EleTs>
-    // constexpr T construct_with_elements(types<T>, EleTs && ... eles);
-    namespace details {
-        template <class T, class ... EleTs>
-        struct _is_constructible_with_elements {
-            template <class TT, class ... EleTTs>
-            static auto test(int) -> decltype(construct_with_elements(types<TT>(), std::declval<EleTTs>() ...), yes()) {
-                return yes();
-            }
-            template <class, class ...>
-            static no test(...) { return no(); }
-            static constexpr bool value = decltype(test<T, EleTs ...>(0))::value;
-        };
-    }
-    template <class T, class ... EleTs>
-    struct is_constructible_with_elements
-        : const_bool<details::_is_constructible_with_elements<T, EleTs ...>::value> {};
-
-
-    // template <class T, class ShapeT, class ... EleTs>
-    // constexpr T construct_with_shape_elements(types<T>, const ShapeT & shape, EleTs && ... eles);
-    namespace details {
-        template <class T, class ShapeT, class ... EleTs>
-        struct _is_constructible_with_shape_elements {
-            template <class TT, class ShapeTT, class ... EleTTs>
-            static auto test(int) -> decltype(construct_with_shape_elements(types<TT>(), std::declval<ShapeTT>(), std::declval<EleTs>() ...), yes()) {
-                return yes();
-            }
-            template <class, class ...>
-            static no test(...) { return no(); }
-            static constexpr bool value = decltype(test<T, ShapeT, EleTs ...>(0))::value;
-        };
-    }
-    template <class T, class ShapeT, class ... EleTs>
-    struct is_constructible_with_shape_elements
-        : const_bool<details::_is_constructible_with_shape_elements<T, ShapeT, EleTs ...>::value> {};
+    template <class T>
+    struct is_constructible_with_shape : no {};
+    template <class T>
+    struct is_constructible_with_elements : no {};
+    template <class T>
+    struct is_constructible_with_shape_elements : no {};
 
 
 
 
-
-
-
-    // element accessors
-    
-    // template <class T, class IndexT>
-    // constexpr decltype(auto) element_at_index(T && data_provider, const IndexT & index);
-    namespace details {
-        template <class T, class IndexT>
-        struct _is_element_accessible_at_index {
-            template <class TT, class IndexTT>
-            static auto test(int) -> decltype(element_at_index(std::declval<TT>(), std::declval<IndexTT>()), yes()) {
-                return yes();
-            }
-            template <class, class>
-            static no test(...) { return no(); }
-            static constexpr bool value = decltype(test<T, IndexT>(0))::value;
-        };
-        template <class T, class IndexT>
-        struct _is_element_accessible_at_index_amp {
-            template <class TT, class IndexTT>
-            static auto test(int) restrict(cpu, amp) -> decltype(call_amp(element_at_index(std::declval<TT>(), std::declval<IndexTT>())), yes()){
-                return yes();
-            }
-            template <class, class>
-            static no test(...) restrict(cpu, amp) { return no(); }
-            static constexpr bool value = decltype(test<T, IndexT>(0))::value;
-        };
-    }
-
-    template <class PlatformT, class T, class IndexT>
+    // accessing elements
+    template <class PlatformT, class T>
     struct is_element_accessible_at_index : no {};
-
-    template <class T, class IndexT>
-    struct is_element_accessible_at_index<platform_cpu, T, IndexT>
-        : const_bool<details::_is_element_accessible_at_index<T, IndexT>::value> {};
-    template <class T, class IndexT>
-    struct is_element_accessible_at_index<platform_amp, T, IndexT>
-        : const_bool<details::_is_element_accessible_at_index_amp<T, IndexT>::value> {};
-
-
-
-
-    // template <class T, class ... SubTs>
-    // constexpr decltype(auto) element_at_subs(T && data_provider, const SubTs & ... index);
-    namespace details {
-        template <class T, class ... SubTs>
-        struct _is_element_accessible_at_subs {
-            template <class TT, class ... SubTTs>
-            static auto test(int) -> decltype(element_at_subs(std::declval<TT>(), std::declval<SubTTs>() ...), yes()) {
-                return yes();
-            }
-            template <class, class ...>
-            static no test(...) { return no(); }
-            static constexpr bool value = decltype(test<T, SubTs ...>(0))::value;
-        };
-        template <class T, class ... SubTs>
-        struct _is_element_accessible_at_subs_amp {
-            template <class TT, class ... SubTTs>
-            static auto test(int) -> decltype(call_amp(element_at_subs(std::declval<TT>(), std::declval<SubTTs>() ...)), yes()) {
-                return yes();
-            }
-            template <class, class ...>
-            static no test(...) { return no(); }
-            static constexpr bool value = decltype(test<T, SubTs ...>(0))::value;
-        };
-    }
-
-    template <class PlatformT, class T, class ... SubTs>
+    template <class PlatformT, class T>
     struct is_element_accessible_at_subs : no {};
-
-    template <class T, class ... SubTs>
-    struct is_element_accessible_at_subs<platform_cpu, T, SubTs ...>
-        : const_bool<details::_is_element_accessible_at_subs<T, SubTs ...>::value> {};
-    template <class T, class ... SubTs>
-    struct is_element_accessible_at_subs<platform_amp, T, SubTs ...>
-        : const_bool<details::_is_element_accessible_at_subs_amp<T, SubTs ...>::value> {};
-
-
-
-
-
 
 
 
@@ -176,24 +49,39 @@ namespace wheels {
 
     // std::array
     // constructors
+    template <class E, size_t N> 
+    struct is_constructible_with_shape<std::array<E, N>> : yes {};
+    
     template <class E, size_t N, class ShapeT>
     constexpr std::array<E, N> construct_with_shape(types<std::array<E, N>>, const ShapeT & shape) {
         return std::array<E, N>();
     }
+    
+    template <class E, size_t N>
+    struct is_constructible_with_elements<std::array<E, N>> : yes {};
+    
     template <class E, size_t N, class ... EleTs>
     constexpr std::array<E, N> construct_with_elements(types<std::array<E, N>>, const EleTs & ... eles) {
         return { {(E)eles ...} };
     }
+    
+    template <class E, size_t N>
+    struct is_constructible_with_shape_elements<std::array<E, N>> : yes {};
+    
     template <class E, size_t N, class ShapeT, class ... EleTs>
     constexpr std::array<E, N> construct_with_shape_elements(types<std::array<E, N>>, const ShapeT & shape, const EleTs & ... eles) {
         return{ { (E)eles ... } };
     }
 
-    // element accessors
+    // accessing elements
+    template <class E, size_t N>
+    struct is_element_accessible_at_index<platform_cpu, std::array<E, N>> : yes {};
+
     template <class E, size_t N, class IndexT>
     constexpr const E & element_at_index(const std::array<E, N> & a, const IndexT & index) {
         return a[index];
     }
+
     template <class E, size_t N, class IndexT>
     inline E & element_at_index(std::array<E, N> & a, const IndexT & index) {
         return a[index];
@@ -201,8 +89,59 @@ namespace wheels {
 
 
 
+
+
+
+    // std::vector
+    // constructors
+    template <class E, class AllocT>
+    struct is_constructible_with_shape<std::vector<E, AllocT>> : yes {};
+
+    template <class E, class AllocT, class ShapeT>
+    inline std::vector<E, AllocT> construct_with_shape(types<std::vector<E, AllocT>>, const ShapeT & shape) {
+        return std::vector<E, AllocT>(shape.magnitude());
+    }
+
+    template <class E, class AllocT>
+    struct is_constructible_with_elements<std::vector<E, AllocT>> : yes {};
+
+    template <class E, class AllocT, class ... EleTs>
+    inline std::vector<E, AllocT> construct_with_elements(types<std::vector<E, AllocT>>, const EleTs & ... eles) {
+        return { (E)eles... };
+    }
+
+    template <class E, class AllocT>
+    struct is_constructible_with_shape_elements<std::vector<E, AllocT>> : yes {};
+
+    template <class E, class AllocT, class ShapeT, class ... EleTs>
+    inline std::vector<E, AllocT> construct_with_shape_elements(types<std::vector<E, AllocT>>, const ShapeT & shape, const EleTs & ... eles) {
+        std::vector<E, AllocT> v = { (E)eles ... };
+        v.resize(shape.magnitude());
+        return v;
+    }
+    
+    // accessing elements
+    template <class E, class AllocT>
+    struct is_element_accessible_at_index<platform_cpu, std::vector<E, AllocT>> : yes {};
+
+    template <class E, class AllocT, class IndexT>
+    inline const E & element_at_index(const std::vector<E, AllocT> & a, const IndexT & index) {
+        return a[index];
+    }
+    template <class E, class AllocT, class IndexT>
+    inline E & element_at_index(std::vector<E, AllocT> & a, const IndexT & index) {
+        return a[index];
+    }
+
+
+
+
+
     // concurrency::array_view
     // constructors
+    template <class E, int Rank>
+    struct is_constructible_with_shape<concurrency::array_view<E, Rank>> : yes {};
+
     namespace details {
         template <class E, int Rank, class ShapeT, int ... Is>
         inline concurrency::array_view<E, Rank> _construct_with_shape_seq(
@@ -212,6 +151,7 @@ namespace wheels {
             return concurrency::array_view<E, Rank>(shape[const_int<Is>()] ...);
         }
     }
+    
     template <class E, int Rank, class T, class ... SizeTs>
     inline concurrency::array_view<E, Rank> construct_with_shape(types<concurrency::array_view<E, Rank>> t, 
         const tensor_shape<T, SizeTs ...> & shape) {
@@ -219,30 +159,23 @@ namespace wheels {
         return details::_construct_with_shape_seq(t, shape, make_const_sequence(const_int<Rank>()));
     }
 
-    // element accessors
+    // accessing elements
+    template <class E, int Rank>
+    struct is_element_accessible_at_subs<platform_cpu, concurrency::array_view<E, Rank>> : yes {};
+    
+    template <class E, int Rank>
+    struct is_element_accessible_at_subs<platform_amp, concurrency::array_view<E, Rank>> : yes {};
+    
     template <class E, int Rank, class ... SubTs>
-    inline decltype(auto) element_at_subs(const concurrency::array_view<E, Rank> & a, const SubTs & ... subs) {
+    inline decltype(auto) element_at_subs(const concurrency::array_view<E, Rank> & a, const SubTs & ... subs) restrict(cpu, amp) {
         static_assert(Rank == sizeof...(subs), "subscript count mismatch");
         const int subs_arr[] = { subs ... };
         concurrency::index<Rank> ind(subs_arr);
         return a[ind];
     }
+
     template <class E, int Rank, class ... SubTs>
-    inline decltype(auto) element_at_subs(concurrency::array_view<E, Rank> & a, const SubTs & ... subs) {
-        static_assert(Rank == sizeof...(subs), "subscript count mismatch");
-        const int subs_arr[] = { subs ... };
-        concurrency::index<Rank> ind(subs_arr);
-        return a[ind];
-    }
-    template <class E, int Rank, class ... SubTs>
-    inline decltype(auto) element_at_subs(const concurrency::array_view<E, Rank> & a, const SubTs & ... subs) restrict(amp) {
-        static_assert(Rank == sizeof...(subs), "subscript count mismatch");
-        const int subs_arr[] = { subs ... };
-        concurrency::index<Rank> ind(subs_arr);
-        return a[ind];
-    }
-    template <class E, int Rank, class ... SubTs>
-    inline decltype(auto) element_at_subs(concurrency::array_view<E, Rank> & a, const SubTs & ... subs) restrict(amp) {
+    inline decltype(auto) element_at_subs(concurrency::array_view<E, Rank> & a, const SubTs & ... subs) restrict(cpu, amp) {
         static_assert(Rank == sizeof...(subs), "subscript count mismatch");
         const int subs_arr[] = { subs ... };
         concurrency::index<Rank> ind(subs_arr);
