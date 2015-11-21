@@ -32,7 +32,6 @@ namespace wheels {
         static constexpr bool value = false;
     };
 
-
 #define WHEELS_IS_INT_SUPPORTED_BY_AMP(t) \
     template <> struct is_int_supported_by_amp<t> { \
         static constexpr bool value = true; \
@@ -45,5 +44,10 @@ namespace wheels {
     WHEELS_IS_INT_SUPPORTED_BY_AMP(unsigned long)
     WHEELS_IS_INT_SUPPORTED_BY_AMP(float)
     WHEELS_IS_INT_SUPPORTED_BY_AMP(double)
+
+    template <class FunT>
+    constexpr auto call_amp(FunT && f) restrict(amp) {
+        return f();
+    }
 
 }
