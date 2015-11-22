@@ -9,24 +9,39 @@ namespace wheels {
 
 #define wheels_restrict_all restrict(cpu, amp)
 #define wheels_align_for_amp alignas(4)
-
-
     
+    using safe_size_t = unsigned long;
+
     struct platform_cpu {
         constexpr platform_cpu() wheels_restrict_all {}
         static const char * name() { return "cpu"; }
+        template <class FunT>
+        static constexpr auto invoke(FunT && fun) {
+            return fun();
+        }
     };
 
     struct platform_amp {
         constexpr platform_amp() wheels_restrict_all {}
         static const char * name() { return "amp"; }
+        template <class FunT>
+        static constexpr auto invoke(FunT && fun) restrict(amp) {
+            return fun();
+        }
+    };
+
+    struct platform_cpu_amp {
+        constexpr platform_cpu_amp() wheels_restrict_all {}
+        static const char * name() { return "cpu & amp"; }
+        template <class FunT>
+        static constexpr auto invoke(FunT && fun) restrict(cpu, amp) {
+            return fun();
+        }
     };
 
     
     
-    
-    using safe_size_t = unsigned long;
-
+  
     template <class T>
     struct is_int_supported_by_amp {
         static constexpr bool value = false;
@@ -45,9 +60,5 @@ namespace wheels {
     WHEELS_IS_INT_SUPPORTED_BY_AMP(float)
     WHEELS_IS_INT_SUPPORTED_BY_AMP(double)
 
-    template <class FunT>
-    constexpr auto call_amp(FunT && f) restrict(amp) {
-        return f();
-    }
 
 }

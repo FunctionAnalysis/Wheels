@@ -9,6 +9,7 @@
 
 #include "tensor_shape.hpp"
 #include "tensor_data.hpp"
+#include "tensor_assign.hpp"
 
 namespace wheels {
 
@@ -73,12 +74,61 @@ namespace wheels {
         constexpr decltype(auto) storage() const { return layout().storage_impl(); }
     };
 
+    template <class LayoutT>
+    class tensor_base<platform_amp, LayoutT> {
+    public:
+        using platform_type = platform_amp;
+        using layout_type = LayoutT;
+
+        const layout_type & layout() const restrict(amp) { return (const layout_type &)(*this); }
+        layout_type & layout() restrict(amp) { return (layout_type &)(*this); }
+
+        // shape related
+        constexpr decltype(auto) shape() const restrict(amp) { return layout().shape_impl(); }
+        constexpr auto degree() const restrict(amp) { return const_ints<int, decltype(shape())::degree>(); }
+        constexpr auto degree_sequence() const restrict(amp) { return make_const_sequence(degree()); }
+
+        template <class T, T Idx>
+        constexpr auto size(const const_ints<T, Idx> & i) const restrict(amp) {
+            return shape().at(i);
+        }
+        auto numel() const restrict(amp) { return shape().magnitude(); }
+
+        // storage
+        constexpr decltype(auto) storage() const restrict(amp) { return layout().storage_impl(); }
+    };
+
+    template <class LayoutT>
+    class tensor_base<platform_cpu_amp, LayoutT> {
+    public:
+        using platform_type = platform_cpu_amp;
+        using layout_type = LayoutT;
+
+        const layout_type & layout() const restrict(cpu, amp) { return (const layout_type &)(*this); }
+        layout_type & layout()  restrict(cpu, amp) { return (layout_type &)(*this); }
+
+        // shape related
+        constexpr decltype(auto) shape() const restrict(cpu, amp) { return layout().shape_impl(); }
+        constexpr auto degree() const  restrict(cpu, amp) { return const_ints<int, decltype(shape())::degree>(); }
+        constexpr auto degree_sequence() const restrict(cpu, amp) { return make_const_sequence(degree()); }
+
+        template <class T, T Idx>
+        constexpr auto size(const const_ints<T, Idx> & i) const  restrict(cpu, amp) {
+            return shape().at(i);
+        }
+        auto numel() const  restrict(cpu, amp) { return shape().magnitude(); }
+
+        // storage
+        constexpr decltype(auto) storage() const restrict(cpu, amp) { return layout().storage_impl(); }
+    };
+
 
 
 
 
 
     // tensor_manip_element_at_index
+    // cpu
     template <class LayoutT>
     class tensor_manip_element_at_index<platform_cpu, LayoutT, true> 
         : public tensor_base<platform_cpu, LayoutT> {        
@@ -121,14 +171,123 @@ namespace wheels {
     private:
         template <class IndexT, int ... Is>
         constexpr decltype(auto) _at_subs_seq(const IndexT & index, const_ints<int, Is...>) const {
-            size_t subs[sizeof...(Is)];
+            int subs[sizeof...(Is)];
             ind2sub(shape(), index, subs[Is]...);
             return element_at_subs(layout().storage_impl(), subs[Is]...);
         }
-
         template <class IndexT, int ... Is>
         decltype(auto) _at_subs_seq(const IndexT & index, const_ints<int, Is...>) {
-            size_t subs[sizeof...(Is)];
+            int subs[sizeof...(Is)];
+            ind2sub(shape(), index, subs[Is]...);
+            return element_at_subs(layout().storage_impl(), subs[Is]...);
+        }
+    };
+
+    // amp
+    template <class LayoutT>
+    class tensor_manip_element_at_index<platform_amp, LayoutT, true>
+        : public tensor_base<platform_amp, LayoutT> {
+        static constexpr bool _is_element_accessible_at_index = true;
+    public:
+        using platform_type = platform_amp;
+        using layout_type = LayoutT;
+
+        // at_index related
+        template <class IndexT>
+        constexpr decltype(auto) at_index(const IndexT & index) const restrict(amp) {
+            return element_at_index(layout().storage_impl(), index);
+        }
+
+        template <class IndexT>
+        decltype(auto) at_index(const IndexT & index) restrict(amp) {
+            return element_at_index(layout().storage_impl(), index);
+        }
+    };
+
+    template <class LayoutT>
+    class tensor_manip_element_at_index<platform_amp, LayoutT, false>
+        : public tensor_base<platform_amp, LayoutT> {
+        static constexpr bool _is_element_accessible_at_index = false;
+    public:
+        using platform_type = platform_amp;
+        using layout_type = LayoutT;
+
+        // at_index related
+        template <class IndexT>
+        constexpr decltype(auto) at_index(const IndexT & index) const restrict(amp) {
+            return _at_subs_seq(index, degree_sequence());
+        }
+
+        template <class IndexT>
+        decltype(auto) at_index(const IndexT & index) restrict(amp) {
+            return _at_subs_seq(index, degree_sequence());
+        }
+
+    private:
+        template <class IndexT, int ... Is>
+        constexpr decltype(auto) _at_subs_seq(const IndexT & index, const_ints<int, Is...>) const restrict(amp) {
+            int subs[sizeof...(Is)];
+            ind2sub(shape(), index, subs[Is]...);
+            return element_at_subs(layout().storage_impl(), subs[Is]...);
+        }
+        template <class IndexT, int ... Is>
+        decltype(auto) _at_subs_seq(const IndexT & index, const_ints<int, Is...>) restrict(amp) {
+            int subs[sizeof...(Is)];
+            ind2sub(shape(), index, subs[Is]...);
+            return element_at_subs(layout().storage_impl(), subs[Is]...);
+        }
+    };
+
+    // cpu amp
+    template <class LayoutT>
+    class tensor_manip_element_at_index<platform_cpu_amp, LayoutT, true>
+        : public tensor_base<platform_cpu_amp, LayoutT> {
+        static constexpr bool _is_element_accessible_at_index = true;
+    public:
+        using platform_type = platform_cpu_amp;
+        using layout_type = LayoutT;
+
+        // at_index related
+        template <class IndexT>
+        constexpr decltype(auto) at_index(const IndexT & index) const restrict(cpu, amp) {
+            return element_at_index(layout().storage_impl(), index);
+        }
+
+        template <class IndexT>
+        decltype(auto) at_index(const IndexT & index) restrict(cpu, amp) {
+            return element_at_index(layout().storage_impl(), index);
+        }
+    };
+
+    template <class LayoutT>
+    class tensor_manip_element_at_index<platform_cpu_amp, LayoutT, false>
+        : public tensor_base<platform_cpu_amp, LayoutT> {
+        static constexpr bool _is_element_accessible_at_index = false;
+    public:
+        using platform_type = platform_cpu_amp;
+        using layout_type = LayoutT;
+
+        // at_index related
+        template <class IndexT>
+        constexpr decltype(auto) at_index(const IndexT & index) const restrict(cpu, amp) {
+            return _at_subs_seq(index, degree_sequence());
+        }
+
+        template <class IndexT>
+        decltype(auto) at_index(const IndexT & index) restrict(cpu, amp) {
+            return _at_subs_seq(index, degree_sequence());
+        }
+
+    private:
+        template <class IndexT, int ... Is>
+        constexpr decltype(auto) _at_subs_seq(const IndexT & index, const_ints<int, Is...>) const restrict(cpu, amp) {
+            int subs[sizeof...(Is)];
+            ind2sub(shape(), index, subs[Is]...);
+            return element_at_subs(layout().storage_impl(), subs[Is]...);
+        }
+        template <class IndexT, int ... Is>
+        decltype(auto) _at_subs_seq(const IndexT & index, const_ints<int, Is...>) restrict(cpu, amp) {
+            int subs[sizeof...(Is)];
             ind2sub(shape(), index, subs[Is]...);
             return element_at_subs(layout().storage_impl(), subs[Is]...);
         }
@@ -140,7 +299,9 @@ namespace wheels {
 
 
 
-    
+
+    // tensor_manip_element_at_subs
+    // cpu
     template <class LayoutT>
     class tensor_manip_element_at_subs<platform_cpu, LayoutT, true> 
         : public tensor_manip_element_at_index<platform_cpu, LayoutT> {
@@ -187,8 +348,99 @@ namespace wheels {
         }
     };
 
+    // amp
+    template <class LayoutT>
+    class tensor_manip_element_at_subs<platform_amp, LayoutT, true>
+        : public tensor_manip_element_at_index<platform_amp, LayoutT> {
+    public:
+        using platform_type = platform_amp;
+        using layout_type = LayoutT;
 
+        // at_subs related
+        template <class ... SubTs>
+        constexpr decltype(auto) at_subs(const SubTs & ... subs) const restrict(amp) {
+            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
+                "at_subs(...) requires all subs should be integral or const_ints");
+            return element_at_subs(layout().storage_impl(), subs ...);
+        }
 
+        template <class ... SubTs>
+        decltype(auto) at_subs(const SubTs & ... subs) restrict(amp) {
+            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
+                "at_subs(...) requires all subs should be integral or const_ints");
+            return element_at_subs(layout().storage_impl(), subs ...);
+        }
+    };
+
+    template <class LayoutT>
+    class tensor_manip_element_at_subs<platform_amp, LayoutT, false>
+        : public tensor_manip_element_at_index<platform_amp, LayoutT> {
+    public:
+        using platform_type = platform_cpu;
+        using layout_type = LayoutT;
+
+        // at_subs related
+        template <class ... SubTs>
+        constexpr decltype(auto) at_subs(const SubTs & ... subs) const restrict(amp) {
+            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
+                "at_subs(...) requires all subs should be integral or const_ints");
+            return element_at_index(layout().storage_impl(), sub2ind(shape(), subs ...));
+        }
+
+        template <class ... SubTs>
+        decltype(auto) at_subs(const SubTs & ... subs) restrict(amp) {
+            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
+                "at_subs(...) requires all subs should be integral or const_ints");
+            return element_at_index(layout().storage_impl(), sub2ind(shape(), subs ...));
+        }
+    };
+
+    // cpu amp
+    template <class LayoutT>
+    class tensor_manip_element_at_subs<platform_cpu_amp, LayoutT, true>
+        : public tensor_manip_element_at_index<platform_cpu_amp, LayoutT> {
+    public:
+        using platform_type = platform_cpu_amp;
+        using layout_type = LayoutT;
+
+        // at_subs related
+        template <class ... SubTs>
+        constexpr decltype(auto) at_subs(const SubTs & ... subs) const restrict(cpu, amp) {
+            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
+                "at_subs(...) requires all subs should be integral or const_ints");
+            return element_at_subs(layout().storage_impl(), subs ...);
+        }
+
+        template <class ... SubTs>
+        decltype(auto) at_subs(const SubTs & ... subs) restrict(cpu, amp) {
+            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
+                "at_subs(...) requires all subs should be integral or const_ints");
+            return element_at_subs(layout().storage_impl(), subs ...);
+        }
+    };
+
+    template <class LayoutT>
+    class tensor_manip_element_at_subs<platform_cpu_amp, LayoutT, false>
+        : public tensor_manip_element_at_index<platform_cpu_amp, LayoutT> {
+    public:
+        using platform_type = platform_cpu_amp;
+        using layout_type = LayoutT;
+
+        // at_subs related
+        template <class ... SubTs>
+        constexpr decltype(auto) at_subs(const SubTs & ... subs) const restrict(cpu, amp) {
+            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
+                "at_subs(...) requires all subs should be integral or const_ints");
+            return element_at_index(layout().storage_impl(), sub2ind(shape(), subs ...));
+        }
+
+        template <class ... SubTs>
+        decltype(auto) at_subs(const SubTs & ... subs) restrict(cpu, amp) {
+            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
+                "at_subs(...) requires all subs should be integral or const_ints");
+            return element_at_index(layout().storage_impl(), sub2ind(shape(), subs ...));
+        }
+    };
 
 
 
@@ -211,7 +463,8 @@ namespace wheels {
         }
     }
 
-
+    // tensor_all_methods
+    // cpu
     template <class LayoutT>
     class tensor_all_methods<platform_cpu, LayoutT> 
         : public tensor_manip_element_at_subs<platform_cpu, LayoutT> {
@@ -219,7 +472,7 @@ namespace wheels {
         using platform_type = platform_cpu;
         using layout_type = LayoutT;
 
-        // at_index
+        // [...] based on at_index
         template <class E>
         constexpr decltype(auto) operator[](const E & e) const {
             return at_index(details::_eval_const_expr(e, numel()));
@@ -229,7 +482,7 @@ namespace wheels {
             return at_index(details::_eval_const_expr(e, numel()));
         }
 
-        // at_subs
+        // (...) based on at_subs
         template <class ... SubEs>
         constexpr decltype(auto) operator()(const SubEs & ... subes) const {
             return _parenthesis_seq(make_const_sequence(const_int<sizeof...(SubEs)>()), subes ...);
@@ -250,6 +503,83 @@ namespace wheels {
         }
     };
     
+    // amp
+    template <class LayoutT>
+    class tensor_all_methods<platform_amp, LayoutT>
+        : public tensor_manip_element_at_subs<platform_amp, LayoutT> {
+    public:
+        using platform_type = platform_amp;
+        using layout_type = LayoutT;
+
+        // [...] based on at_index
+        template <class E>
+        constexpr decltype(auto) operator[](const E & e) const restrict(amp) {
+            return at_index(details::_eval_const_expr(e, numel()));
+        }
+        template <class E>
+        decltype(auto) operator[](const E & e) restrict(amp) {
+            return at_index(details::_eval_const_expr(e, numel()));
+        }
+
+        // (...) based on at_subs
+        template <class ... SubEs>
+        constexpr decltype(auto) operator()(const SubEs & ... subes) const restrict(amp) {
+            return _parenthesis_seq(make_const_sequence(const_int<sizeof...(SubEs)>()), subes ...);
+        }
+        template <class ... SubEs>
+        decltype(auto) operator()(const SubEs & ... subes) restrict(amp) {
+            return _parenthesis_seq(make_const_sequence(const_int<sizeof...(SubEs)>()), subes ...);
+        }
+
+    private:
+        template <class ... SubEs, int ... Is>
+        constexpr decltype(auto) _parenthesis_seq(const_ints<int, Is...>, const SubEs & ... subes) const restrict(amp) {
+            return at_subs(details::_eval_const_expr(subes, size(const_int<Is>())) ...);
+        }
+        template <class ... SubEs, int ... Is>
+        decltype(auto) _parenthesis_seq(const_ints<int, Is...>, const SubEs & ... subes) restrict(amp) {
+            return at_subs(details::_eval_const_expr(subes, size(const_int<Is>())) ...);
+        }
+    };
+
+    // cpu amp
+    template <class LayoutT>
+    class tensor_all_methods<platform_cpu_amp, LayoutT>
+        : public tensor_manip_element_at_subs<platform_cpu_amp, LayoutT> {
+    public:
+        using platform_type = platform_cpu_amp;
+        using layout_type = LayoutT;
+
+        // [...] based on at_index
+        template <class E>
+        constexpr decltype(auto) operator[](const E & e) const restrict(cpu, amp) {
+            return at_index(details::_eval_const_expr(e, numel()));
+        }
+        template <class E>
+        decltype(auto) operator[](const E & e) restrict(cpu, amp) {
+            return at_index(details::_eval_const_expr(e, numel()));
+        }
+
+        // (...) based on at_subs
+        template <class ... SubEs>
+        constexpr decltype(auto) operator()(const SubEs & ... subes) const restrict(cpu, amp) {
+            return _parenthesis_seq(make_const_sequence(const_int<sizeof...(SubEs)>()), subes ...);
+        }
+        template <class ... SubEs>
+        decltype(auto) operator()(const SubEs & ... subes) restrict(cpu, amp) {
+            return _parenthesis_seq(make_const_sequence(const_int<sizeof...(SubEs)>()), subes ...);
+        }
+
+    private:
+        template <class ... SubEs, int ... Is>
+        constexpr decltype(auto) _parenthesis_seq(const_ints<int, Is...>, const SubEs & ... subes) const restrict(cpu, amp) {
+            return at_subs(details::_eval_const_expr(subes, size(const_int<Is>())) ...);
+        }
+        template <class ... SubEs, int ... Is>
+        decltype(auto) _parenthesis_seq(const_ints<int, Is...>, const SubEs & ... subes) restrict(cpu, amp) {
+            return at_subs(details::_eval_const_expr(subes, size(const_int<Is>())) ...);
+        }
+    };
 
 
 

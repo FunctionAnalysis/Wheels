@@ -145,7 +145,7 @@ namespace wheels {
     namespace details {
         template <class E, int Rank, class ShapeT, int ... Is>
         inline concurrency::array_view<E, Rank> _construct_with_shape_seq(
-            types<concurrency::array_view<E, 1>> t, 
+            types<concurrency::array_view<E, Rank>> t, 
             const ShapeT & shape,
             const_ints<int, Is...> seq) {
             return concurrency::array_view<E, Rank>(shape[const_int<Is>()] ...);
@@ -165,6 +165,9 @@ namespace wheels {
     
     template <class E, int Rank>
     struct is_element_accessible_at_subs<platform_amp, concurrency::array_view<E, Rank>> : yes {};
+
+    template <class E, int Rank>
+    struct is_element_accessible_at_subs<platform_cpu_amp, concurrency::array_view<E, Rank>> : yes {};
     
     template <class E, int Rank, class ... SubTs>
     inline decltype(auto) element_at_subs(const concurrency::array_view<E, Rank> & a, const SubTs & ... subs) restrict(cpu, amp) {
