@@ -1,6 +1,7 @@
 #pragma once
 
 #include "constants.hpp"
+#include "operators.hpp"
 
 namespace wheels {
 
@@ -79,40 +80,19 @@ namespace wheels {
 
 
 #define WHEELS_CONST_EXPR_OVERLOAD_UNARY_OP(op, name) \
-    namespace details { \
-        struct _const_expr_unary_op_##name { \
-            constexpr _const_expr_unary_op_##name () {} \
-            template <class RE> \
-            constexpr auto operator()(const RE & re) const {\
-                return op re; \
-            } \
-            template <class Archive> void serialize(Archive &) {} \
-        }; \
-    } \
     template <class E, class = std::enable_if_t<is_const_expr<E>::value>> \
     constexpr auto operator op (const E & e) { \
-        using _op_t = details::_const_expr_unary_op_##name; \
+        using _op_t = unary_op_##name; \
         return const_unary_op<_op_t, E> (_op_t(), e); \
     }
-
     WHEELS_CONST_EXPR_OVERLOAD_UNARY_OP(-, minus)
 
 
 #define WHEELS_CONST_EXPR_OVERLOAD_BINARY_OP(op, name) \
-    namespace details { \
-        struct _const_expr_binary_op_##name { \
-            constexpr _const_expr_binary_op_##name () {} \
-            template <class RE1, class RE2> \
-            constexpr auto operator()(const RE1 & re1, const RE2 & re2) const { \
-                return re1 op re2; \
-            } \
-            template <class Archive> void serialize(Archive &) {} \
-        }; \
-    } \
     template <class E1, class E2, class =  \
         std::enable_if_t<is_const_expr<E1>::value && is_const_expr<E2>::value>>  \
     constexpr auto operator op (const E1 & e1, const E2 & e2) { \
-        using _op_t = details::_const_expr_binary_op_##name; \
+        using _op_t = binary_op_##name; \
         return const_binary_op<_op_t, E1, E2> (_op_t(), e1, e2); \
     } \
     template <class E1, class E2, class = \

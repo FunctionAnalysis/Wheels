@@ -20,6 +20,10 @@ TEST(core, utility) {
     static_assert(min(5_c, 6_sizec, 34_c, 1_c, 2_uc) == 1, "");
     static_assert(max(5_c, 6_sizec, 34_c, 1_c, 2_uc) == 34, "");
 
+    static_assert(all_same(1_c, 1, 1_c), "");
+    static_assert(!all_same(1_c, 2, 1_c), "");
+    static_assert(all_same(1_c, 1, 1_c, 1, 1, 1_sizec), "");
+
     wheels::traverse([](auto v) {std::cout << v << std::endl; }, 1_c, 2_c);
 
 }

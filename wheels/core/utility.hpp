@@ -87,6 +87,16 @@ namespace wheels {
         return details::_max2(forward<T>(v), max(forward<Ts>(vs)...));
     }
 
+
+    // all_same(...)
+    template <class T1, class T2>
+    constexpr auto all_same(const T1 & a, T2 && b) {
+        return a == forward<T2>(b);
+    }
+    template <class T1, class T2, class ... T2s>
+    constexpr auto all_same(const T1 & a, T2 && b, T2s && ... bs) {
+        return a == forward<T2>(b) && all_same(a, forward<T2s>(bs) ...);
+    }
     
 
     // traverse(fun, ...)

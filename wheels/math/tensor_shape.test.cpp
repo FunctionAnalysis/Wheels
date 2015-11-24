@@ -48,7 +48,9 @@ TEST(math, tensor_shape) {
 
     tensor_shape<int, int, const_int<5>> shape(4);
     for (int i = 0; i < shape.magnitude(); i++) {
-        invoke_with_subs(shape, i, [&shape](int a, int b) {println(std::cout, sub2ind(shape, a, b)); });
+        invoke_with_subs(shape, i, [&shape](int a, int b) {
+            println(std::cout, sub2ind(shape, a, b)); 
+        });
     }
 
 }

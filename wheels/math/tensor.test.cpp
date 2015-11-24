@@ -6,23 +6,20 @@ using namespace wheels;
 using namespace wheels::literals;
 using namespace wheels::index_tags;
 
-using mat2 = tensor_layout<tensor_shape<int, const_int<2>, const_int<2>>, std::array<double, 4>>;
-using matx = tensor_layout<tensor_shape<int, int, int>, std::vector<double>>;
-
-static_assert(std::is_standard_layout<mat2>::value, "");
+static_assert(std::is_standard_layout<mat2x2>::value, "");
+static_assert(std::is_standard_layout<mat2x3>::value, "");
 
 struct A { int a; };
 struct B : A {};
 struct C : B {};
 static_assert(std::is_standard_layout<C>::value, "");
 
-constexpr int v2 = sizeof(mat2);
-constexpr int vx = sizeof(matx);
 
-TEST(math, tensor_static) {
-    mat2 m1;
-    mat2 m2(with_elements, 1, 2, 3, 4);
+TEST(math, test1) {
+    mat2x2 m1;
+    mat2x2 m2(with_elements, 1, 2, 3, 4);
     matx m3 = m2;
+    ASSERT_TRUE(m3.numel() == 4);
     ASSERT_TRUE(m2[0] == 1);
     ASSERT_TRUE(m2(last, last) == 4);
     ASSERT_TRUE(m3[0] == 1);
