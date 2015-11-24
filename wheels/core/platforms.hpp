@@ -9,8 +9,7 @@ namespace wheels {
 
 #define wheels_restrict_all restrict(cpu, amp)
 #define wheels_align_for_amp alignas(4)
-    
-    using safe_size_t = unsigned long;
+   
 
     struct platform_cpu {
         constexpr platform_cpu() wheels_restrict_all {}

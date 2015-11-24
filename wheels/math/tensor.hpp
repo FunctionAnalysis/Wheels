@@ -1,11 +1,11 @@
 #pragma once
 
+#include <cassert>
 #include <array>
 #include <vector>
 
 #include "../core/const_expr.hpp"
 #include "../core/types.hpp"
-#include "../core/platforms.hpp"
 
 #include "tensor_shape.hpp"
 #include "tensor_data.hpp"
@@ -14,50 +14,63 @@
 namespace wheels {
 
     // forward declaration
-    template <class PlatformT, class LayoutT>
+    template <class LayoutT>
     class tensor_base;
-    
-    template <class ShapeT, class StorageT, class PlatformT,
+
+    template <class ShapeT, class DataProviderT,
         bool ShapeIsStatic = ShapeT::is_static>
     class tensor_layout;
 
     namespace details {
         template <class LayoutT>
-        struct _ele_accessible_at_index : no {};
-        template <class ShapeT, class StorageT, class PlatformT, bool S>
-        struct _ele_accessible_at_index<tensor_layout<ShapeT, StorageT, PlatformT, S>> 
-            : const_bool<is_element_accessible_at_index<PlatformT, StorageT>::value> {};
+        struct _layout_property {};
+        template <class ShapeT, class DataProviderT, bool S>
+        struct _layout_property<tensor_layout<ShapeT, DataProviderT, S>> {
+            static constexpr bool element_readable_at_index = 
+                tdp::is_element_readable_at_index<DataProviderT>::value;
+            static constexpr bool element_writable_at_index = 
+                tdp::is_element_writable_at_index<DataProviderT>::value;
+            static constexpr bool element_readable_at_subs = 
+                tdp::is_element_readable_at_subs<DataProviderT>::value;
+            static constexpr bool element_writable_at_subs = 
+                tdp::is_element_writable_at_subs<DataProviderT>::value;
+        };
     }
-    template <class PlatformT, class LayoutT,
-        bool SupportEleAtIndex = details::_ele_accessible_at_index<LayoutT>::value>
-    class tensor_manip_element_at_index;
 
-    namespace details {
-        template <class LayoutT>
-        struct _ele_accessible_at_subs : no {};
-        template <class ShapeT, class StorageT, class PlatformT, bool S>
-        struct _ele_accessible_at_subs<tensor_layout<ShapeT, StorageT, PlatformT, S>>
-            : const_bool<is_element_accessible_at_subs<PlatformT, StorageT>::value> {};
-    }
-    template <class PlatformT, class LayoutT,
-        bool SupportEleAtSubs = details::_ele_accessible_at_subs<LayoutT>::value>
-    class tensor_manip_element_at_subs;
+    template <class LayoutT,
+        bool AssignByIndex = details::_layout_property<LayoutT>::element_readable_at_index>
+    class tensor_method_assign;
 
-    template <class PlatformT, class LayoutT>
+    template <class LayoutT,
+        bool EleReadableAtIndex = details::_layout_property<LayoutT>::element_readable_at_index>
+    class tensor_method_read_element_at_index;
+
+    template <class LayoutT,
+        bool EleWritableAtIndex = details::_layout_property<LayoutT>::element_writable_at_index>
+    class tensor_method_write_element_at_index;
+
+    template <class LayoutT,
+        bool EleReadableAtSubs = details::_layout_property<LayoutT>::element_readable_at_subs>
+    class tensor_method_read_element_at_subs;
+
+    template <class LayoutT,
+        bool EleWritableAtSubs = details::_layout_property<LayoutT>::element_writable_at_subs>
+    class tensor_method_write_element_at_subs;
+
+    template <class LayoutT>
     class tensor_all_methods;
-
 
 
 
     // tensor_base
     template <class LayoutT>
-    class tensor_base<platform_cpu, LayoutT> {
+    class tensor_base {
     public:
-        using platform_type = platform_cpu;
         using layout_type = LayoutT;
 
-        const layout_type & layout() const { return (const layout_type &)(*this); }
+        constexpr const layout_type & layout() const { return (const layout_type &)(*this); }
         layout_type & layout() { return (layout_type &)(*this); }
+
 
         // shape related
         constexpr decltype(auto) shape() const { return layout().shape_impl(); }
@@ -71,378 +84,190 @@ namespace wheels {
         auto numel() const { return shape().magnitude(); }
 
         // storage
-        constexpr decltype(auto) storage() const { return layout().storage_impl(); }
-    };
-
-    template <class LayoutT>
-    class tensor_base<platform_amp, LayoutT> {
-    public:
-        using platform_type = platform_amp;
-        using layout_type = LayoutT;
-
-        const layout_type & layout() const restrict(amp) { return (const layout_type &)(*this); }
-        layout_type & layout() restrict(amp) { return (layout_type &)(*this); }
-
-        // shape related
-        constexpr decltype(auto) shape() const restrict(amp) { return layout().shape_impl(); }
-        constexpr auto degree() const restrict(amp) { return const_ints<int, decltype(shape())::degree>(); }
-        constexpr auto degree_sequence() const restrict(amp) { return make_const_sequence(degree()); }
-
-        template <class T, T Idx>
-        constexpr auto size(const const_ints<T, Idx> & i) const restrict(amp) {
-            return shape().at(i);
-        }
-        auto numel() const restrict(amp) { return shape().magnitude(); }
-
-        // storage
-        constexpr decltype(auto) storage() const restrict(amp) { return layout().storage_impl(); }
-    };
-
-    template <class LayoutT>
-    class tensor_base<platform_cpu_amp, LayoutT> {
-    public:
-        using platform_type = platform_cpu_amp;
-        using layout_type = LayoutT;
-
-        const layout_type & layout() const restrict(cpu, amp) { return (const layout_type &)(*this); }
-        layout_type & layout()  restrict(cpu, amp) { return (layout_type &)(*this); }
-
-        // shape related
-        constexpr decltype(auto) shape() const restrict(cpu, amp) { return layout().shape_impl(); }
-        constexpr auto degree() const  restrict(cpu, amp) { return const_ints<int, decltype(shape())::degree>(); }
-        constexpr auto degree_sequence() const restrict(cpu, amp) { return make_const_sequence(degree()); }
-
-        template <class T, T Idx>
-        constexpr auto size(const const_ints<T, Idx> & i) const  restrict(cpu, amp) {
-            return shape().at(i);
-        }
-        auto numel() const  restrict(cpu, amp) { return shape().magnitude(); }
-
-        // storage
-        constexpr decltype(auto) storage() const restrict(cpu, amp) { return layout().storage_impl(); }
+        constexpr decltype(auto) storage() const { return layout().data_provider_impl(); }     
     };
 
 
+#define WHEELS_TENSOR_METHOD_LAYER(method_name) \
+    constexpr const tensor_method_##method_name<LayoutT> & \
+        method_##method_name() const { \
+        return (const tensor_method_##method_name<LayoutT> &)(*this); \
+    } \
+    tensor_method_##method_name<LayoutT> & \
+        method_##method_name() { \
+        return (tensor_method_##method_name<LayoutT> &)(*this); \
+    }
 
 
 
-
-    // tensor_manip_element_at_index
-    // cpu
+    // tensor_method_read_element_at_index
     template <class LayoutT>
-    class tensor_manip_element_at_index<platform_cpu, LayoutT, true> 
-        : public tensor_base<platform_cpu, LayoutT> {        
-        static constexpr bool _is_element_accessible_at_index = true;
+    class tensor_method_read_element_at_index<LayoutT, true>
+        : public tensor_base<LayoutT> {
     public:
-        using platform_type = platform_cpu;
-        using layout_type = LayoutT;
-
-        // at_index related
+        WHEELS_TENSOR_METHOD_LAYER(read_element_at_index)
+        static constexpr bool element_readable_at_index = true;
+        // read element at index
         template <class IndexT>
         constexpr decltype(auto) at_index(const IndexT & index) const {
-            return element_at_index(layout().storage_impl(), index);
-        }
-
-        template <class IndexT>
-        decltype(auto) at_index(const IndexT & index) {
-            return element_at_index(layout().storage_impl(), index);
+            return tdp::element_at_index(layout().data_provider_impl(), index);
         }
     };
-
     template <class LayoutT>
-    class tensor_manip_element_at_index<platform_cpu, LayoutT, false>
-        : public tensor_base<platform_cpu, LayoutT> {
-        static constexpr bool _is_element_accessible_at_index = false;
+    class tensor_method_read_element_at_index<LayoutT, false>
+        : public tensor_base<LayoutT> {
     public:
-        using platform_type = platform_cpu;
-        using layout_type = LayoutT;
-
-        // at_index related
+        WHEELS_TENSOR_METHOD_LAYER(read_element_at_index)
+        static constexpr bool element_readable_at_index = false;
+        // read element at index
         template <class IndexT>
         constexpr decltype(auto) at_index(const IndexT & index) const {
-            return _at_subs_seq(index, degree_sequence());
+            return invoke_with_subs(shape(), index, [this](const auto & subs ...) {
+                return tdp::element_at_subs(layout().data_provider_impl(), subs ...);
+            });
         }
+    };
 
+    // tensor_method_write_element_at_index
+    template <class LayoutT>
+    class tensor_method_write_element_at_index<LayoutT, true>
+        : public tensor_method_read_element_at_index<LayoutT> {
+    public:
+        WHEELS_TENSOR_METHOD_LAYER(write_element_at_index)
+        static constexpr bool element_writable_at_subs = true;
+        // write element at index
         template <class IndexT>
         decltype(auto) at_index(const IndexT & index) {
-            return _at_subs_seq(index, degree_sequence());
+            return tdp::element_at_index(layout().data_provider_impl(), index);
         }
-
-    private:
-        template <class IndexT, int ... Is>
-        constexpr decltype(auto) _at_subs_seq(const IndexT & index, const_ints<int, Is...>) const {
-            int subs[sizeof...(Is)];
-            ind2sub(shape(), index, subs[Is]...);
-            return element_at_subs(layout().storage_impl(), subs[Is]...);
-        }
-        template <class IndexT, int ... Is>
-        decltype(auto) _at_subs_seq(const IndexT & index, const_ints<int, Is...>) {
-            int subs[sizeof...(Is)];
-            ind2sub(shape(), index, subs[Is]...);
-            return element_at_subs(layout().storage_impl(), subs[Is]...);
+    };
+    template <class LayoutT>
+    class tensor_method_write_element_at_index<LayoutT, false>
+        : public tensor_method_read_element_at_index<LayoutT> {
+    public:
+        WHEELS_TENSOR_METHOD_LAYER(write_element_at_index)
+        static constexpr bool element_writable_at_index = false;
+        // write element at index
+        template <class IndexT>
+        decltype(auto) at_index(const IndexT & index) {
+            return invoke_with_subs(shape(), index, [this](const auto & ... subs) {
+                return tdp::element_at_subs(layout().data_provider_impl(), subs ...);
+            });
         }
     };
 
-    // amp
+    
+
+
+
+
+    // tensor_method_read_element_at_subs
     template <class LayoutT>
-    class tensor_manip_element_at_index<platform_amp, LayoutT, true>
-        : public tensor_base<platform_amp, LayoutT> {
-        static constexpr bool _is_element_accessible_at_index = true;
+    class tensor_method_read_element_at_subs<LayoutT, true> 
+        : public tensor_method_write_element_at_index<LayoutT> {
     public:
-        using platform_type = platform_amp;
-        using layout_type = LayoutT;
-
-        // at_index related
-        template <class IndexT>
-        constexpr decltype(auto) at_index(const IndexT & index) const restrict(amp) {
-            return element_at_index(layout().storage_impl(), index);
-        }
-
-        template <class IndexT>
-        decltype(auto) at_index(const IndexT & index) restrict(amp) {
-            return element_at_index(layout().storage_impl(), index);
-        }
-    };
-
-    template <class LayoutT>
-    class tensor_manip_element_at_index<platform_amp, LayoutT, false>
-        : public tensor_base<platform_amp, LayoutT> {
-        static constexpr bool _is_element_accessible_at_index = false;
-    public:
-        using platform_type = platform_amp;
-        using layout_type = LayoutT;
-
-        // at_index related
-        template <class IndexT>
-        constexpr decltype(auto) at_index(const IndexT & index) const restrict(amp) {
-            return _at_subs_seq(index, degree_sequence());
-        }
-
-        template <class IndexT>
-        decltype(auto) at_index(const IndexT & index) restrict(amp) {
-            return _at_subs_seq(index, degree_sequence());
-        }
-
-    private:
-        template <class IndexT, int ... Is>
-        constexpr decltype(auto) _at_subs_seq(const IndexT & index, const_ints<int, Is...>) const restrict(amp) {
-            int subs[sizeof...(Is)];
-            ind2sub(shape(), index, subs[Is]...);
-            return element_at_subs(layout().storage_impl(), subs[Is]...);
-        }
-        template <class IndexT, int ... Is>
-        decltype(auto) _at_subs_seq(const IndexT & index, const_ints<int, Is...>) restrict(amp) {
-            int subs[sizeof...(Is)];
-            ind2sub(shape(), index, subs[Is]...);
-            return element_at_subs(layout().storage_impl(), subs[Is]...);
-        }
-    };
-
-    // cpu amp
-    template <class LayoutT>
-    class tensor_manip_element_at_index<platform_cpu_amp, LayoutT, true>
-        : public tensor_base<platform_cpu_amp, LayoutT> {
-        static constexpr bool _is_element_accessible_at_index = true;
-    public:
-        using platform_type = platform_cpu_amp;
-        using layout_type = LayoutT;
-
-        // at_index related
-        template <class IndexT>
-        constexpr decltype(auto) at_index(const IndexT & index) const restrict(cpu, amp) {
-            return element_at_index(layout().storage_impl(), index);
-        }
-
-        template <class IndexT>
-        decltype(auto) at_index(const IndexT & index) restrict(cpu, amp) {
-            return element_at_index(layout().storage_impl(), index);
-        }
-    };
-
-    template <class LayoutT>
-    class tensor_manip_element_at_index<platform_cpu_amp, LayoutT, false>
-        : public tensor_base<platform_cpu_amp, LayoutT> {
-        static constexpr bool _is_element_accessible_at_index = false;
-    public:
-        using platform_type = platform_cpu_amp;
-        using layout_type = LayoutT;
-
-        // at_index related
-        template <class IndexT>
-        constexpr decltype(auto) at_index(const IndexT & index) const restrict(cpu, amp) {
-            return _at_subs_seq(index, degree_sequence());
-        }
-
-        template <class IndexT>
-        decltype(auto) at_index(const IndexT & index) restrict(cpu, amp) {
-            return _at_subs_seq(index, degree_sequence());
-        }
-
-    private:
-        template <class IndexT, int ... Is>
-        constexpr decltype(auto) _at_subs_seq(const IndexT & index, const_ints<int, Is...>) const restrict(cpu, amp) {
-            int subs[sizeof...(Is)];
-            ind2sub(shape(), index, subs[Is]...);
-            return element_at_subs(layout().storage_impl(), subs[Is]...);
-        }
-        template <class IndexT, int ... Is>
-        decltype(auto) _at_subs_seq(const IndexT & index, const_ints<int, Is...>) restrict(cpu, amp) {
-            int subs[sizeof...(Is)];
-            ind2sub(shape(), index, subs[Is]...);
-            return element_at_subs(layout().storage_impl(), subs[Is]...);
-        }
-    };
-
-
-
-
-
-
-
-
-    // tensor_manip_element_at_subs
-    // cpu
-    template <class LayoutT>
-    class tensor_manip_element_at_subs<platform_cpu, LayoutT, true> 
-        : public tensor_manip_element_at_index<platform_cpu, LayoutT> {
-    public:
-        using platform_type = platform_cpu;
-        using layout_type = LayoutT;
-
-        // at_subs related
+        WHEELS_TENSOR_METHOD_LAYER(read_element_at_subs)
+        static constexpr bool element_readable_at_subs = true;
+        // read element at subs
         template <class ... SubTs>
         constexpr decltype(auto) at_subs(const SubTs & ... subs) const {
             static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
                 "at_subs(...) requires all subs should be integral or const_ints");
-            return element_at_subs(layout().storage_impl(), subs ...);
-        }
-
-        template <class ... SubTs>
-        decltype(auto) at_subs(const SubTs & ... subs) {
-            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
-                "at_subs(...) requires all subs should be integral or const_ints");
-            return element_at_subs(layout().storage_impl(), subs ...);
-        }      
+            return tdp::element_at_subs(layout().data_provider_impl(), subs ...);
+        }    
     };
-
     template <class LayoutT>
-    class tensor_manip_element_at_subs<platform_cpu, LayoutT, false>
-        : public tensor_manip_element_at_index<platform_cpu, LayoutT> {
+    class tensor_method_read_element_at_subs<LayoutT, false>
+        : public tensor_method_write_element_at_index<LayoutT> {
     public:
-        using platform_type = platform_cpu;
-        using layout_type = LayoutT;
-
-        // at_subs related
+        WHEELS_TENSOR_METHOD_LAYER(read_element_at_subs)
+        static constexpr bool element_readable_at_subs = false;
+        // read element at subs
         template <class ... SubTs>
         constexpr decltype(auto) at_subs(const SubTs & ... subs) const {
             static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
                 "at_subs(...) requires all subs should be integral or const_ints");
-            return element_at_index(layout().storage_impl(), sub2ind(shape(), subs ...));
+            return tdp::element_at_index(layout().data_provider_impl(), 
+                sub2ind(shape(), subs ...));
         }
+    };
 
+
+
+
+    // tensor_method_write_element_at_subs
+    template <class LayoutT>
+    class tensor_method_write_element_at_subs<LayoutT, true>
+        : public tensor_method_read_element_at_subs<LayoutT> {
+    public:
+        WHEELS_TENSOR_METHOD_LAYER(write_element_at_subs)
+        static constexpr bool element_writable_at_subs = true;
+        // write element at subs
         template <class ... SubTs>
         decltype(auto) at_subs(const SubTs & ... subs) {
             static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
                 "at_subs(...) requires all subs should be integral or const_ints");
-            return element_at_index(layout().storage_impl(), sub2ind(shape(), subs ...));
+            return tdp::element_at_subs(layout().data_provider_impl(), subs ...);
         }
     };
-
-    // amp
     template <class LayoutT>
-    class tensor_manip_element_at_subs<platform_amp, LayoutT, true>
-        : public tensor_manip_element_at_index<platform_amp, LayoutT> {
+    class tensor_method_write_element_at_subs<LayoutT, false>
+        : public tensor_method_read_element_at_subs<LayoutT> {
     public:
-        using platform_type = platform_amp;
-        using layout_type = LayoutT;
-
-        // at_subs related
+        WHEELS_TENSOR_METHOD_LAYER(write_element_at_subs)
+        static constexpr bool element_writable_at_subs = false;
+        // write element at subs
         template <class ... SubTs>
-        constexpr decltype(auto) at_subs(const SubTs & ... subs) const restrict(amp) {
+        decltype(auto) at_subs(const SubTs & ... subs) {
             static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
                 "at_subs(...) requires all subs should be integral or const_ints");
-            return element_at_subs(layout().storage_impl(), subs ...);
-        }
-
-        template <class ... SubTs>
-        decltype(auto) at_subs(const SubTs & ... subs) restrict(amp) {
-            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
-                "at_subs(...) requires all subs should be integral or const_ints");
-            return element_at_subs(layout().storage_impl(), subs ...);
+            return tdp::element_at_index(layout().data_provider_impl(), 
+                sub2ind(shape(), subs ...));
         }
     };
 
+
+    // tensor_method_assign
     template <class LayoutT>
-    class tensor_manip_element_at_subs<platform_amp, LayoutT, false>
-        : public tensor_manip_element_at_index<platform_amp, LayoutT> {
+    class tensor_method_assign<LayoutT, true> // by index
+        : public tensor_method_write_element_at_subs<LayoutT> {
     public:
-        using platform_type = platform_cpu;
-        using layout_type = LayoutT;
-
-        // at_subs related
-        template <class ... SubTs>
-        constexpr decltype(auto) at_subs(const SubTs & ... subs) const restrict(amp) {
-            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
-                "at_subs(...) requires all subs should be integral or const_ints");
-            return element_at_index(layout().storage_impl(), sub2ind(shape(), subs ...));
-        }
-
-        template <class ... SubTs>
-        decltype(auto) at_subs(const SubTs & ... subs) restrict(amp) {
-            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
-                "at_subs(...) requires all subs should be integral or const_ints");
-            return element_at_index(layout().storage_impl(), sub2ind(shape(), subs ...));
+        WHEELS_TENSOR_METHOD_LAYER(assign)
+        static constexpr bool assign_by_index = true;
+        // copy_to
+        template <class LayoutToT, bool B>
+        void copy_to(tensor_method_write_element_at_index<LayoutToT, B> & to) const {
+            assert(shape() == to.shape());
+            tdp::reserve_storage(to.shape(), to.layout().data_provider_impl());
+            for (int ind = 0; ind < numel(); ind++) {
+                to.at_index(ind) = method_read_element_at_index().at_index(ind);
+            }
         }
     };
-
-    // cpu amp
     template <class LayoutT>
-    class tensor_manip_element_at_subs<platform_cpu_amp, LayoutT, true>
-        : public tensor_manip_element_at_index<platform_cpu_amp, LayoutT> {
+    class tensor_method_assign<LayoutT, false> // by subs
+        : public tensor_method_write_element_at_subs<LayoutT> {
     public:
-        using platform_type = platform_cpu_amp;
-        using layout_type = LayoutT;
-
-        // at_subs related
-        template <class ... SubTs>
-        constexpr decltype(auto) at_subs(const SubTs & ... subs) const restrict(cpu, amp) {
-            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
-                "at_subs(...) requires all subs should be integral or const_ints");
-            return element_at_subs(layout().storage_impl(), subs ...);
-        }
-
-        template <class ... SubTs>
-        decltype(auto) at_subs(const SubTs & ... subs) restrict(cpu, amp) {
-            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
-                "at_subs(...) requires all subs should be integral or const_ints");
-            return element_at_subs(layout().storage_impl(), subs ...);
-        }
-    };
-
-    template <class LayoutT>
-    class tensor_manip_element_at_subs<platform_cpu_amp, LayoutT, false>
-        : public tensor_manip_element_at_index<platform_cpu_amp, LayoutT> {
-    public:
-        using platform_type = platform_cpu_amp;
-        using layout_type = LayoutT;
-
-        // at_subs related
-        template <class ... SubTs>
-        constexpr decltype(auto) at_subs(const SubTs & ... subs) const restrict(cpu, amp) {
-            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
-                "at_subs(...) requires all subs should be integral or const_ints");
-            return element_at_index(layout().storage_impl(), sub2ind(shape(), subs ...));
-        }
-
-        template <class ... SubTs>
-        decltype(auto) at_subs(const SubTs & ... subs) restrict(cpu, amp) {
-            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
-                "at_subs(...) requires all subs should be integral or const_ints");
-            return element_at_index(layout().storage_impl(), sub2ind(shape(), subs ...));
+        WHEELS_TENSOR_METHOD_LAYER(assign)
+        static constexpr bool assign_by_index = false;
+        // copy_to
+        template <class LayoutToT, bool B>
+        void copy_to(tensor_method_write_element_at_subs<LayoutToT, B> & to) const {
+            assert(shape() == to.shape());
+            tdp::reserve_storage(to.shape(), to.layout().data_provider_impl());
+            for_each_subscript(shape(), [this, &to](const auto & ... subs) {
+                to.at_subs(subs ...) = method_read_element_at_subs().at_subs(subs ...);
+            });
         }
     };
 
 
+
+
+    namespace details{
+        template <class LayoutT> 
+        using _tensor_method_last = tensor_method_assign<LayoutT>;
+    }
 
 
 
@@ -464,12 +289,10 @@ namespace wheels {
     }
 
     // tensor_all_methods
-    // cpu
     template <class LayoutT>
-    class tensor_all_methods<platform_cpu, LayoutT> 
-        : public tensor_manip_element_at_subs<platform_cpu, LayoutT> {
+    class tensor_all_methods 
+        : public details::_tensor_method_last<LayoutT> {
     public:
-        using platform_type = platform_cpu;
         using layout_type = LayoutT;
 
         // [...] based on at_index
@@ -495,93 +318,15 @@ namespace wheels {
     private:
         template <class ... SubEs, int ... Is>
         constexpr decltype(auto) _parenthesis_seq(const_ints<int, Is...>, const SubEs & ... subes) const {
-            return at_subs(details::_eval_const_expr(subes, size(const_int<Is>())) ...);
+            return method_read_element_at_subs().
+                at_subs(details::_eval_const_expr(subes, size(const_int<Is>())) ...);
         }
         template <class ... SubEs, int ... Is>
         decltype(auto) _parenthesis_seq(const_ints<int, Is...>, const SubEs & ... subes) {
-            return at_subs(details::_eval_const_expr(subes, size(const_int<Is>())) ...);
+            return method_write_element_at_subs().
+                at_subs(details::_eval_const_expr(subes, size(const_int<Is>())) ...);
         }
     };
-    
-    // amp
-    template <class LayoutT>
-    class tensor_all_methods<platform_amp, LayoutT>
-        : public tensor_manip_element_at_subs<platform_amp, LayoutT> {
-    public:
-        using platform_type = platform_amp;
-        using layout_type = LayoutT;
-
-        // [...] based on at_index
-        template <class E>
-        constexpr decltype(auto) operator[](const E & e) const restrict(amp) {
-            return at_index(details::_eval_const_expr(e, numel()));
-        }
-        template <class E>
-        decltype(auto) operator[](const E & e) restrict(amp) {
-            return at_index(details::_eval_const_expr(e, numel()));
-        }
-
-        // (...) based on at_subs
-        template <class ... SubEs>
-        constexpr decltype(auto) operator()(const SubEs & ... subes) const restrict(amp) {
-            return _parenthesis_seq(make_const_sequence(const_int<sizeof...(SubEs)>()), subes ...);
-        }
-        template <class ... SubEs>
-        decltype(auto) operator()(const SubEs & ... subes) restrict(amp) {
-            return _parenthesis_seq(make_const_sequence(const_int<sizeof...(SubEs)>()), subes ...);
-        }
-
-    private:
-        template <class ... SubEs, int ... Is>
-        constexpr decltype(auto) _parenthesis_seq(const_ints<int, Is...>, const SubEs & ... subes) const restrict(amp) {
-            return at_subs(details::_eval_const_expr(subes, size(const_int<Is>())) ...);
-        }
-        template <class ... SubEs, int ... Is>
-        decltype(auto) _parenthesis_seq(const_ints<int, Is...>, const SubEs & ... subes) restrict(amp) {
-            return at_subs(details::_eval_const_expr(subes, size(const_int<Is>())) ...);
-        }
-    };
-
-    // cpu amp
-    template <class LayoutT>
-    class tensor_all_methods<platform_cpu_amp, LayoutT>
-        : public tensor_manip_element_at_subs<platform_cpu_amp, LayoutT> {
-    public:
-        using platform_type = platform_cpu_amp;
-        using layout_type = LayoutT;
-
-        // [...] based on at_index
-        template <class E>
-        constexpr decltype(auto) operator[](const E & e) const restrict(cpu, amp) {
-            return at_index(details::_eval_const_expr(e, numel()));
-        }
-        template <class E>
-        decltype(auto) operator[](const E & e) restrict(cpu, amp) {
-            return at_index(details::_eval_const_expr(e, numel()));
-        }
-
-        // (...) based on at_subs
-        template <class ... SubEs>
-        constexpr decltype(auto) operator()(const SubEs & ... subes) const restrict(cpu, amp) {
-            return _parenthesis_seq(make_const_sequence(const_int<sizeof...(SubEs)>()), subes ...);
-        }
-        template <class ... SubEs>
-        decltype(auto) operator()(const SubEs & ... subes) restrict(cpu, amp) {
-            return _parenthesis_seq(make_const_sequence(const_int<sizeof...(SubEs)>()), subes ...);
-        }
-
-    private:
-        template <class ... SubEs, int ... Is>
-        constexpr decltype(auto) _parenthesis_seq(const_ints<int, Is...>, const SubEs & ... subes) const restrict(cpu, amp) {
-            return at_subs(details::_eval_const_expr(subes, size(const_int<Is>())) ...);
-        }
-        template <class ... SubEs, int ... Is>
-        decltype(auto) _parenthesis_seq(const_ints<int, Is...>, const SubEs & ... subes) restrict(cpu, amp) {
-            return at_subs(details::_eval_const_expr(subes, size(const_int<Is>())) ...);
-        }
-    };
-
-
 
 
 
@@ -600,99 +345,150 @@ namespace wheels {
     constexpr details::_tensor_construct_tag<_with_args> with_args;
 
 
-
     // tensor_layout with non-static shape
-    template <class ShapeT, class StorageT, class PlatformT>
-    class tensor_layout<ShapeT, StorageT, PlatformT, false> 
-        : public tensor_all_methods<PlatformT, tensor_layout<ShapeT, StorageT, PlatformT, false>> {
+    template <class ShapeT, class DataProviderT>
+    class tensor_layout<ShapeT, DataProviderT, false> 
+        : public tensor_all_methods<tensor_layout<ShapeT, DataProviderT, false>> {
         static_assert(is_tensor_shape<ShapeT>::value, "ShapeT should be a tensor_shape");
         static constexpr bool _shape_is_static = false;
 
+        template <class ST, class DPT>
+        friend constexpr tensor_layout<ST, std::decay_t<DPT>>
+            compose_tensor_layout(const ST & shape, DPT && dp);
+
     public:  
         using shape_type = ShapeT;
-        using storage_type = StorageT;
-        using value_type = typename storage_type::value_type;
-        using platform_type = PlatformT;
-
-        static constexpr platform_type platform() { return platform_type(); }        
+        using data_provider_type = DataProviderT;
+        using value_type = typename data_provider_type::value_type;    
         
     public:
-        template <wheels_enable_if(is_default_constructible<storage_type>::value)>
+        template <wheels_enable_if(tdp::is_default_constructible<data_provider_type>::value)>
         constexpr tensor_layout() {}
 
-        template <wheels_enable_if(is_copy_constructible<storage_type>::value)>
-        constexpr tensor_layout(const ShapeT & s, const StorageT & stg)
-            : _shape(s), _storage(stg) {}
+        template <wheels_enable_if(tdp::is_copy_constructible<data_provider_type>::value)>
+        constexpr tensor_layout(const ShapeT & s, const DataProviderT & stg)
+            : _shape(s), _data_provider(stg) {}
 
-        template <wheels_enable_if(is_move_constructible<storage_type>::value)>
-        constexpr tensor_layout(const ShapeT & s, StorageT && stg)
-            : _shape(s), _storage(std::move(stg)) {}
+        template <wheels_enable_if(tdp::is_move_constructible<data_provider_type>::value)>
+        constexpr tensor_layout(const ShapeT & s, DataProviderT && stg)
+            : _shape(s), _data_provider(std::move(stg)) {}
 
         // tensor_layout(shape)
-        template <wheels_enable_if(is_constructible_with_shape<storage_type>::value)>
+        template <wheels_enable_if(tdp::is_constructible_with_shape<data_provider_type>::value)>
         constexpr explicit tensor_layout(const ShapeT & s)
-            : _shape(s), _storage(construct_with_shape(types<storage_type>(), s)) {}
+            : _shape(s), _data_provider(tdp::construct_with_shape(types<data_provider_type>(), s)) {}
 
         // tensor_layout(shape, with_elements, elements ...)
-        template <wheels_enable_if(is_constructible_with_shape_elements<storage_type>::value), 
+        template <wheels_enable_if(tdp::is_constructible_with_shape_elements<data_provider_type>::value),
             class ... EleTs>
         constexpr tensor_layout(const ShapeT & s, details::_tensor_construct_tag<_with_elements>, EleTs && ... eles)
-            : _shape(s), _storage(construct_with_shape_elements(types<storage_type>(), _shape, forward<EleTs>(eles) ...)) {}
+            : _shape(s), _data_provider(tdp::construct_with_shape_elements(types<data_provider_type>(), _shape, forward<EleTs>(eles) ...)) {}
 
         // tensor_layout(shape, with_args, args ...)
         template <class ... ArgTs>
         constexpr tensor_layout(const ShapeT & s, details::_tensor_construct_tag<_with_args>, ArgTs && ... args)
-            : _shape(s), _storage(construct_with_args(types<storage_type>(), forward<ArgTs>(args) ...)) {}
+            : _shape(s), _data_provider(tdp::construct_with_args(types<data_provider_type>(), forward<ArgTs>(args) ...)) {}
+
+        // default copy
+        constexpr tensor_layout(const tensor_layout &) = default;
+        constexpr tensor_layout(tensor_layout &&) = default;
+        tensor_layout & operator = (const tensor_layout &) = default;
+        tensor_layout & operator = (tensor_layout &&) = default;
+
+        // copy
+        template <class LayoutFromT, bool B>
+        tensor_layout(const tensor_method_assign<LayoutFromT, B> & from) : _shape(from.shape()) {
+            from.copy_to(*this);
+        }
+        template <class LayoutFromT, bool B>
+        tensor_layout & operator = (const tensor_method_assign<LayoutFromT, B> & from) {
+            _shape = from.shape();
+            from.copy_to(*this);
+            return *this;
+        }
 
         // interfaces
         constexpr const ShapeT & shape_impl() const { return _shape; }
-        constexpr const StorageT & storage_impl() const { return _storage; }
-        StorageT & storage_impl() { return _storage; }
+        constexpr const DataProviderT & data_provider_impl() const { return _data_provider; }
+        DataProviderT & data_provider_impl() { return _data_provider; }
+
+    private:
+        template <class DPT>
+        constexpr tensor_layout(const ShapeT & shape, DPT && dp) 
+            : _shape(shape), _data_provider(forward<DPT>(dp)) {}
 
     private:
         ShapeT _shape;
-        StorageT _storage;
+        DataProviderT _data_provider;
     };
 
 
     // tensor_layout with static shape
-    template <class ShapeT, class StorageT, class PlatformT>
-    class tensor_layout<ShapeT, StorageT, PlatformT, true> 
-        : public tensor_all_methods<PlatformT, tensor_layout<ShapeT, StorageT, PlatformT, true>> {
+    template <class ShapeT, class DataProviderT>
+    class tensor_layout<ShapeT, DataProviderT, true> 
+        : public tensor_all_methods<tensor_layout<ShapeT, DataProviderT, true>> {
         static_assert(is_tensor_shape<ShapeT>::value, "ShapeT should be a tensor_shape");
         static constexpr bool _shape_is_static = true;
 
+        template <class ST, class DPT>
+        friend constexpr tensor_layout<ST, std::decay_t<DPT>>
+            compose_tensor_layout(const ST & shape, DPT && dp);
+
     public:
         using shape_type = ShapeT;
-        using storage_type = StorageT;
-        using value_type = typename storage_type::value_type;
-        using platform_type = PlatformT;
-
-        static constexpr platform_type platform() { return platform_type(); }
+        using data_provider_type = DataProviderT;
+        using value_type = typename data_provider_type::value_type;
 
     public:
-        template <wheels_enable_if(is_constructible_with_shape<storage_type>::value)>
-        constexpr tensor_layout() : _storage(construct_with_shape(types<storage_type>(), ShapeT())) {}
+        template <wheels_enable_if(tdp::is_constructible_with_shape<data_provider_type>::value)>
+        constexpr tensor_layout() : _data_provider(tdp::construct_with_shape(types<data_provider_type>(), ShapeT())) {}
 
         // tensor_layout(with_elements, elements ...)
-        template <wheels_enable_if(is_constructible_with_shape_elements<storage_type>::value), 
+        template <wheels_enable_if(tdp::is_constructible_with_shape_elements<data_provider_type>::value),
             class ... EleTs>
         constexpr tensor_layout(const details::_tensor_construct_tag<_with_elements> &, EleTs && ... eles)
-            : _storage(construct_with_shape_elements(types<storage_type>(), ShapeT(), forward<EleTs>(eles) ...)) {}
+            : _data_provider(tdp::construct_with_shape_elements(types<data_provider_type>(), ShapeT(), forward<EleTs>(eles) ...)) {}
 
         template <class ... ArgTs>
         constexpr tensor_layout(details::_tensor_construct_tag<_with_args>, ArgTs && ... args)
-            : _storage(construct_with_args(types<storage_type>(), forward<ArgTs>(args) ...)) {}
+            : _data_provider(tdp::construct_with_args(types<data_provider_type>(), forward<ArgTs>(args) ...)) {}
+
+        // default copy/assign
+        constexpr tensor_layout(const tensor_layout &) = default;
+        constexpr tensor_layout(tensor_layout &&) = default;
+        tensor_layout & operator = (const tensor_layout &) = default;
+        tensor_layout & operator = (tensor_layout &&) = default;
+
+        // copy
+        template <class LayoutFromT, bool B>
+        tensor_layout(const tensor_method_assign<LayoutFromT, B> & from) {
+            from.copy_to(*this);
+        }
+        template <class LayoutFromT, bool B>
+        tensor_layout & operator = (const tensor_method_assign<LayoutFromT, B> & from) {
+            from.copy_to(*this);
+            return *this;
+        }
 
         // interfaces
         constexpr ShapeT shape_impl() const { return ShapeT(); }
-        constexpr const StorageT & storage_impl() const { return _storage; }
-        StorageT & storage_impl() { return _storage; }
+        constexpr const DataProviderT & data_provider_impl() const { return _data_provider; }
+        DataProviderT & data_provider_impl() { return _data_provider; }
 
     private:
-        StorageT _storage;
+        template <class DPT>
+        constexpr tensor_layout(const ShapeT & shape, DPT && dp)
+            : _data_provider(forward<DPT>(dp)) {}
+
+    private:
+        DataProviderT _data_provider;
     };
 
+
+    template <class ShapeT, class DPT>
+    constexpr tensor_layout<ShapeT, std::decay_t<DPT>> compose_tensor_layout(const ShapeT & shape, DPT && dp) {
+        return tensor_layout<ShapeT, std::decay_t<DPT>>(shape, forward<DPT>(dp));
+    }
 
 
 }

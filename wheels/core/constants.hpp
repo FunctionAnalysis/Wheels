@@ -29,12 +29,12 @@ namespace wheels {
             static constexpr bool any = Val || _rest_reduction_t::any;
         };
         // element helper
-        template <safe_size_t Idx, class T, T ... Vals> struct _element {};
+        template <size_t Idx, class T, T ... Vals> struct _element {};
         template <class T, T Val, T ... Vals>
         struct _element<0, T, Val, Vals ...> {
             static constexpr T value = Val;
         };
-        template <safe_size_t Idx, class T, T Val, T ... Vals>
+        template <size_t Idx, class T, T Val, T ... Vals>
         struct _element<Idx, T, Val, Vals ...> {
             static constexpr T value = _element<Idx - 1, T, Vals ...>::value;
         };
@@ -48,7 +48,6 @@ namespace wheels {
         static constexpr size_t length = sizeof...(Vals);
 
         constexpr const_ints() {}
-        constexpr const_ints() restrict(amp) {}
 
         static constexpr auto to_array() { return std::array<T, length>{ Vals ... }; }
         static constexpr auto to_tuple() { return std::make_tuple(Vals...); }
@@ -58,17 +57,8 @@ namespace wheels {
         static constexpr auto all() { return const_ints<bool, details::_reduction<T, Vals...>::all>(); }
         static constexpr auto any() { return const_ints<bool, details::_reduction<T, Vals...>::any>(); }
 
-        static constexpr auto sum() restrict(amp) { return const_ints<T, details::_reduction<T, Vals...>::sum>(); }
-        static constexpr auto prod() restrict(amp) { return const_ints<T, details::_reduction<T, Vals...>::prod>(); }
-        static constexpr auto all() restrict(amp) { return const_ints<bool, details::_reduction<T, Vals...>::all>(); }
-        static constexpr auto any() restrict(amp) { return const_ints<bool, details::_reduction<T, Vals...>::any>(); }
-
         template <class K, K Idx>
         constexpr auto operator[](const const_ints<K, Idx> &) const {
-            return const_ints<T, details::_element<Idx, T, Vals ...>::value>();
-        }
-        template <class K, K Idx>
-        constexpr auto operator[](const const_ints<K, Idx> &) const restrict(amp) {
             return const_ints<T, details::_element<Idx, T, Vals ...>::value>();
         }
 
@@ -85,7 +75,6 @@ namespace wheels {
         static constexpr T value = Val;
 
         constexpr const_ints() {}
-        constexpr const_ints() restrict(amp) {}
         
         static constexpr auto to_array() { return std::array<T, length>{ Val }; }
         static constexpr auto to_tuple() { return std::make_tuple(Val); }
@@ -95,19 +84,10 @@ namespace wheels {
         static constexpr auto all() { return const_ints<bool, (bool)Val>(); }
         static constexpr auto any() { return const_ints<bool, (bool)Val>(); }
 
-        static constexpr auto sum() restrict(amp) { return const_ints<T, Val>(); }
-        static constexpr auto prod() restrict(amp) { return const_ints<T, Val>(); }
-        static constexpr auto all() restrict(amp) { return const_ints<bool, (bool)Val>(); }
-        static constexpr auto any() restrict(amp) { return const_ints<bool, (bool)Val>(); }
-
         template <class K>
         constexpr auto operator[](const const_ints<K, 0> &) const { return const_ints<T, Val>(); }
-        template <class K>
-        constexpr auto operator[](const const_ints<K, 0> &) const restrict(amp) { return const_ints<T, Val>(); }
 
         constexpr operator T() const { return value; }
-        template <wheels_enable_if(is_int_supported_by_amp<T>::value)>
-        constexpr operator T() const restrict(amp) { return value; }
 
         template <class Archive> void serialize(Archive &) {}
     };
@@ -115,8 +95,8 @@ namespace wheels {
 
     template <bool Val> using const_bool = const_ints<bool, Val>;
     template <int Val> using const_int = const_ints<int, Val>;
-    template <safe_size_t Val> using const_size = const_ints<safe_size_t, Val>;
-    template <safe_size_t Val> using const_index = const_ints<safe_size_t, Val>;
+    template <size_t Val> using const_size = const_ints<size_t, Val>;
+    template <size_t Val> using const_index = const_ints<size_t, Val>;
 
     using yes = const_bool<true>;
     using no = const_bool<false>;
@@ -221,10 +201,6 @@ namespace wheels {
     template <class T, T ... Vals> \
     constexpr auto operator op (const const_ints<T, Vals ...> &) { \
         return const_ints<decltype(op std::declval<T>()), (op Vals) ...>(); \
-    } \
-    template <class T, T ... Vals> \
-    constexpr auto operator op (const const_ints<T, Vals ...> &) restrict(amp) { \
-        return const_ints<decltype(op std::declval<T>()), (op Vals) ...>(); \
     }
 
     WHEELS_CONST_INT_OVERLOAD_UNARY_OP(!)
@@ -250,27 +226,7 @@ namespace wheels {
     constexpr auto operator op (const const_ints<T1, Val1s ...> &, const const_ints<T2, Val2s ...> &) { \
         static_assert(sizeof...(Val1s) == sizeof...(Val2s), "lengths of the two const_ints do not match"); \
         return const_ints<decltype(std::declval<T1>() op std::declval<T2>()), (Val1s op Val2s) ...>();\
-    } \
-    \
-    template <class T1, T1 Val1, class T2, T2 Val2> \
-    constexpr auto operator op (const const_ints<T1, Val1> &, const const_ints<T2, Val2> &) restrict(amp) {\
-        return const_ints<decltype(Val1 op Val2), (Val1 op Val2)>();\
-    } \
-    template <class T1, T1 Val1, class T2, T2 ... Val2s> \
-    constexpr auto operator op (const const_ints<T1, Val1> &, const const_ints<T2, Val2s ...> &) restrict(amp) {\
-        return const_ints<decltype(Val1 op std::declval<T2>()), (Val1 op Val2s) ...>();\
-    } \
-    template <class T1, T1 ... Val1s, class T2, T2 Val2> \
-    constexpr auto operator op (const const_ints<T1, Val1s ...> &, const const_ints<T2, Val2> &) restrict(amp) {\
-        return const_ints<decltype(std::declval<T1>() op Val2), (Val1s op Val2) ...>();\
-    } \
-    template <class T1, T1 ... Val1s, class T2, T2 ... Val2s, \
-        class = std::enable_if_t<(sizeof...(Val1s) > 1 && sizeof...(Val2s) > 1)>> \
-    constexpr auto operator op (const const_ints<T1, Val1s ...> &, const const_ints<T2, Val2s ...> &) restrict(amp) { \
-        static_assert(sizeof...(Val1s) == sizeof...(Val2s), "lengths of the two const_ints do not match"); \
-        return const_ints<decltype(std::declval<T1>() op std::declval<T2>()), (Val1s op Val2s) ...>();\
     }
-
 
     WHEELS_CONST_INT_OVERLOAD_BINARY_OP(==)
     WHEELS_CONST_INT_OVERLOAD_BINARY_OP(!=)
@@ -314,23 +270,6 @@ namespace wheels {
         return details::_cat2(first, cat(rest...));
     }
 
-    template <class T, T ... Vals>
-    constexpr auto cat(const const_ints<T, Vals ...> &) restrict(amp) {
-        return const_ints<T, Vals ...>();
-    }
-    namespace details {
-        template <class T, T ... Val1s, T ... Val2s>
-        constexpr auto _cat2(const const_ints<T, Val1s ...> &, const const_ints<T, Val2s ...> &) restrict(amp) {
-            return const_ints<T, Val1s ..., Val2s ...>();
-        }
-    }
-    template <class T, class ... Ts>
-    constexpr auto cat(const T & first, const Ts & ... rest) restrict(amp) {
-        static_assert(is_const_ints<T>::value, "");
-        return details::_cat2(first, cat(rest...));
-    }
-
-
 
     // conditional
     template <class T, T Val, class ThenT, class ElseT>
@@ -343,18 +282,6 @@ namespace wheels {
         ThenT && thenv, ElseT && elsev) {
         return static_cast<ElseT &&>(elsev);
     }
-
-    template <class T, T Val, class ThenT, class ElseT>
-    constexpr std::enable_if_t<Val, ThenT &&> conditional(const const_ints<T, Val> &,
-        ThenT && thenv, ElseT && elsev) restrict(amp) {
-        return static_cast<ThenT &&>(thenv);
-    }
-    template <class T, T Val, class ThenT, class ElseT, bool _B = Val>
-    constexpr std::enable_if_t<!_B, ElseT &&> conditional(const const_ints<T, Val> &,
-        ThenT && thenv, ElseT && elsev) restrict(amp) {
-        return static_cast<ElseT &&>(elsev);
-    }
-
 
 
 
@@ -380,19 +307,10 @@ namespace wheels {
     constexpr auto make_const_sequence(const const_ints<T, Size> &) {
         return typename details::_make_seq<T, Size == 0, Size>::type();
     }
-    template <class T, T Size>
-    constexpr auto make_const_sequence(const const_ints<T, Size> &) restrict(amp) {
-        return typename details::_make_seq<T, Size == 0, Size>::type();
-    }
-
 
     // make_const_range
     template <class T, T From, T To>
     constexpr auto make_const_range(const const_ints<T, From> & from, const const_ints<T, To> & to) {
-        return typename details::_make_seq_range<T, From, To>::type();
-    }
-    template <class T, T From, T To>
-    constexpr auto make_const_range(const const_ints<T, From> & from, const const_ints<T, To> & to) restrict(amp) {
         return typename details::_make_seq_range<T, From, To>::type();
     }
 
