@@ -93,6 +93,10 @@ namespace wheels {
             return T(forward<ArgTs>(args) ...);
         }
 
+        type_info info() const { return typeid(T); }
+        const char * name() const { return typeid(T).name(); }
+        const char * raw_name() const { return typeid(T).raw_name(); }
+
         template <class Archive> void serialize(Archive &) {}
     };
 

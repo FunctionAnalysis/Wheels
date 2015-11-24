@@ -1,27 +1,33 @@
 #pragma once
 
+#include "tensor.hpp"
+#include "tensor_op.hpp"
+
 namespace wheels {
-    
-    struct vec_concept {
-        // using value_type;
-        // static constexpr size_t dimension;
-        // value_type operator[](size_t i);
-    };
+
+    template <class T, size_t N>
+    using point_ = vec_<T, N>;
+
+    template <class T, class = std::enable_if<is_tensor_layout<std::decay_t<T>>::value>>
+    constexpr auto normalize(T && t) {
+        return forward<T>(t) / t.norm();
+    }
 
 
-    struct line_concept {
-        // vec_concept first();
-        // vec_concept second();
-    };
+    // matrix transform
+    template <class T, class K>
+    mat_<T, 3, 3> make_rotate3(const vec_<T, 3> & axis, const K & angle) {
+        auto a = normalize(axis);
+        double l = a[0], m = a[1], n = a[2];
+        double cosv = std::cos(angle), sinv = std::sin(angle);
+        return mat_<T, 3, 3>(with_elements,
+            l*l*(1 - cosv) + cosv, m*l*(1 - cosv) - n*sinv, n*l*(1 - cosv) + m*sinv,
+            l*m*(1 - cosv) + n*sinv, m*m*(1 - cosv) + cosv, n*m*(1 - cosv) - l*sinv,
+            l*n*(1 - cosv) - m*sinv, m*n*(1 - cosv) + l*sinv, n*n*(1 - cosv) + cosv);
+    }
 
-    struct plane_concept {
-        // vec_concept anchor();
-        // vec_concept normal();
-    };
 
-    struct aligned_box_concept {
-        // vec_concept min_corner();
-        // vec_concept max_corner();
-    };
+
+
 
 }

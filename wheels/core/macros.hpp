@@ -36,3 +36,11 @@
 #elif (defined __GNUG__)
 #pragma GCC diagnostic ignored "-Wenum-compare"
 #endif
+
+
+#define wheels_distinguish_1 class=void
+#define wheels_distinguish_2 wheels_distinguish_1, wheels_distinguish_1
+#define wheels_distinguish_3 wheels_distinguish_2, wheels_distinguish_1
+#define wheels_distinguish_4 wheels_distinguish_2, wheels_distinguish_2
+#define wheels_distinguish_5 wheels_distinguish_4, wheels_distinguish_1
+#define wheels_distinguish_6 wheels_distinguish_3, wheels_distinguish_3

@@ -4,8 +4,10 @@
 #include <array>
 #include <vector>
 
+#include "../core/macros.hpp"
 #include "../core/const_expr.hpp"
 #include "../core/types.hpp"
+#include "../core/parallel.hpp"
 
 #include "tensor_shape.hpp"
 #include "tensor_data.hpp"
@@ -59,11 +61,21 @@ namespace wheels {
     class tensor_method_write_element;
 
     template <class LayoutT,
+        bool EleReadable = details::_layout_property<LayoutT>::element_readable_at_index ||
+            details::_layout_property<LayoutT>::element_readable_at_subs>
+    class tensor_method_iterate_const;
+
+    template <class LayoutT,
+        bool EleWritable = details::_layout_property<LayoutT>::element_writable_at_index ||
+            details::_layout_property<LayoutT>::element_writable_at_subs>
+    class tensor_method_iterate_nonconst;
+
+    template <class LayoutT,
         bool AssignByIndex = details::_layout_property<LayoutT>::element_readable_at_index>
     class tensor_method_assign;
 
     template <class LayoutT>
-    class tensor_all_methods;
+    class tensor_fundamental_methods;
 
 
 
@@ -135,7 +147,7 @@ namespace wheels {
         // read element at index
         template <class IndexT>
         constexpr decltype(auto) at_index(const IndexT & index) const {
-            return invoke_with_subs(shape(), index, [this](const auto & subs ...) {
+            return invoke_with_subs(shape(), index, [this](const auto & ... subs) {
                 return tdp::element_at_subs(layout().data_provider_impl(), subs ...);
             });
         }
@@ -257,13 +269,162 @@ namespace wheels {
 
 
 
+    // tensor_method_iterate_const
+    template <class LayoutT>
+    class tensor_method_iterate_const<LayoutT, true>  // readable
+        : public tensor_method_write_element<LayoutT> {
+        using this_t = tensor_method_iterate_const<LayoutT, true>;
+    public:
+        WHEELS_TENSOR_METHOD_LAYER(iterate_const)
+        struct const_iterator : std::iterator<std::random_access_iterator_tag,
+            std::decay_t<decltype(std::declval<this_t &>().method_write_element().at_index(0))>, 
+            std::ptrdiff_t> {
+            const this_t & self;
+            size_t ind;
+            constexpr const_iterator(const this_t & s, size_t i = 0) : self(s), ind(i) {}
+            constexpr decltype(auto) operator * () const { return self.method_read_element().at_index(ind); }
+            constexpr decltype(auto) operator -> () const { return self.method_read_element().at_index(ind); }
+            const_iterator & operator ++() { ++ind; return *this; }
+            const_iterator & operator --() { assert(ind != 0);  --ind; return *this; }
+            const_iterator & operator +=(size_t s) { ind += s; return *this; }
+            const_iterator & operator -=(size_t s) { ind -= s; return *this; }
+            constexpr const_iterator operator + (size_t s) const { return const_iterator(self, ind + s); }
+            constexpr const_iterator operator - (size_t s) const { return const_iterator(self, ind - s); }
+            std::ptrdiff_t operator - (const const_iterator & it) const { return ind - it.ind; }
+            constexpr bool operator == (const const_iterator & it) const {
+                assert(&self == &(it.self)); 
+                return ind == it.ind; 
+            }
+            constexpr bool operator != (const const_iterator & it) const {
+                return ind != it.ind;
+            }
+            constexpr bool operator < (const const_iterator & it) const {
+                return ind < it.ind;
+            }
+        };
+
+        constexpr const_iterator begin() const { return const_iterator(*this, 0); }
+        constexpr const_iterator cbegin() const { return const_iterator(*this, 0); }
+
+        constexpr const_iterator end() const { return const_iterator(*this, numel()); }
+        constexpr const_iterator cend() const { return const_iterator(*this, numel()); }
+    };
+    template <class LayoutT>
+    class tensor_method_iterate_const<LayoutT, false>  // not readable
+        : public tensor_method_write_element<LayoutT> {
+    };
+
+
+
+    // tensor_method_iterate_nonconst
+    template <class LayoutT>
+    class tensor_method_iterate_nonconst<LayoutT, true>  // writable
+        : public tensor_method_iterate_const<LayoutT> {
+        using this_t = tensor_method_iterate_nonconst<LayoutT, true>;
+    public:
+        WHEELS_TENSOR_METHOD_LAYER(iterate_nonconst)
+        struct iterator : std::iterator<std::random_access_iterator_tag, 
+            std::decay_t<decltype(std::declval<this_t &>().method_write_element().at_index(0))>,
+            std::ptrdiff_t> {
+            this_t & self;
+            size_t ind;
+            constexpr iterator(this_t & s, size_t i = 0) : self(s), ind(i) {}
+            decltype(auto) operator * () const { return self.method_write_element().at_index(ind); }
+            decltype(auto) operator -> () const { return self.method_write_element().at_index(ind); }
+            iterator & operator ++() { ++ind; return *this; }
+            iterator & operator --() { assert(ind != 0);  --ind; return *this; }
+            iterator & operator +=(size_t s) { ind += s; return *this; }
+            iterator & operator -=(size_t s) { ind -= s; return *this; }
+            constexpr iterator operator + (size_t s) const { return iterator(self, ind + s); }
+            constexpr iterator operator - (size_t s) const { return iterator(self, ind - s); }
+            std::ptrdiff_t operator - (const iterator & it) const { return ind - it.ind; }
+            constexpr bool operator == (const iterator & it) const {
+                assert(&self == &(it.self));
+                return ind == it.ind;
+            }
+            constexpr bool operator != (const iterator & it) const {
+                return ind != it.ind;
+            }
+            constexpr bool operator < (const iterator & it) const {
+                return ind < it.ind;
+            }
+        };
+
+        iterator begin() { return iterator(*this, 0); }
+        iterator end() { return iterator(*this, numel()); }
+    };
+    template <class LayoutT>
+    class tensor_method_iterate_nonconst<LayoutT, false>  // not writable
+        : public tensor_method_iterate_const<LayoutT> {};
+
+
+
+
+
+    // tensor_method_reduce
+    static constexpr size_t _parallel_thres = 70000;
+    static constexpr size_t _parallel_batch = 35000;
+    template <class LayoutT>
+    class tensor_method_reduce : public tensor_method_iterate_nonconst<LayoutT> {
+    public:
+        WHEELS_TENSOR_METHOD_LAYER(reduce)
+        // reduce
+        template <class T, class ReduceT>
+        T accumulate(const T & base, ReduceT && redux) const {
+            T result = base;
+            if (numel() < _parallel_thres) {
+                return std::accumulate(method_iterate_const().cbegin(),
+                    method_iterate_const().cend(), result, forward<ReduceT>(redux));
+            } else {
+                return parallel_accumulate(method_iterate_const().cbegin(),
+                    method_iterate_const().cend(), result, forward<ReduceT>(redux),
+                    _parallel_batch);
+            }
+        }
+        auto sum() const {
+            using _value_t = std::decay_t<decltype(method_read_element().at_index(0))>;
+            return accumulate(_value_t(0), binary_op_plus());
+        }
+        auto prod() const {
+            using _value_t = std::decay_t<decltype(method_read_element().at_index(0))>;
+            return accumulate(_value_t(1), binary_op_mul());
+        }
+        bool all() const { return accumulate(true, binary_op_and()); }
+        bool any() const { return accumulate(false, binary_op_or()); }
+        bool none() const { return !any(); }
+
+        // norm_squared
+        auto norm_squared() const {
+            using _value_t = std::decay_t<decltype(method_read_element().at_index(0))>;
+            _value_t result = 0;
+            if (numel() < _parallel_thres) {
+                for (int ind = 0; ind < numel(); ind++) {
+                    decltype(auto) e = method_read_element().at_index(ind);
+                    result += e * e;
+                }
+            } else {
+                parallel_for_each(numel(), [this, &result](size_t ind) {
+                    decltype(auto) e = method_read_element().at_index(ind);
+                    result += e * e;
+                }, _parallel_batch);
+            }
+            return result;
+        }
+
+        // norm
+        auto norm() const { return std::sqrt(norm_squared()); }
+    };
+
+
+
+
 
 
 
     // tensor_method_assign
     template <class LayoutT>
     class tensor_method_assign<LayoutT, true> // by index
-        : public tensor_method_write_element<LayoutT> {
+        : public tensor_method_reduce<LayoutT> {
     public:
         WHEELS_TENSOR_METHOD_LAYER(assign)
         static constexpr bool assign_by_index = true;
@@ -273,14 +434,20 @@ namespace wheels {
             static_assert(B1 || B2, "'to' is not writable");
             assert(shape() == to.shape());
             tdp::reserve_storage(to.shape(), to.layout().data_provider_impl());
-            for (int ind = 0; ind < numel(); ind++) {
-                to.at_index(ind) = method_read_element().at_index(ind);
+            if (numel() < _parallel_thres) {
+                for (int ind = 0; ind < numel(); ind++) {
+                    to.at_index(ind) = method_read_element().at_index(ind);
+                }
+            } else {
+                parallel_for_each(numel(), [this, &to](size_t ind) {
+                    to.at_index(ind) = method_read_element().at_index(ind);
+                }, _parallel_batch);
             }
         }
     };
     template <class LayoutT>
     class tensor_method_assign<LayoutT, false> // by subs
-        : public tensor_method_write_element<LayoutT> {
+        : public tensor_method_reduce<LayoutT> {
     public:
         WHEELS_TENSOR_METHOD_LAYER(assign)
         static constexpr bool assign_by_index = false;
@@ -290,19 +457,19 @@ namespace wheels {
             static_assert(B1 || B2, "'to' is not writable");
             assert(shape() == to.shape());
             tdp::reserve_storage(to.shape(), to.layout().data_provider_impl());
-            for_each_subscript(shape(), [this, &to](const auto & ... subs) {
-                to.at_subs(subs ...) = method_read_element().at_subs(subs ...);
-            });
+            if (numel() < _parallel_thres) {
+                for_each_subscript(shape(), [this, &to](const auto & ... subs) {
+                    to.at_subs(subs ...) = method_read_element().at_subs(subs ...);
+                });
+            } else {
+                parallel_for_each(numel(), [this, &to](size_t ind) {
+                    invoke_with_subs(shape(), ind, [this, &to](const auto & ... subs) {
+                        to.at_subs(subs ...) = method_read_element().at_subs(subs ...);
+                    });
+                }, _parallel_batch);
+            }
         }
     };
-
-
-
-
-    namespace details{
-        template <class LayoutT> 
-        using _tensor_method_last = tensor_method_assign<LayoutT>;
-    }
 
 
 
@@ -323,21 +490,23 @@ namespace wheels {
         }
     }
 
-    // tensor_all_methods
+
+
+
+    // tensor_fundamental_methods
     template <class LayoutT>
-    class tensor_all_methods 
-        : public details::_tensor_method_last<LayoutT> {
+    class tensor_fundamental_methods : public tensor_method_assign<LayoutT> {
     public:
         using layout_type = LayoutT;
 
         // [...] based on at_index
         template <class E>
         constexpr decltype(auto) operator[](const E & e) const {
-            return at_index(details::_eval_const_expr(e, numel()));
+            return method_read_element().at_index(details::_eval_const_expr(e, numel()));
         }
         template <class E>
         decltype(auto) operator[](const E & e) {
-            return at_index(details::_eval_const_expr(e, numel()));
+            return method_write_element().at_index(details::_eval_const_expr(e, numel()));
         }
 
         // (...) based on at_subs
@@ -383,7 +552,7 @@ namespace wheels {
     // tensor_layout with non-static shape
     template <class ShapeT, class DataProviderT>
     class tensor_layout<ShapeT, DataProviderT, false> 
-        : public tensor_all_methods<tensor_layout<ShapeT, DataProviderT, false>> {
+        : public tensor_fundamental_methods<tensor_layout<ShapeT, DataProviderT, false>> {
         static_assert(is_tensor_shape<ShapeT>::value, "ShapeT should be a tensor_shape");
         static constexpr bool _shape_is_static = false;
 
@@ -430,12 +599,13 @@ namespace wheels {
         tensor_layout & operator = (tensor_layout &&) = default;
 
         // copy
-        template <class LayoutFromT, bool B>
-        tensor_layout(const tensor_method_assign<LayoutFromT, B> & from) : _shape(from.shape()) {
+        template <class ShapeFromT, class DataProviderFromT, bool B>
+        constexpr tensor_layout(const tensor_layout<ShapeFromT, DataProviderFromT, B> & from) 
+            : _shape(from.shape()) {
             from.copy_to(*this);
         }
-        template <class LayoutFromT, bool B>
-        tensor_layout & operator = (const tensor_method_assign<LayoutFromT, B> & from) {
+        template <class ShapeFromT, class DataProviderFromT, bool B>
+        tensor_layout & operator = (const tensor_layout<ShapeFromT, DataProviderFromT, B> & from) {
             _shape = from.shape();
             from.copy_to(*this);
             return *this;
@@ -465,7 +635,7 @@ namespace wheels {
     // tensor_layout with static shape
     template <class ShapeT, class DataProviderT>
     class tensor_layout<ShapeT, DataProviderT, true> 
-        : public tensor_all_methods<tensor_layout<ShapeT, DataProviderT, true>> {
+        : public tensor_fundamental_methods<tensor_layout<ShapeT, DataProviderT, true>> {
         static_assert(is_tensor_shape<ShapeT>::value, "ShapeT should be a tensor_shape");
         static constexpr bool _shape_is_static = true;
 
@@ -498,12 +668,12 @@ namespace wheels {
         tensor_layout & operator = (tensor_layout &&) = default;
 
         // copy
-        template <class LayoutFromT, bool B>
-        tensor_layout(const tensor_method_assign<LayoutFromT, B> & from) {
+        template <class ShapeFromT, class DataProviderFromT, bool B>
+        constexpr tensor_layout(const tensor_layout<ShapeFromT, DataProviderFromT, B> & from) {
             from.copy_to(*this);
         }
-        template <class LayoutFromT, bool B>
-        tensor_layout & operator = (const tensor_method_assign<LayoutFromT, B> & from) {
+        template <class ShapeFromT, class DataProviderFromT, bool B>
+        tensor_layout & operator = (const tensor_layout<ShapeFromT, DataProviderFromT, B> & from) {
             from.copy_to(*this);
             return *this;
         }
@@ -533,6 +703,7 @@ namespace wheels {
     struct is_tensor_layout<tensor_layout<ShapeT, DataProviderT, B>> : yes {};
 
 
+    // compose_tensor_layout
     template <class ST, class DPT>
     constexpr tensor_layout<ST, std::decay_t<DPT>> compose_tensor_layout(const ST & shape, DPT && dp) {
         return tensor_layout<ST, std::decay_t<DPT>>(shape, forward<DPT>(dp));
@@ -563,4 +734,6 @@ namespace wheels {
     template <class T> using cubex_ =
         tensor_layout<tensor_shape<size_t, size_t, size_t, size_t>, std::vector<T>>;
     using cubex = cubex_<double>;
+
+
 }

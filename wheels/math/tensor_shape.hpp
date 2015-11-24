@@ -225,12 +225,12 @@ namespace wheels {
 
 
     // ind2sub
-    template <class T>
-    void ind2sub(const tensor_shape<T> &, T ind) {}
-    template <class T, class SizeT, class ... SizeTs>
-    void ind2sub(const tensor_shape<T, SizeT, SizeTs...> &, T ind) {}
-    template <class T, class SizeT, class ... SizeTs, class K, class ... Ks>
-    void ind2sub(const tensor_shape<T, SizeT, SizeTs...> & shape, T ind, K & sub, Ks & ... subs) {
+    template <class T, class IndexT>
+    void ind2sub(const tensor_shape<T> &, const IndexT & ind) {}
+    template <class T, class IndexT, class SizeT, class ... SizeTs>
+    void ind2sub(const tensor_shape<T, SizeT, SizeTs...> &, const IndexT & ind) {}
+    template <class T, class IndexT, class SizeT, class ... SizeTs, class K, class ... Ks>
+    void ind2sub(const tensor_shape<T, SizeT, SizeTs...> & shape, const IndexT & ind, K & sub, Ks & ... subs) {
         const auto lm = shape.rest().magnitude();
         sub = ind / lm;
         ind2sub(shape.rest(), ind % lm, subs ...);
@@ -252,10 +252,10 @@ namespace wheels {
 
 
     // ind2sub_by_iter
-    template <class T, class SubsIterT> 
-    void ind2sub_by_iter(const tensor_shape<T> &, T ind, SubsIterT subs_iter) {}
-    template <class SubsIterT, class T, class SizeT,  class ... SizeTs>
-    void ind2sub_by_iter(const tensor_shape<T, SizeT, SizeTs...> & shape, T ind, SubsIterT subs_iter) {
+    template <class T, class IndexT, class SubsIterT> 
+    void ind2sub_by_iter(const tensor_shape<T> &, const IndexT & ind, SubsIterT subs_iter) {}
+    template <class SubsIterT, class IndexT, class T, class SizeT,  class ... SizeTs>
+    void ind2sub_by_iter(const tensor_shape<T, SizeT, SizeTs...> & shape, const IndexT & ind, SubsIterT subs_iter) {
         const auto lm = shape.rest().magnitude();
         *subs_iter = ind / lm;
         ind2sub_by_iter(shape.rest(), ind % lm, ++subs_iter);
@@ -263,12 +263,14 @@ namespace wheels {
 
 
     // invoke_with_subs
-    template <class T, class FunT, class ... SubTs>
-    constexpr decltype(auto) invoke_with_subs(const tensor_shape<T> & shape, T ind, FunT && fun, const SubTs & ... subs) {
+    template <class T, class IndexT, class FunT, class ... SubTs>
+    constexpr decltype(auto) invoke_with_subs(const tensor_shape<T> & shape, const IndexT & ind, 
+        FunT && fun, const SubTs & ... subs) {
         return forward<FunT>(fun)(subs ...);
     }
-    template <class T, class FunT, class SizeT, class ... SizeTs, class ... SubTs>
-    constexpr decltype(auto) invoke_with_subs(const tensor_shape<T, SizeT, SizeTs...> & shape, T ind, FunT && fun, const SubTs & ... subs) {
+    template <class T, class IndexT, class FunT, class SizeT, class ... SizeTs, class ... SubTs>
+    constexpr decltype(auto) invoke_with_subs(const tensor_shape<T, SizeT, SizeTs...> & shape, const IndexT & ind, 
+        FunT && fun, const SubTs & ... subs) {
         return invoke_with_subs(shape.rest(), ind % shape.rest().magnitude(),
             forward<FunT>(fun), 
             subs ..., ind / shape.rest().magnitude());

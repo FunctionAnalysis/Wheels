@@ -6,6 +6,7 @@ option (WITH_EIGEN "with EIGEN" off)
 option (WITH_CUDA "with CUDA" off)
 option (WITH_MATLAB "with MATLAB" off)
 option (WITH_OPENCV "with OPENCV" off)
+option (WITH_CEREAL "with CEREAL" off)
 
 
 set (CMAKE_ALLOW_LOOSE_CONSTRUCTS true)
@@ -69,11 +70,17 @@ if (${WITH_OPENCV})
 	list (APPEND DEPENDENCY_BIN_PATHS ${_OpenCV_LIB_PATH})
 endif()
 
+if (${WITH_CEREAL})
+	find_package (Cereal REQUIRED)
+	list (APPEND DEPENDENCY_INCLUDES ${CEREAL_INCLUDE_DIR})	
+endif()
+
+
 
 get_filename_component(wheels_data_dir "${CMAKE_CURRENT_SOURCE_DIR}/data/" REALPATH)
 message (STATUS "data directory: " ${wheels_data_dir})
 if (MSVC)
-	add_definitions ( "/DNOMINMAX")
+	add_definitions ( "/DNOMINMAX /W3 /D_CRT_SECURE_NO_WARNINGS /wd4503")
 	add_definitions ( "/Dwheels_data_dir_str=\"${wheels_data_dir}\"" )
 else ()
 	add_definitions ( "-Dwheels_data_dir_str=\"${wheels_data_dir}\"" )

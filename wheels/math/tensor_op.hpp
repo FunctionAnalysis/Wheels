@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../core/macros.hpp"
+
 #include "tensor_data.hpp"
 #include "tensor.hpp"
 
@@ -77,7 +79,7 @@ namespace wheels {
         struct is_element_readable_at_subs<eye<T>> : yes {};
 
         template <class T, class ... SubTs>
-        constexpr const T & element_at_subs(const eye<T> & a, const SubTs & ... subs) {
+        constexpr auto element_at_subs(const eye<T> & a, const SubTs & ... subs) {
             static_assert(sizeof...(SubTs) > 1, "shape degree must be over 1");
             return all_same(subs ...) ? 1 : 0;
         }
@@ -92,6 +94,34 @@ namespace wheels {
     constexpr auto eye(const SizeTs & ... sizes) {
         return compose_tensor_layout(make_shape<ST>(sizes ...), tdp::eye<T>());
     }
+
+
+
+    // iota
+    namespace tdp {
+        struct iota {
+            constexpr iota() {}
+            template <class Archiver>
+            void serialize(Archiver & ar) {}
+        };
+        // accessing elements
+        template <> struct is_element_readable_at_index<iota> : yes {};
+        template <class IndexT>
+        constexpr IndexT && element_at_index(const iota & a, IndexT && index) {
+            return static_cast<IndexT>(index);
+        }
+    }
+
+    template <class ST, class ... SizeTs>
+    constexpr auto iota(const tensor_shape<ST, SizeTs ...> & shape) {
+        return compose_tensor_layout(shape, tdp::iota());
+    }
+
+    template <class ST = size_t, class ... SizeTs>
+    constexpr auto iota(const SizeTs & ... sizes) {
+        return compose_tensor_layout(make_shape<ST>(sizes ...), tdp::iota());
+    }
+
 
 
     // ewise op
@@ -116,7 +146,7 @@ namespace wheels {
         template <class OpT, class ... InputTs, class IndexT, size_t ... Is>
         constexpr decltype(auto) _element_at_index_seq(const ewise_op<OpT, InputTs ...> & a,
             const IndexT & index, const_ints<size_t, Is ...>) {
-            return a.op(std::get<Is>(a.inputs).at_index(index) ...);
+            return a.op(std::get<Is>(a.inputs).method_read_element().at_index(index) ...);
         }
         template <class OpT, class ... InputTs, class IndexT>
         constexpr decltype(auto) element_at_index(const ewise_op<OpT, InputTs ...> & a, const IndexT & index) {
@@ -129,7 +159,7 @@ namespace wheels {
         template <class OpT, class ... InputTs, class ... SubTs, size_t ... Is>
         constexpr decltype(auto) _element_at_subs_seq(const ewise_op<OpT, InputTs ...> & a,
             const_ints<size_t, Is ...>, const SubTs & ... subs) {
-            return a.op(std::get<Is>(a.inputs).at_subs(subs ...) ...);
+            return a.op(std::get<Is>(a.inputs).method_read_element().at_subs(subs ...) ...);
         }
         template <class OpT, class ... InputTs, class ... SubTs>
         constexpr decltype(auto) element_at_subs(const ewise_op<OpT, InputTs ...> & a, const SubTs & ... subs) {
@@ -142,7 +172,6 @@ namespace wheels {
         }
     }
 
-    
     namespace details {
         template <class ... Ts>
         struct _all_tensor_layouts {
@@ -150,10 +179,10 @@ namespace wheels {
                 const_ints<bool, is_tensor_layout<std::decay_t<Ts>>::value ...>::all();
         };
     }
-    
+
 
 #define WHEELS_TENSOR_OVERLOAD_UNARY_OP(op, name) \
-    template <class A, class = std::enable_if_t<details::_all_tensor_layouts<A>::value>>  \
+    template <class A, class = std::enable_if_t<is_tensor_layout<std::decay_t<A>>::value>, class = void>  \
     constexpr auto operator op (A && a) { \
         return compose_tensor_layout(a.shape(), tdp::compose_ewise_op(unary_op_##name(), forward<A>(a))); \
     }
@@ -164,7 +193,9 @@ namespace wheels {
 
 
 #define WHEELS_TENSOR_OVERLOAD_BINARY_OP(op, name) \
-    template <class A, class B, class = std::enable_if_t<details::_all_tensor_layouts<A, B>::value>> \
+    template <class A, class B, \
+        class = std::enable_if_t<is_tensor_layout<std::decay_t<A>>::value && is_tensor_layout<std::decay_t<B>>::value>, \
+        wheels_distinguish_3> \
     constexpr auto operator op (A && a, B && b) { \
         assert(a.shape() == b.shape()); \
         return compose_tensor_layout(a.shape(),  \
@@ -173,29 +204,71 @@ namespace wheels {
 
     WHEELS_TENSOR_OVERLOAD_BINARY_OP(+, plus)
     WHEELS_TENSOR_OVERLOAD_BINARY_OP(-, minus)
+    
+    WHEELS_TENSOR_OVERLOAD_BINARY_OP(==, eq)
+    WHEELS_TENSOR_OVERLOAD_BINARY_OP(!=, neq)
+    WHEELS_TENSOR_OVERLOAD_BINARY_OP(<, lt)
+    WHEELS_TENSOR_OVERLOAD_BINARY_OP(<=, lte)
+    WHEELS_TENSOR_OVERLOAD_BINARY_OP(>, gt)
+    WHEELS_TENSOR_OVERLOAD_BINARY_OP(>=, gte)
+
+    WHEELS_TENSOR_OVERLOAD_BINARY_OP(&&, and)
+    WHEELS_TENSOR_OVERLOAD_BINARY_OP(||, or)
+    WHEELS_TENSOR_OVERLOAD_BINARY_OP(&, bitwise_and)
+    WHEELS_TENSOR_OVERLOAD_BINARY_OP(|, bitwise_or)
 
 
-#define WHEELS_TENSOR_OVERLOAD_UNARY_OP_WITH(op, name) \
+#define WHEELS_TENSOR_OVERLOAD_UNARY_OP_WITH_SCALAR(op, name) \
     template <class A, class B, class = \
-        std::enable_if_t<details::_all_tensor_layouts<A>::value &&  \
-        !details::_all_tensor_layouts<B>::value>, class = void> \
+        std::enable_if_t<\
+         is_tensor_layout<std::decay_t<A>>::value &&  \
+        !is_tensor_layout<std::decay_t<B>>::value && \
+        !is_const_expr<std::decay_t<B>>::value>, wheels_distinguish_4> \
     constexpr auto operator op (A && a, B && b) { \
         return compose_tensor_layout(a.shape(), \
             tdp::compose_ewise_op(unary_op_##name##_with<std::decay_t<B>>(forward<B>(b)), forward<A>(a))); \
     } \
     template <class A, class B, class = \
-        std::enable_if_t<details::_all_tensor_layouts<B>::value && \
-        !details::_all_tensor_layouts<A>::value>, class = void, class = void> \
+        std::enable_if_t<\
+         is_tensor_layout<std::decay_t<B>>::value && \
+        !is_tensor_layout<std::decay_t<A>>::value && \
+        !is_const_expr<std::decay_t<A>>::value>, wheels_distinguish_5> \
         constexpr auto operator op (A && a, B && b) { \
         return compose_tensor_layout(b.shape(), \
             tdp::compose_ewise_op(unary_op_##name##_with_<std::decay_t<A>>(forward<A>(a)), forward<B>(b))); \
     }
 
-    WHEELS_TENSOR_OVERLOAD_UNARY_OP_WITH(+, plus)
-    WHEELS_TENSOR_OVERLOAD_UNARY_OP_WITH(-, minus)
-    WHEELS_TENSOR_OVERLOAD_UNARY_OP_WITH(*, mul)
-    WHEELS_TENSOR_OVERLOAD_UNARY_OP_WITH(/, div)
-    WHEELS_TENSOR_OVERLOAD_UNARY_OP_WITH(%, mod)
+    WHEELS_TENSOR_OVERLOAD_UNARY_OP_WITH_SCALAR(+, plus)
+    WHEELS_TENSOR_OVERLOAD_UNARY_OP_WITH_SCALAR(-, minus)
+    WHEELS_TENSOR_OVERLOAD_UNARY_OP_WITH_SCALAR(*, mul)
+    WHEELS_TENSOR_OVERLOAD_UNARY_OP_WITH_SCALAR(/, div)
+    WHEELS_TENSOR_OVERLOAD_UNARY_OP_WITH_SCALAR(%, mod)
+
+
+#define WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(func) \
+    template <class A, class = std::enable_if_t<is_tensor_layout<std::decay_t<A>>::value>> \
+    constexpr auto func(A && a) { \
+        return compose_tensor_layout(a.shape(), \
+            tdp::compose_ewise_op(unary_func_##func(), forward<A>(a))); \
+    }
+
+    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(sin)
+    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(cos)
+    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(tan)
+    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(sinh)
+    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(cosh)
+    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(tanh)
+    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(asin)
+    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(acos)
+    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(atan)
+    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(asinh)
+    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(acosh)
+    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(atanh)
+    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(exp)
+    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(log)
+    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(log10)
+    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(log2)
+    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(abs)
 
 
 }
