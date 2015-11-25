@@ -31,24 +31,24 @@ namespace wheels {
             } \
             template <class Archive> void serialize(Archive &) {} \
         };
-    
+
     WHEELS_DEFINE_BINARY_OP(+, plus)
     WHEELS_DEFINE_BINARY_OP(-, minus)
     WHEELS_DEFINE_BINARY_OP(*, mul)
-    WHEELS_DEFINE_BINARY_OP(/, div)
+    WHEELS_DEFINE_BINARY_OP(/ , div)
     WHEELS_DEFINE_BINARY_OP(%, mod)
-
-    WHEELS_DEFINE_BINARY_OP(==, eq)
-    WHEELS_DEFINE_BINARY_OP(!=, neq)
+    
+    WHEELS_DEFINE_BINARY_OP(== , eq)
+    WHEELS_DEFINE_BINARY_OP(!= , neq)
     WHEELS_DEFINE_BINARY_OP(<, lt)
-    WHEELS_DEFINE_BINARY_OP(<=, lte)
+    WHEELS_DEFINE_BINARY_OP(<= , lte)
     WHEELS_DEFINE_BINARY_OP(>, gt)
-    WHEELS_DEFINE_BINARY_OP(>=, gte)
+    WHEELS_DEFINE_BINARY_OP(>= , gte)
 
     WHEELS_DEFINE_BINARY_OP(&&, and)
-    WHEELS_DEFINE_BINARY_OP(||, or)
+    WHEELS_DEFINE_BINARY_OP(|| , or )
     WHEELS_DEFINE_BINARY_OP(&, bitwise_and)
-    WHEELS_DEFINE_BINARY_OP(|, bitwise_or)
+    WHEELS_DEFINE_BINARY_OP(| , bitwise_or)
 
 
 
@@ -79,7 +79,7 @@ namespace wheels {
     WHEELS_DEFINE_UNARY_OP_WITH(+, plus)
     WHEELS_DEFINE_UNARY_OP_WITH(-, minus)
     WHEELS_DEFINE_UNARY_OP_WITH(*, mul)
-    WHEELS_DEFINE_UNARY_OP_WITH(/, div)
+    WHEELS_DEFINE_UNARY_OP_WITH(/ , div)
     WHEELS_DEFINE_UNARY_OP_WITH(%, mod)
 
 
@@ -106,15 +106,32 @@ namespace wheels {
     WHEELS_DEFINE_UNARY_FUNC(acosh)
     WHEELS_DEFINE_UNARY_FUNC(atanh)
     WHEELS_DEFINE_UNARY_FUNC(exp)
+    WHEELS_DEFINE_UNARY_FUNC(exp2)
     WHEELS_DEFINE_UNARY_FUNC(log)
     WHEELS_DEFINE_UNARY_FUNC(log10)
     WHEELS_DEFINE_UNARY_FUNC(log2)
     WHEELS_DEFINE_UNARY_FUNC(abs)
+    WHEELS_DEFINE_UNARY_FUNC(sqrt)
+    WHEELS_DEFINE_UNARY_FUNC(cbrt)
+    WHEELS_DEFINE_UNARY_FUNC(ceil)
+    WHEELS_DEFINE_UNARY_FUNC(floor)
+    WHEELS_DEFINE_UNARY_FUNC(round)
 
 
-
-//#define WHEELS_DEFINE_BINARY_FUNC(func) \
+#define WHEELS_DEFINE_BINARY_FUNC(func) \
+    struct binary_func_##func {\
+        constexpr binary_func_##func() {} \
+        template <class A, class B> \
+        constexpr auto operator()(A && a, B && b) const {\
+            return std::func(forward<A>(a), forward<B>(b)); \
+        } \
+        template <class Archive> void serialize(Archive &) {} \
+    };
     
+    WHEELS_DEFINE_BINARY_FUNC(max)
+    WHEELS_DEFINE_BINARY_FUNC(min)
+    WHEELS_DEFINE_BINARY_FUNC(pow)
+    WHEELS_DEFINE_BINARY_FUNC(atan2)
 
 
 

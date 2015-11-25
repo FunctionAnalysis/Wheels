@@ -57,6 +57,11 @@ namespace wheels {
         static constexpr auto all() { return const_ints<bool, details::_reduction<T, Vals...>::all>(); }
         static constexpr auto any() { return const_ints<bool, details::_reduction<T, Vals...>::any>(); }
 
+        static constexpr T sum_v = details::_reduction<T, Vals...>::sum;
+        static constexpr T prod_v = details::_reduction<T, Vals...>::prod;
+        static constexpr bool all_v = details::_reduction<T, Vals...>::all;
+        static constexpr bool any_v = details::_reduction<T, Vals...>::any;
+
         template <class K, K Idx>
         constexpr auto operator[](const const_ints<K, Idx> &) const {
             return const_ints<T, details::_element<Idx, T, Vals ...>::value>();
@@ -83,6 +88,11 @@ namespace wheels {
         static constexpr auto prod() { return const_ints<T, Val>(); }
         static constexpr auto all() { return const_ints<bool, (bool)Val>(); }
         static constexpr auto any() { return const_ints<bool, (bool)Val>(); }
+
+        static constexpr T sum_v = Val;
+        static constexpr T prod_v = Val;
+        static constexpr bool all_v = (bool)Val;
+        static constexpr bool any_v = (bool)Val;
 
         template <class K>
         constexpr auto operator[](const const_ints<K, 0> &) const { return const_ints<T, Val>(); }

@@ -179,7 +179,7 @@ namespace wheels {
 
 
 
-#define WHEELS_TENSOR_OVERLOAD_UNARY_OP(op, name) \
+#define WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_OP(op, name) \
     template <class A, \
         class = std::enable_if_t<is_tensor<std::decay_t<A>>::value>, \
         wheels_distinguish_1>  \
@@ -187,12 +187,12 @@ namespace wheels {
         return compose_tensor(a.shape(), tdp::compose_ewise_op(unary_op_##name(), forward<A>(a))); \
     }
 
-    WHEELS_TENSOR_OVERLOAD_UNARY_OP(+, plus)
-    WHEELS_TENSOR_OVERLOAD_UNARY_OP(-, minus)
-    WHEELS_TENSOR_OVERLOAD_UNARY_OP(!, not)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_OP(+, plus)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_OP(-, minus)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_OP(!, not)
 
 
-#define WHEELS_TENSOR_OVERLOAD_BINARY_OP(op, name) \
+#define WHEELS_TENSOR_OVERLOAD_EWISE_BINARY_OP(op, name) \
     template <class A, class B, \
         class = std::enable_if_t<is_tensor<std::decay_t<A>>::value && is_tensor<std::decay_t<B>>::value>, \
         wheels_distinguish_3> \
@@ -202,23 +202,23 @@ namespace wheels {
             tdp::compose_ewise_op(binary_op_##name(), forward<A>(a), forward<B>(b))); \
     }
 
-    WHEELS_TENSOR_OVERLOAD_BINARY_OP(+, plus)
-    WHEELS_TENSOR_OVERLOAD_BINARY_OP(-, minus)
+    WHEELS_TENSOR_OVERLOAD_EWISE_BINARY_OP(+, plus)
+    WHEELS_TENSOR_OVERLOAD_EWISE_BINARY_OP(-, minus)
     
-    WHEELS_TENSOR_OVERLOAD_BINARY_OP(==, eq)
-    WHEELS_TENSOR_OVERLOAD_BINARY_OP(!=, neq)
-    WHEELS_TENSOR_OVERLOAD_BINARY_OP(<, lt)
-    WHEELS_TENSOR_OVERLOAD_BINARY_OP(<=, lte)
-    WHEELS_TENSOR_OVERLOAD_BINARY_OP(>, gt)
-    WHEELS_TENSOR_OVERLOAD_BINARY_OP(>=, gte)
+    WHEELS_TENSOR_OVERLOAD_EWISE_BINARY_OP(==, eq)
+    WHEELS_TENSOR_OVERLOAD_EWISE_BINARY_OP(!=, neq)
+    WHEELS_TENSOR_OVERLOAD_EWISE_BINARY_OP(<, lt)
+    WHEELS_TENSOR_OVERLOAD_EWISE_BINARY_OP(<=, lte)
+    WHEELS_TENSOR_OVERLOAD_EWISE_BINARY_OP(>, gt)
+    WHEELS_TENSOR_OVERLOAD_EWISE_BINARY_OP(>=, gte)
 
-    WHEELS_TENSOR_OVERLOAD_BINARY_OP(&&, and)
-    WHEELS_TENSOR_OVERLOAD_BINARY_OP(||, or)
-    WHEELS_TENSOR_OVERLOAD_BINARY_OP(&, bitwise_and)
-    WHEELS_TENSOR_OVERLOAD_BINARY_OP(|, bitwise_or)
+    WHEELS_TENSOR_OVERLOAD_EWISE_BINARY_OP(&&, and)
+    WHEELS_TENSOR_OVERLOAD_EWISE_BINARY_OP(||, or)
+    WHEELS_TENSOR_OVERLOAD_EWISE_BINARY_OP(&, bitwise_and)
+    WHEELS_TENSOR_OVERLOAD_EWISE_BINARY_OP(|, bitwise_or)
 
 
-#define WHEELS_TENSOR_OVERLOAD_UNARY_OP_WITH_SCALAR(op, name) \
+#define WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_OP_WITH_SCALAR(op, name) \
     template <class A, class B, class = \
         std::enable_if_t<\
          is_tensor<std::decay_t<A>>::value &&  \
@@ -238,14 +238,14 @@ namespace wheels {
             tdp::compose_ewise_op(unary_op_##name##_with_<std::decay_t<A>>(forward<A>(a)), forward<B>(b))); \
     }
 
-    WHEELS_TENSOR_OVERLOAD_UNARY_OP_WITH_SCALAR(+, plus)
-    WHEELS_TENSOR_OVERLOAD_UNARY_OP_WITH_SCALAR(-, minus)
-    WHEELS_TENSOR_OVERLOAD_UNARY_OP_WITH_SCALAR(*, mul)
-    WHEELS_TENSOR_OVERLOAD_UNARY_OP_WITH_SCALAR(/, div)
-    WHEELS_TENSOR_OVERLOAD_UNARY_OP_WITH_SCALAR(%, mod)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_OP_WITH_SCALAR(+, plus)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_OP_WITH_SCALAR(-, minus)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_OP_WITH_SCALAR(*, mul)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_OP_WITH_SCALAR(/, div)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_OP_WITH_SCALAR(%, mod)
 
 
-#define WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(func) \
+#define WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(func) \
     template <class A, \
         class = std::enable_if_t<is_tensor<std::decay_t<A>>::value>> \
     constexpr auto func(A && a) { \
@@ -253,23 +253,29 @@ namespace wheels {
             tdp::compose_ewise_op(unary_func_##func(), forward<A>(a))); \
     }
 
-    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(sin)
-    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(cos)
-    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(tan)
-    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(sinh)
-    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(cosh)
-    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(tanh)
-    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(asin)
-    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(acos)
-    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(atan)
-    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(asinh)
-    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(acosh)
-    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(atanh)
-    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(exp)
-    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(log)
-    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(log10)
-    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(log2)
-    WHEELS_TENSOR_OVERLOAD_UNARY_FUNC(abs)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(sin)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(cos)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(tan)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(sinh)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(cosh)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(tanh)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(asin)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(acos)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(atan)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(asinh)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(acosh)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(atanh)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(exp)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(exp2)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(log)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(log10)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(log2)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(abs)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(sqrt)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(cbrt)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(ceil)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(floor)
+    WHEELS_TENSOR_OVERLOAD_EWISE_UNARY_FUNC(round)
 
 
     // ewise_mul
@@ -291,5 +297,23 @@ namespace wheels {
         return compose_tensor(a.shape(),
             tdp::compose_ewise_op(binary_op_div(), forward<A>(a), forward<B>(b)));
     }
+
+
+
+#define WHEELS_TENSOR_OVERLOAD_EWISE_BINARY_FUNC(func) \
+    template <class A, class B, \
+        class = std::enable_if_t<is_tensor<std::decay_t<A>>::value &&  \
+        is_tensor<std::decay_t<B>>::value>> \
+    constexpr auto ewise_##func (A && a, B && b) { \
+        assert(a.shape() == b.shape()); \
+        return compose_tensor(a.shape(), \
+            tdp::compose_ewise_op(binary_func_##func(), forward<A>(a), forward<B>(b))); \
+    }
+
+    WHEELS_TENSOR_OVERLOAD_EWISE_BINARY_FUNC(max)
+    WHEELS_TENSOR_OVERLOAD_EWISE_BINARY_FUNC(min)
+    WHEELS_TENSOR_OVERLOAD_EWISE_BINARY_FUNC(pow)
+    WHEELS_TENSOR_OVERLOAD_EWISE_BINARY_FUNC(atan2)
+
 
 }

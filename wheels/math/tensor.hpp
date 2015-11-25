@@ -70,7 +70,7 @@ namespace wheels {
 
 
 
-    // tensor_method_core
+    // tensor_method_core provides shape() and layout()
     template <class LayoutT>
     class tensor_method_core {
     public:
@@ -82,7 +82,7 @@ namespace wheels {
         // shape related
         constexpr decltype(auto) shape() const { return layout().shape_impl(); }
         constexpr auto rank() const { return const_ints<int, decltype(shape())::rank>(); }
-        constexpr auto degree_sequence() const { return make_const_sequence(rank()); }
+        constexpr auto rank_sequence() const { return make_const_sequence(rank()); }
 
         template <class T, T Idx>
         constexpr auto size(const const_ints<T, Idx> & i) const {
@@ -92,7 +92,7 @@ namespace wheels {
     };
 
 
-    // tensor_method_read_element
+    // tensor_method_read_element provides at_index_const(...) and at_subs_const(...)
     template <class LayoutT>
     class tensor_method_read_element<LayoutT, true, true>
         : public tensor_method_core<LayoutT> {
@@ -208,7 +208,8 @@ namespace wheels {
         // write element at subs
         template <class ... SubTs>
         decltype(auto) at_subs_nonconst(const SubTs & ... subs) {
-            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
+            using _checks = const_ints<bool, is_int<SubTs>::value ...>;
+            static_assert(_checks::all_v,
                 "at_subs(...) requires all subs should be integral or const_ints");
             return tdp::element_at_subs(layout().data_provider_impl(), subs ...);
         }
@@ -227,8 +228,9 @@ namespace wheels {
         // write element at subs
         template <class ... SubTs>
         decltype(auto) at_subs_nonconst(const SubTs & ... subs) {
-           /* static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
-                "at_subs(...) requires all subs should be integral or const_ints");*/
+            using _checks = const_ints<bool, is_int<SubTs>::value ...>;
+            static_assert(_checks::all_v,
+                "at_subs(...) requires all subs should be integral or const_ints");
             return tdp::element_at_index(layout().data_provider_impl(),
                 sub2ind(shape(), subs ...));
         }
@@ -363,9 +365,10 @@ namespace wheels {
     template <class LayoutT>
     class tensor_method_reduce : public tensor_method_iterate_nonconst<LayoutT> {
     public:
+        using value_type = typename LayoutT::value_type;
         // reduce
         template <class T, class ReduceT>
-        T accumulate(const T & base, ReduceT && redux) const {
+        T reduce(const T & base, ReduceT && redux) const {
             T result = base;
             if (numel() < _parallel_thres) {
                 for (size_t ind = 0; ind < numel(); ind++) {
@@ -378,16 +381,16 @@ namespace wheels {
             }
             return result;
         }
-        auto sum() const { return accumulate(typename LayoutT::value_type(0), binary_op_plus()); }
+        auto sum() const { return reduce(value_type(0), binary_op_plus()); }
         auto mean() const { return sum() / numel(); }
-        auto prod() const { return accumulate(typename LayoutT::value_type(1), binary_op_mul()); }
-        bool all() const { return accumulate(true, binary_op_and()); }
-        bool any() const { return accumulate(false, binary_op_or()); }
+        auto prod() const { return reduce(value_type(1), binary_op_mul()); }
+        bool all() const { return reduce(true, binary_op_and()); }
+        bool any() const { return reduce(false, binary_op_or()); }
         bool none() const { return !any(); }
 
         // norm_squared
         auto norm_squared() const {
-            typename LayoutT::value_type result = 0;
+            value_type result = 0;
             if (numel() < _parallel_thres) {
                 for (size_t ind = 0; ind < numel(); ind++) {
                     decltype(auto) e = at_index_const(ind);
@@ -405,10 +408,6 @@ namespace wheels {
         // norm
         auto norm() const { return std::sqrt(norm_squared()); }
     };
-
-
-
-
 
 
 
@@ -521,11 +520,10 @@ namespace wheels {
 
 
 
-    // tensor_extended
-    // overload to implement more methods
+    // tensor_pattern
+    // overload the pattern to implement more methods
     template <class LayoutT> 
-    class tensor_extended 
-        : public tensor_base<LayoutT> {
+    class tensor_pattern : public tensor_base<LayoutT> {
     };
 
 
@@ -548,7 +546,7 @@ namespace wheels {
     // tensor_layout with non-static shape
     template <class ShapeT, class DataProviderT>
     class tensor_layout<ShapeT, DataProviderT, false> 
-        : public tensor_extended<tensor_layout<ShapeT, DataProviderT, false>> {
+        : public tensor_pattern<tensor_layout<ShapeT, DataProviderT, false>> {
         static_assert(is_tensor_shape<ShapeT>::value, "ShapeT should be a tensor_shape");
         static constexpr bool _shape_is_static = false;
 
@@ -632,7 +630,7 @@ namespace wheels {
     // tensor_layout with static shape
     template <class ShapeT, class DataProviderT>
     class tensor_layout<ShapeT, DataProviderT, true> 
-        : public tensor_extended<tensor_layout<ShapeT, DataProviderT, true>> {
+        : public tensor_pattern<tensor_layout<ShapeT, DataProviderT, true>> {
         static_assert(is_tensor_shape<ShapeT>::value, "ShapeT should be a tensor_shape");
         static constexpr bool _shape_is_static = true;
 
@@ -694,6 +692,15 @@ namespace wheels {
     private:
         DataProviderT _data_provider;
     };
+
+
+
+
+
+
+
+
+
 
 
 

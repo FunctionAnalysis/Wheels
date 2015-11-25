@@ -23,6 +23,7 @@ namespace wheels {
             struct _helper : T { int x; };
             static constexpr bool value = sizeof(_helper) == sizeof(int);
         };
+
     }
 
     // types
@@ -106,6 +107,12 @@ namespace wheels {
     }
 
     #define type_t(t) decltype(t)::type
+
+
+    template <class T>
+    struct is_wheel : no {};
+    template <class ... Ts>
+    struct is_wheel<types<Ts ...>> : yes {};
 
 
     // == 

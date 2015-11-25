@@ -32,8 +32,7 @@ namespace wheels {
 
     template <class IterT, class FunT>
     void parallel_for_each(IterT begin, IterT end, FunT && fun, size_t batch_num = 1,
-        size_t concurrency_num = std::thread::hardware_concurrency()) {
-        
+        size_t concurrency_num = std::thread::hardware_concurrency()) {        
         std::vector<std::thread> threads;
         threads.reserve(concurrency_num);
 
