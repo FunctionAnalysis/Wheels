@@ -13,7 +13,8 @@ namespace wheels {
     class tensor_shape<T> {
         static_assert(std::is_integral<T>::value, "T should be an integral type");
     public:
-        static constexpr size_t degree = 0;
+        using value_type = T;
+        static constexpr size_t rank = 0;
         static constexpr bool is_static = true;
         static constexpr size_t static_size_num = 0;
 
@@ -34,7 +35,8 @@ namespace wheels {
         using rest_tensor_shape_t = tensor_shape<T, SizeTs ...>;
 
     public:
-        static constexpr size_t degree = sizeof...(SizeTs)+1;
+        using value_type = T;
+        static constexpr size_t rank = sizeof...(SizeTs)+1;
         static constexpr bool is_static = rest_tensor_shape_t::is_static;
         static constexpr size_t static_size_num = rest_tensor_shape_t::static_size_num + 1;
 
@@ -89,7 +91,7 @@ namespace wheels {
         // at
         template <size_t Idx> 
         constexpr auto at(const const_index<Idx> &) const { 
-            static_assert(Idx < degree, "Idx too large");
+            static_assert(Idx < rank, "Idx too large");
             return rest().at(const_index<Idx - 1>()); 
         }
         constexpr auto at(const const_index<0> &) const { return value(); }
@@ -125,7 +127,8 @@ namespace wheels {
         using rest_tensor_shape_t = tensor_shape<T, SizeTs ...>;
 
     public:
-        static constexpr size_t degree = sizeof...(SizeTs)+1;
+        using value_type = T;
+        static constexpr size_t rank = sizeof...(SizeTs)+1;
         static constexpr bool is_static = false;
         static constexpr size_t static_size_num = rest_tensor_shape_t::static_size_num;
 
@@ -170,7 +173,7 @@ namespace wheels {
         // at
         template <size_t Idx>
         constexpr auto at(const const_index<Idx> &) const { 
-            static_assert(Idx < degree, "Idx too large");
+            static_assert(Idx < rank, "Idx too large");
             return rest().at(const_index<Idx - 1>());
         }
         constexpr T at(const const_index<0u>) const { return _val; }
@@ -387,6 +390,10 @@ namespace wheels {
     constexpr auto make_shape(const const_ints<T, Sizes...> &) {
         return tensor_shape<T, const_ints<T, Sizes>...>();
     }
+
+
+
+
 
 
     // stream

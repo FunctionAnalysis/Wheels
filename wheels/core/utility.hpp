@@ -3,7 +3,6 @@
 #include <iostream>
 
 #include "macros.hpp"
-#include "platforms.hpp"
 
 
 namespace wheels {

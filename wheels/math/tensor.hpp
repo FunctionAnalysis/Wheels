@@ -11,30 +11,18 @@
 
 #include "tensor_shape.hpp"
 #include "tensor_data.hpp"
-#include "tensor_assign.hpp"
 
 namespace wheels {
 
     // forward declaration
-    template <class LayoutT>
-    class tensor_base;
 
-    template <class ShapeT, class DataProviderT,
+    template <class ShapeT, 
+        class DataProviderT,
         bool ShapeIsStatic = ShapeT::is_static>
     class tensor_layout;
 
-    namespace details {
-        template <class ShapeT>
-        struct _shape_property {};
-        template <class ShapeT, class DataProviderT, bool S>
-        struct _shape_property<tensor_layout<ShapeT, DataProviderT, S>> {
-            static constexpr bool is_static = ShapeT::is_static;
-            static constexpr bool is_scalar = ShapeT::degree == 0;
-            static constexpr bool is_vector = ShapeT::degree == 1;
-            static constexpr bool is_matrix = ShapeT::degree == 2;
-            static constexpr bool is_cube = ShapeT::degree == 3;
-        };
 
+    namespace details {
         template <class LayoutT>
         struct _layout_property {};
         template <class ShapeT, class DataProviderT, bool S>
@@ -49,6 +37,9 @@ namespace wheels {
                 tdp::is_element_writable_at_subs<DataProviderT>::value;
         };
     }
+
+    template <class LayoutT>
+    class tensor_method_core;
 
     template <class LayoutT,
         bool EleReadableAtIndex = details::_layout_property<LayoutT>::element_readable_at_index,
@@ -72,16 +63,16 @@ namespace wheels {
 
     template <class LayoutT,
         bool AssignByIndex = details::_layout_property<LayoutT>::element_readable_at_index>
-    class tensor_method_assign;
+    class tensor_method_copy;
 
     template <class LayoutT>
-    class tensor_fundamental_methods;
+    class tensor_base;
 
 
 
-    // tensor_base
+    // tensor_method_core
     template <class LayoutT>
-    class tensor_base {
+    class tensor_method_core {
     public:
         using layout_type = LayoutT;
 
@@ -90,48 +81,32 @@ namespace wheels {
 
         // shape related
         constexpr decltype(auto) shape() const { return layout().shape_impl(); }
-        constexpr auto degree() const { return const_ints<int, decltype(shape())::degree>(); }
-        constexpr auto degree_sequence() const { return make_const_sequence(degree()); }
+        constexpr auto rank() const { return const_ints<int, decltype(shape())::rank>(); }
+        constexpr auto degree_sequence() const { return make_const_sequence(rank()); }
 
         template <class T, T Idx>
         constexpr auto size(const const_ints<T, Idx> & i) const {
             return shape().at(i);
         }
-        auto numel() const { return shape().magnitude(); }
-
-        // storage
-        constexpr decltype(auto) storage() const { return layout().data_provider_impl(); }     
+        auto numel() const { return shape().magnitude(); }    
     };
-
-
-#define WHEELS_TENSOR_METHOD_LAYER(method_name) \
-    constexpr const tensor_method_##method_name<LayoutT> & \
-        method_##method_name() const { \
-        return (const tensor_method_##method_name<LayoutT> &)(*this); \
-    } \
-    tensor_method_##method_name<LayoutT> & \
-        method_##method_name() { \
-        return (tensor_method_##method_name<LayoutT> &)(*this); \
-    }
-
 
 
     // tensor_method_read_element
     template <class LayoutT>
     class tensor_method_read_element<LayoutT, true, true>
-        : public tensor_base<LayoutT> {
+        : public tensor_method_core<LayoutT> {
     public:
-        WHEELS_TENSOR_METHOD_LAYER(read_element)
         static constexpr bool element_readable_at_index = true;
         static constexpr bool element_readable_at_subs = true;
         // read element at index
         template <class IndexT>
-        constexpr decltype(auto) at_index(const IndexT & index) const {
+        constexpr decltype(auto) at_index_const(const IndexT & index) const {
             return tdp::element_at_index(layout().data_provider_impl(), index);
         }
         // read element at subs
         template <class ... SubTs>
-        constexpr decltype(auto) at_subs(const SubTs & ... subs) const {
+        constexpr decltype(auto) at_subs_const(const SubTs & ... subs) const {
             static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
                 "at_subs(...) requires all subs should be integral or const_ints");
             return tdp::element_at_subs(layout().data_provider_impl(), subs ...);
@@ -139,21 +114,20 @@ namespace wheels {
     };
     template <class LayoutT>
     class tensor_method_read_element<LayoutT, false, true>
-        : public tensor_base<LayoutT> {
+        : public tensor_method_core<LayoutT> {
     public:
-        WHEELS_TENSOR_METHOD_LAYER(read_element)
         static constexpr bool element_readable_at_index = false;
         static constexpr bool element_readable_at_subs = true;
         // read element at index
         template <class IndexT>
-        constexpr decltype(auto) at_index(const IndexT & index) const {
+        constexpr decltype(auto) at_index_const(const IndexT & index) const {
             return invoke_with_subs(shape(), index, [this](const auto & ... subs) {
                 return tdp::element_at_subs(layout().data_provider_impl(), subs ...);
             });
         }
         // read element at subs
         template <class ... SubTs>
-        constexpr decltype(auto) at_subs(const SubTs & ... subs) const {
+        constexpr decltype(auto) at_subs_const(const SubTs & ... subs) const {
             static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
                 "at_subs(...) requires all subs should be integral or const_ints");
             return tdp::element_at_subs(layout().data_provider_impl(), subs ...);
@@ -161,19 +135,18 @@ namespace wheels {
     };
     template <class LayoutT>
     class tensor_method_read_element<LayoutT, true, false>
-        : public tensor_base<LayoutT> {
+        : public tensor_method_core<LayoutT> {
     public:
-        WHEELS_TENSOR_METHOD_LAYER(read_element)
         static constexpr bool element_readable_at_index = true;
         static constexpr bool element_readable_at_subs = false;
         // read element at index
         template <class IndexT>
-        constexpr decltype(auto) at_index(const IndexT & index) const {
+        constexpr decltype(auto) at_index_const(const IndexT & index) const {
             return tdp::element_at_index(layout().data_provider_impl(), index);
         }
         // read element at subs
         template <class ... SubTs>
-        constexpr decltype(auto) at_subs(const SubTs & ... subs) const {
+        constexpr decltype(auto) at_subs_const(const SubTs & ... subs) const {
             static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
                 "at_subs(...) requires all subs should be integral or const_ints");
             return tdp::element_at_index(layout().data_provider_impl(),
@@ -182,11 +155,18 @@ namespace wheels {
     };
     template <class LayoutT>
     class tensor_method_read_element<LayoutT, false, false>
-        : public tensor_base<LayoutT> {
+        : public tensor_method_core<LayoutT> {
     public:
-        WHEELS_TENSOR_METHOD_LAYER(read_element)
         static constexpr bool element_readable_at_index = false;
         static constexpr bool element_readable_at_subs = false;
+        template <class IndexT> 
+        constexpr int at_index_const(const IndexT & index) const {
+            static_assert(always<bool, false, IndexT>::value, "the data prodiver is not readable");
+        }
+        template <class ... SubTs>
+        constexpr int at_subs_const(const SubTs & ... subs) const {
+            static_assert(always<bool, false, SubTs ...>::value, "the data prodiver is not readable");
+        }
     };
 
 
@@ -197,17 +177,16 @@ namespace wheels {
     class tensor_method_write_element<LayoutT, true, true>
         : public tensor_method_read_element<LayoutT> {
     public:
-        WHEELS_TENSOR_METHOD_LAYER(write_element)
         static constexpr bool element_writable_at_index = true;
         static constexpr bool element_writable_at_subs = true;
         // write element at index
         template <class IndexT>
-        decltype(auto) at_index(const IndexT & index) {
+        decltype(auto) at_index_nonconst(const IndexT & index) {
             return tdp::element_at_index(layout().data_provider_impl(), index);
         }
         // write element at subs
         template <class ... SubTs>
-        decltype(auto) at_subs(const SubTs & ... subs) {
+        decltype(auto) at_subs_nonconst(const SubTs & ... subs) {
             static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
                 "at_subs(...) requires all subs should be integral or const_ints");
             return tdp::element_at_subs(layout().data_provider_impl(), subs ...);
@@ -217,19 +196,18 @@ namespace wheels {
     class tensor_method_write_element<LayoutT, false, true>
         : public tensor_method_read_element<LayoutT> {
     public:
-        WHEELS_TENSOR_METHOD_LAYER(write_element)
         static constexpr bool element_writable_at_index = false;
         static constexpr bool element_writable_at_subs = true;
         // write element at index
         template <class IndexT>
-        decltype(auto) at_index(const IndexT & index) {
+        decltype(auto) at_index_nonconst(const IndexT & index) {
             return invoke_with_subs(shape(), index, [this](const auto & subs ...) {
                 return tdp::element_at_subs(layout().data_provider_impl(), subs ...);
             });
         }
         // write element at subs
         template <class ... SubTs>
-        decltype(auto) at_subs(const SubTs & ... subs) {
+        decltype(auto) at_subs_nonconst(const SubTs & ... subs) {
             static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
                 "at_subs(...) requires all subs should be integral or const_ints");
             return tdp::element_at_subs(layout().data_provider_impl(), subs ...);
@@ -239,19 +217,18 @@ namespace wheels {
     class tensor_method_write_element<LayoutT, true, false>
         : public tensor_method_read_element<LayoutT> {
     public:
-        WHEELS_TENSOR_METHOD_LAYER(write_element)
         static constexpr bool element_writable_at_index = true;
         static constexpr bool element_writable_at_subs = false;
         // write element at index
         template <class IndexT>
-        decltype(auto) at_index(const IndexT & index) {
+        decltype(auto) at_index_nonconst(const IndexT & index) {
             return tdp::element_at_index(layout().data_provider_impl(), index);
         }
         // write element at subs
         template <class ... SubTs>
-        decltype(auto) at_subs(const SubTs & ... subs) {
-            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
-                "at_subs(...) requires all subs should be integral or const_ints");
+        decltype(auto) at_subs_nonconst(const SubTs & ... subs) {
+           /* static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
+                "at_subs(...) requires all subs should be integral or const_ints");*/
             return tdp::element_at_index(layout().data_provider_impl(),
                 sub2ind(shape(), subs ...));
         }
@@ -260,9 +237,16 @@ namespace wheels {
     class tensor_method_write_element<LayoutT, false, false>
         : public tensor_method_read_element<LayoutT> {
     public:
-        WHEELS_TENSOR_METHOD_LAYER(write_element)
         static constexpr bool element_writable_at_index = false;
         static constexpr bool element_writable_at_subs = false;
+        template <class IndexT>
+        constexpr decltype(auto) at_index_nonconst(const IndexT & index) const {
+            return at_index_const(index);
+        }
+        template <class ... SubTs>
+        constexpr decltype(auto) at_subs_nonconst(const SubTs & ... subs) const {
+            return at_subs_const(subs ...);
+        }
     };
 
 
@@ -275,15 +259,14 @@ namespace wheels {
         : public tensor_method_write_element<LayoutT> {
         using this_t = tensor_method_iterate_const<LayoutT, true>;
     public:
-        WHEELS_TENSOR_METHOD_LAYER(iterate_const)
         struct const_iterator : std::iterator<std::random_access_iterator_tag,
-            std::decay_t<decltype(std::declval<this_t &>().method_write_element().at_index(0))>, 
+            typename LayoutT::value_type,
             std::ptrdiff_t> {
             const this_t & self;
             size_t ind;
             constexpr const_iterator(const this_t & s, size_t i = 0) : self(s), ind(i) {}
-            constexpr decltype(auto) operator * () const { return self.method_read_element().at_index(ind); }
-            constexpr decltype(auto) operator -> () const { return self.method_read_element().at_index(ind); }
+            constexpr decltype(auto) operator * () const { return self.at_index_const(ind); }
+            constexpr decltype(auto) operator -> () const { return self.at_index_const(ind); }
             const_iterator & operator ++() { ++ind; return *this; }
             const_iterator & operator --() { assert(ind != 0);  --ind; return *this; }
             const_iterator & operator +=(size_t s) { ind += s; return *this; }
@@ -312,6 +295,14 @@ namespace wheels {
     template <class LayoutT>
     class tensor_method_iterate_const<LayoutT, false>  // not readable
         : public tensor_method_write_element<LayoutT> {
+    public:
+        using const_iterator = void;
+
+        constexpr const_iterator begin() const {}
+        constexpr const_iterator cbegin() const {}
+
+        constexpr const_iterator end() const {}
+        constexpr const_iterator cend() const {}
     };
 
 
@@ -322,15 +313,14 @@ namespace wheels {
         : public tensor_method_iterate_const<LayoutT> {
         using this_t = tensor_method_iterate_nonconst<LayoutT, true>;
     public:
-        WHEELS_TENSOR_METHOD_LAYER(iterate_nonconst)
         struct iterator : std::iterator<std::random_access_iterator_tag, 
-            std::decay_t<decltype(std::declval<this_t &>().method_write_element().at_index(0))>,
+            typename LayoutT::value_type,
             std::ptrdiff_t> {
             this_t & self;
             size_t ind;
             constexpr iterator(this_t & s, size_t i = 0) : self(s), ind(i) {}
-            decltype(auto) operator * () const { return self.method_write_element().at_index(ind); }
-            decltype(auto) operator -> () const { return self.method_write_element().at_index(ind); }
+            decltype(auto) operator * () const { return self.at_index_nonconst(ind); }
+            decltype(auto) operator -> () const { return self.at_index_nonconst(ind); }
             iterator & operator ++() { ++ind; return *this; }
             iterator & operator --() { assert(ind != 0);  --ind; return *this; }
             iterator & operator +=(size_t s) { ind += s; return *this; }
@@ -355,7 +345,13 @@ namespace wheels {
     };
     template <class LayoutT>
     class tensor_method_iterate_nonconst<LayoutT, false>  // not writable
-        : public tensor_method_iterate_const<LayoutT> {};
+        : public tensor_method_iterate_const<LayoutT> {
+    public:
+        using iterator = typename tensor_method_iterate_const<LayoutT>::const_iterator;
+
+        iterator begin() { return cbegin(); }
+        iterator end() { return cend(); }
+    };
 
 
 
@@ -367,44 +363,39 @@ namespace wheels {
     template <class LayoutT>
     class tensor_method_reduce : public tensor_method_iterate_nonconst<LayoutT> {
     public:
-        WHEELS_TENSOR_METHOD_LAYER(reduce)
         // reduce
         template <class T, class ReduceT>
         T accumulate(const T & base, ReduceT && redux) const {
             T result = base;
             if (numel() < _parallel_thres) {
-                return std::accumulate(method_iterate_const().cbegin(),
-                    method_iterate_const().cend(), result, forward<ReduceT>(redux));
+                for (size_t ind = 0; ind < numel(); ind++) {
+                    result = redux(result, at_index_const(ind));
+                }
             } else {
-                return parallel_accumulate(method_iterate_const().cbegin(),
-                    method_iterate_const().cend(), result, forward<ReduceT>(redux),
-                    _parallel_batch);
+                parallel_for_each(numel(), [this, &result, &redux](size_t ind) {
+                    result = redux(result, at_index_const(ind));
+                }, _parallel_batch);
             }
+            return result;
         }
-        auto sum() const {
-            using _value_t = std::decay_t<decltype(method_read_element().at_index(0))>;
-            return accumulate(_value_t(0), binary_op_plus());
-        }
-        auto prod() const {
-            using _value_t = std::decay_t<decltype(method_read_element().at_index(0))>;
-            return accumulate(_value_t(1), binary_op_mul());
-        }
+        auto sum() const { return accumulate(typename LayoutT::value_type(0), binary_op_plus()); }
+        auto mean() const { return sum() / numel(); }
+        auto prod() const { return accumulate(typename LayoutT::value_type(1), binary_op_mul()); }
         bool all() const { return accumulate(true, binary_op_and()); }
         bool any() const { return accumulate(false, binary_op_or()); }
         bool none() const { return !any(); }
 
         // norm_squared
         auto norm_squared() const {
-            using _value_t = std::decay_t<decltype(method_read_element().at_index(0))>;
-            _value_t result = 0;
+            typename LayoutT::value_type result = 0;
             if (numel() < _parallel_thres) {
-                for (int ind = 0; ind < numel(); ind++) {
-                    decltype(auto) e = method_read_element().at_index(ind);
+                for (size_t ind = 0; ind < numel(); ind++) {
+                    decltype(auto) e = at_index_const(ind);
                     result += e * e;
                 }
             } else {
                 parallel_for_each(numel(), [this, &result](size_t ind) {
-                    decltype(auto) e = method_read_element().at_index(ind);
+                    decltype(auto) e = at_index_const(ind);
                     result += e * e;
                 }, _parallel_batch);
             }
@@ -421,13 +412,12 @@ namespace wheels {
 
 
 
-    // tensor_method_assign
+    // tensor_method_copy
     template <class LayoutT>
-    class tensor_method_assign<LayoutT, true> // by index
+    class tensor_method_copy<LayoutT, true> // by index
         : public tensor_method_reduce<LayoutT> {
     public:
-        WHEELS_TENSOR_METHOD_LAYER(assign)
-        static constexpr bool assign_by_index = true;
+        static constexpr bool copy_by_index = true;
         // copy_to
         template <class LayoutToT, bool B1, bool B2>
         void copy_to(tensor_method_write_element<LayoutToT, B1, B2> & to) const {
@@ -436,21 +426,20 @@ namespace wheels {
             tdp::reserve_storage(to.shape(), to.layout().data_provider_impl());
             if (numel() < _parallel_thres) {
                 for (int ind = 0; ind < numel(); ind++) {
-                    to.at_index(ind) = method_read_element().at_index(ind);
+                    to.at_index_nonconst(ind) = at_index_const(ind);
                 }
             } else {
                 parallel_for_each(numel(), [this, &to](size_t ind) {
-                    to.at_index(ind) = method_read_element().at_index(ind);
+                    to.at_index_nonconst(ind) = at_index_const(ind);
                 }, _parallel_batch);
             }
         }
     };
     template <class LayoutT>
-    class tensor_method_assign<LayoutT, false> // by subs
+    class tensor_method_copy<LayoutT, false> // by subs
         : public tensor_method_reduce<LayoutT> {
     public:
-        WHEELS_TENSOR_METHOD_LAYER(assign)
-        static constexpr bool assign_by_index = false;
+        static constexpr bool copy_by_index = false;
         // copy_to
         template <class LayoutToT, bool B1, bool B2>
         void copy_to(tensor_method_write_element<LayoutToT, B1, B2> & to) const {
@@ -459,12 +448,12 @@ namespace wheels {
             tdp::reserve_storage(to.shape(), to.layout().data_provider_impl());
             if (numel() < _parallel_thres) {
                 for_each_subscript(shape(), [this, &to](const auto & ... subs) {
-                    to.at_subs(subs ...) = method_read_element().at_subs(subs ...);
+                    to.at_subs_nonconst(subs ...) = at_subs_const(subs ...);
                 });
             } else {
                 parallel_for_each(numel(), [this, &to](size_t ind) {
                     invoke_with_subs(shape(), ind, [this, &to](const auto & ... subs) {
-                        to.at_subs(subs ...) = method_read_element().at_subs(subs ...);
+                        to.at_subs_nonconst(subs ...) = at_subs_const(subs ...);
                     });
                 }, _parallel_batch);
             }
@@ -493,20 +482,20 @@ namespace wheels {
 
 
 
-    // tensor_fundamental_methods
+    // tensor_base
     template <class LayoutT>
-    class tensor_fundamental_methods : public tensor_method_assign<LayoutT> {
+    class tensor_base : public tensor_method_copy<LayoutT> {
     public:
         using layout_type = LayoutT;
 
         // [...] based on at_index
         template <class E>
         constexpr decltype(auto) operator[](const E & e) const {
-            return method_read_element().at_index(details::_eval_const_expr(e, numel()));
+            return at_index_const(details::_eval_const_expr(e, numel()));
         }
         template <class E>
         decltype(auto) operator[](const E & e) {
-            return method_write_element().at_index(details::_eval_const_expr(e, numel()));
+            return at_index_nonconst(details::_eval_const_expr(e, numel()));
         }
 
         // (...) based on at_subs
@@ -522,14 +511,21 @@ namespace wheels {
     private:
         template <class ... SubEs, int ... Is>
         constexpr decltype(auto) _parenthesis_seq(const_ints<int, Is...>, const SubEs & ... subes) const {
-            return method_read_element().
-                at_subs(details::_eval_const_expr(subes, size(const_int<Is>())) ...);
+            return at_subs_const(details::_eval_const_expr(subes, size(const_int<Is>())) ...);
         }
         template <class ... SubEs, int ... Is>
         decltype(auto) _parenthesis_seq(const_ints<int, Is...>, const SubEs & ... subes) {
-            return method_write_element().
-                at_subs(details::_eval_const_expr(subes, size(const_int<Is>())) ...);
+            return at_subs_nonconst(details::_eval_const_expr(subes, size(const_int<Is>())) ...);
         }
+    };
+
+
+
+    // tensor_extended
+    // overload to implement more methods
+    template <class LayoutT> 
+    class tensor_extended 
+        : public tensor_base<LayoutT> {
     };
 
 
@@ -552,17 +548,18 @@ namespace wheels {
     // tensor_layout with non-static shape
     template <class ShapeT, class DataProviderT>
     class tensor_layout<ShapeT, DataProviderT, false> 
-        : public tensor_fundamental_methods<tensor_layout<ShapeT, DataProviderT, false>> {
+        : public tensor_extended<tensor_layout<ShapeT, DataProviderT, false>> {
         static_assert(is_tensor_shape<ShapeT>::value, "ShapeT should be a tensor_shape");
         static constexpr bool _shape_is_static = false;
 
         template <class ST, class DPT>
         friend constexpr tensor_layout<ST, std::decay_t<DPT>>
-            compose_tensor_layout(const ST & shape, DPT && dp);
+            compose_tensor(const ST & shape, DPT && dp);
 
     public:  
         using shape_type = ShapeT;
         using data_provider_type = DataProviderT; 
+        using value_type = typename DataProviderT::value_type;
         
     public:
         template <wheels_enable_if(tdp::is_default_constructible<data_provider_type>::value)>
@@ -635,17 +632,18 @@ namespace wheels {
     // tensor_layout with static shape
     template <class ShapeT, class DataProviderT>
     class tensor_layout<ShapeT, DataProviderT, true> 
-        : public tensor_fundamental_methods<tensor_layout<ShapeT, DataProviderT, true>> {
+        : public tensor_extended<tensor_layout<ShapeT, DataProviderT, true>> {
         static_assert(is_tensor_shape<ShapeT>::value, "ShapeT should be a tensor_shape");
         static constexpr bool _shape_is_static = true;
 
         template <class ST, class DPT>
         friend constexpr tensor_layout<ST, std::decay_t<DPT>>
-            compose_tensor_layout(const ST & shape, DPT && dp);
+            compose_tensor(const ST & shape, DPT && dp);
 
     public:
         using shape_type = ShapeT;
         using data_provider_type = DataProviderT;
+        using value_type = typename DataProviderT::value_type;
 
     public:
         template <wheels_enable_if(tdp::is_constructible_with_shape<data_provider_type>::value)>
@@ -697,43 +695,76 @@ namespace wheels {
         DataProviderT _data_provider;
     };
 
-    // is_tensor_layout
-    template <class T> struct is_tensor_layout : no {};
+
+
+    // is_tensor
+    template <class T> struct is_tensor : no {};
     template <class ShapeT, class DataProviderT, bool B>
-    struct is_tensor_layout<tensor_layout<ShapeT, DataProviderT, B>> : yes {};
+    struct is_tensor<tensor_layout<ShapeT, DataProviderT, B>> : yes {};
 
 
-    // compose_tensor_layout
+    // compose_tensor
     template <class ST, class DPT>
-    constexpr tensor_layout<ST, std::decay_t<DPT>> compose_tensor_layout(const ST & shape, DPT && dp) {
+    constexpr tensor_layout<ST, std::decay_t<DPT>> compose_tensor(const ST & shape, DPT && dp) {
         return tensor_layout<ST, std::decay_t<DPT>>(shape, forward<DPT>(dp));
     }
 
 
-    template <class T, size_t N> using vec_ = 
-        tensor_layout<tensor_shape<size_t, const_size<N>>, std::array<T, N>>;
+
+
+    namespace details {
+        template <class T, class ShapeT, bool ShapeIsStatic = ShapeT::is_static>
+        struct _recommend_data_provider {
+            using type = std::vector<T>;
+        };
+        template <class T, class ShapeT>
+        struct _recommend_data_provider<T, ShapeT, true> {
+            static constexpr size_t M = decltype(std::declval<ShapeT>().magnitude())::value;
+            using type = std::array<T, M>;
+        };
+    }
+
+    // tensor
+    template <class T, class ShapeT> using tensor =
+        tensor_layout<ShapeT, typename details::_recommend_data_provider<T, ShapeT>::type>;
+
+    // tensor_sparse
+    template <class T, class ShapeT> using tensor_sparse =
+        tensor_layout<ShapeT, tdp::dictionary<size_t, T>>;
+
+
+
+    // vec_
+    template <class T, size_t N> using vec_ =
+        tensor<T, tensor_shape<size_t, const_size<N>>>;
     using vec2 = vec_<double, 2>;
     using vec3 = vec_<double, 3>;
     using vec4 = vec_<double, 4>;
-    template <class T> using vecx_ = 
-        tensor_layout<tensor_shape<size_t>, std::vector<T>>;
+    template <class T> using vecx_ =
+        tensor<T, tensor_shape<size_t, size_t>>;
     using vecx = vecx_<double>;
+    using vecsp = tensor_sparse<double, tensor_shape<size_t, size_t>>;
 
+    // mat_
     template <class T, size_t M, size_t N> using mat_ =
-        tensor_layout<tensor_shape<size_t, const_size<M>, const_size<N>>, std::array<T, M * N>>;
+        tensor<T, tensor_shape<size_t, const_size<M>, const_size<N>>>;
     using mat2x2 = mat_<double, 2, 2>;
     using mat2x3 = mat_<double, 2, 3>;
     using mat3x2 = mat_<double, 3, 2>;
     using mat3x3 = mat_<double, 3, 3>;
-    template <class T> using matx_ = 
-        tensor_layout<tensor_shape<size_t, size_t, size_t>, std::vector<T>>;
+    template <class T> using matx_ =
+        tensor<T, tensor_shape<size_t, size_t, size_t>>;
     using matx = matx_<double>;
+    using matsp = tensor_sparse<double, tensor_shape<size_t, size_t, size_t>>;
 
+    // cube_
     template <class T, size_t S1, size_t S2, size_t S3> using cube_ =
-        tensor_layout<tensor_shape<size_t, const_size<S1>, const_size<S2>, const_size<S3>>, std::array<T, S1 * S2 * S3>>;
+        tensor<T, tensor_shape<size_t, const_size<S1>, const_size<S2>, const_size<S3>>>;
     template <class T> using cubex_ =
-        tensor_layout<tensor_shape<size_t, size_t, size_t, size_t>, std::vector<T>>;
+        tensor<T, tensor_shape<size_t, size_t, size_t, size_t>>;
     using cubex = cubex_<double>;
+    using cubesp = tensor_sparse<double, tensor_shape<size_t, size_t, size_t, size_t>>;
+
 
 
 }

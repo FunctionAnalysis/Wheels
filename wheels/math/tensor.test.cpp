@@ -31,3 +31,10 @@ TEST(math, tensor_dynamic) {
     matx m2(make_shape(2, 2));
     matx m3(make_shape(2_c, 2), with_elements, 1, 2, 3, 4);
 }
+
+TEST(math, tensor_sparse) {
+    matsp m1(make_shape(100, 100));
+    m1(1, 2) = 3;
+    m1(last, last) = 5;
+    println(std::cout, m1.sum(), " ", m1.norm());
+}

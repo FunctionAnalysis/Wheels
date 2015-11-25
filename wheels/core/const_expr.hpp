@@ -6,10 +6,17 @@
 namespace wheels {
 
     template <class T> struct is_const_expr : no {};
+    template <class DerivedT>
+    struct const_expr_base {
+        constexpr const_expr_base() {}
+        constexpr const DerivedT & derived() const { 
+            return (const DerivedT &)(*this); 
+        }
+    };
 
     // const_symbol
     template <size_t Idx>
-    struct const_symbol {
+    struct const_symbol : const_expr_base<const_symbol<Idx>> {
         constexpr const_symbol() {}
         template <class ... ArgTs>
         constexpr auto operator()(const ArgTs & ... args) const {
@@ -30,7 +37,7 @@ namespace wheels {
 
     // const_coeff
     template <class T>
-    struct const_coeff {
+    struct const_coeff : const_expr_base<const_coeff<T>> {
         static_assert(!is_const_expr<T>::value, "const_coeff should not be nested");
         T val;
         template <class TT>
@@ -49,7 +56,7 @@ namespace wheels {
 
     // const_unary_op
     template <class Op, class E>
-    struct const_unary_op {
+    struct const_unary_op : const_expr_base<const_unary_op<Op, E>>{
         Op op;
         E e;
         template <class OpT, class T>
@@ -66,7 +73,7 @@ namespace wheels {
 
     // const_binary_op
     template <class Op, class E1, class E2>
-    struct const_binary_op {
+    struct const_binary_op : const_expr_base<const_binary_op<Op, E1, E2>>{
         Op op;
         E1 e1;
         E2 e2;
@@ -84,35 +91,31 @@ namespace wheels {
 
 
 #define WHEELS_CONST_EXPR_OVERLOAD_UNARY_OP(op, name) \
-    template <class E, class = std::enable_if_t<is_const_expr<std::decay_t<E>>::value>> \
-    constexpr auto operator op (E && e) { \
+    template <class E> \
+    constexpr auto operator op (const const_expr_base<E> & e) { \
         using _op_t = unary_op_##name; \
-        return const_unary_op<_op_t, std::decay_t<E>> (_op_t(), forward<E>(e)); \
+        return const_unary_op<_op_t, E> (_op_t(), e.derived()); \
     }
     WHEELS_CONST_EXPR_OVERLOAD_UNARY_OP(-, minus)
 
 
 #define WHEELS_CONST_EXPR_OVERLOAD_BINARY_OP(op, name) \
-    template <class E1, class E2, class =  \
-        std::enable_if_t<is_const_expr<std::decay_t<E1>>::value && \
-        is_const_expr<std::decay_t<E2>>::value>>  \
-    constexpr auto operator op (E1 && e1, E2 && e2) { \
+    template <class E1, class E2>  \
+    constexpr auto operator op (const const_expr_base<E1> & e1, const const_expr_base<E2> & e2) { \
         using _op_t = binary_op_##name; \
-        return const_binary_op<_op_t, E1, E2> (_op_t(), forward<E1>(e1), forward<E2>(e2)); \
+        return const_binary_op<_op_t, E1, E2> (_op_t(), e1.derived(), e2.derived()); \
     } \
     template <class E1, class E2, class = \
-        std::enable_if_t<is_const_expr<std::decay_t<E1>>::value && \
-        !(is_const_expr<std::decay_t<E2>>::value)>, \
+        std::enable_if_t<!(is_const_expr<std::decay_t<E2>>::value)>, \
         class = void> \
-    constexpr auto operator op (E1 && e1, E2 && e2) { \
-        return forward<E1>(e1) op as_const_coeff(forward<E2>(e2)); \
+    constexpr auto operator op (const const_expr_base<E1> & e1, E2 && e2) { \
+        return e1.derived() op as_const_coeff(forward<E2>(e2)); \
     } \
     template <class E1, class E2, class = \
-        std::enable_if_t<!(is_const_expr<std::decay_t<E1>>::value) && \
-        is_const_expr<std::decay_t<E2>>::value>, \
+        std::enable_if_t<!(is_const_expr<std::decay_t<E1>>::value)>, \
         class = void, class = void> \
-    constexpr auto operator op (E1 && e1, E2 && e2) { \
-        return as_const_coeff(forward<E1>(e1)) op forward<E2>(e2); \
+    constexpr auto operator op (E1 && e1, const const_expr_base<E2> & e2) { \
+        return as_const_coeff(forward<E1>(e1)) op e2.derived(); \
     } 
 
     WHEELS_CONST_EXPR_OVERLOAD_BINARY_OP(+, plus)

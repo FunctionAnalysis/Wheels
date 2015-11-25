@@ -21,7 +21,7 @@ TEST(math, tensor_constants) {
     ASSERT_TRUE(cube.size(1_c) == 2);
     ASSERT_TRUE(cube.size(2_c) == 3);
 
-    for (auto & e : cube.storage()) {
+    for (auto & e : cube) {
         ASSERT_TRUE(e == 1);
     }
 
@@ -36,13 +36,13 @@ TEST(math, tensor_constants) {
         ASSERT_TRUE(i == j && j == k ? (e(i, j, k) == 1) : (e(i, j, k) == 0));
     });
 
-    //println(std::cout, time_cost([&e]() {
-    //    auto sine = log(tanh(asin(sin(e)) * 2 + 5 - ones(e.shape()) / 4.0 - 3 + zeros(e.shape())));
-    //    auto s2 = sine * 3.0 + sine / 5.0 - sine * 3.0 - sine * 0.2;
-    //    std::cout << s2.sum() << std::endl;
-    //    std::cout << s2.prod() << std::endl;
-    //    std::cout << s2.norm() << std::endl;
-    //}));
+    println(std::cout, time_cost([&e]() {
+        auto sine = log(tanh(asin(sin(e)) * 2 + 5 - ones(e.shape()) / 4.0 - 3 + zeros(e.shape())));
+        auto s2 = sine * 3.0 + sine / 5.0 - sine * 3.0 - sine * 0.2;
+        std::cout << s2.sum() << std::endl;
+        std::cout << s2.prod() << std::endl;
+        std::cout << s2.norm() << std::endl;
+    }));
 
 
     auto it = iota(3_c, 4_c);

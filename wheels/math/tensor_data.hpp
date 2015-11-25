@@ -5,7 +5,6 @@
 #include <amp.h>
 
 #include "../core/types.hpp"
-#include "../core/platforms.hpp"
 
 #include "tensor_shape.hpp"
 
@@ -50,6 +49,12 @@ namespace wheels {
         struct is_element_writable_at_subs : no {};
 
 
+        // iteration
+        template <class T>
+        struct is_selective_iteratable : no {};
+
+
+
 
         // predefinitions
 
@@ -58,9 +63,14 @@ namespace wheels {
         template <class E, size_t N>
         struct is_constructible_with_shape<std::array<E, N>> : yes {};
 
+        
+        template <class E, size_t N, size_t ... Is>
+        constexpr std::array<E, N> _construct_std_array_seq(types<std::array<E, N>>, const_ints<size_t, Is...>) {
+            return{ { always<int, 0, const_index<Is>>::value ... } };
+        }
         template <class E, size_t N, class ShapeT>
-        constexpr std::array<E, N> construct_with_shape(types<std::array<E, N>>, const ShapeT & shape) {
-            return std::array<E, N>();
+        constexpr std::array<E, N> construct_with_shape(types<std::array<E, N>> t, const ShapeT & shape) {
+            return _construct_std_array_seq(t, make_const_sequence(const_size<N>()));
         }
 
         template <class E, size_t N>
@@ -154,6 +164,73 @@ namespace wheels {
         inline void reserve_storage(const ShapeT & shape, std::vector<E, AllocT> & a) {
             a.resize(shape.magnitude());
         }
+
+
+
+
+
+        // dictionary
+        template <class IndexT, class T, class InternalT = std::map<IndexT, T>>
+        struct dictionary {
+            using value_type = T;
+            InternalT internal;
+            template <class Archiver>
+            void serialize(Archiver & ar) {
+                ar(internal);
+            }
+        };
+
+        template <class IndexT, class T, class InternalT>
+        struct is_constructible_with_shape<dictionary<IndexT, T, InternalT>> : yes {};
+
+        template <class IndexT, class T, class InternalT, class ShapeT>
+        inline dictionary<IndexT, T, InternalT> construct_with_shape(types<dictionary<IndexT, T, InternalT>>, 
+            const ShapeT & shape) {
+            return dictionary<IndexT, T, InternalT>();
+        }
+
+        template <class IndexT, class T, class InternalT>
+        struct is_constructible_with_elements<dictionary<IndexT, T, InternalT>> : yes {};
+
+        template <class IndexT, class T, class InternalT, class ... EleTs>
+        inline dictionary<IndexT, T, InternalT> construct_with_elements(types<dictionary<IndexT, T, InternalT>>, 
+            const EleTs & ... eles) {
+            dictionary<IndexT, T, InternalT> d;
+            const std::array<T, sizeof...(EleTs)> eles_array = { { (T)eles... } };
+            for (IndexT i = 0; i < eles_array.size(); i++) {
+                if (eles_array[i]) {
+                    d.internal.emplace(i, eles_array[i]);
+                }
+            }
+            return d;
+        }
+
+        template <class IndexT, class T, class InternalT>
+        struct is_constructible_with_shape_elements<dictionary<IndexT, T, InternalT>> : yes {};
+
+        template <class IndexT, class T, class InternalT, class ShapeT, class ... EleTs>
+        inline dictionary<IndexT, T, InternalT> construct_with_shape_elements(types<dictionary<IndexT, T, InternalT>> t,
+            const ShapeT & shape, const EleTs & ... eles) {
+            return construct_with_elements(t, eles ...);
+        }
+
+        // accessing elements
+        template <class IndexT, class T, class InternalT>
+        struct is_element_readable_at_index<dictionary<IndexT, T, InternalT>> : yes {};
+
+        template <class IndexT, class T, class InternalT>
+        inline T element_at_index(const dictionary<IndexT, T, InternalT> & a, const IndexT & index) {
+            return a.internal.find(index) == a.internal.end() ? T() : a.internal.at(index);
+        }
+
+        template <class IndexT, class T, class InternalT>
+        struct is_element_writable_at_index<dictionary<IndexT, T, InternalT>> : yes {};
+
+        template <class IndexT, class T, class InternalT>
+        inline T & element_at_index(dictionary<IndexT, T, InternalT> & a, const IndexT & index) {
+            return a.internal[index];
+        }
+
 
     }
     
