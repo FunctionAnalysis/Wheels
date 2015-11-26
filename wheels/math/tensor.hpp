@@ -365,7 +365,6 @@ namespace wheels {
     template <class LayoutT>
     class tensor_method_reduce : public tensor_method_iterate_nonconst<LayoutT> {
     public:
-        using value_type = typename LayoutT::value_type;
         // reduce
         template <class T, class ReduceT>
         T reduce(const T & base, ReduceT && redux) const {
@@ -375,22 +374,21 @@ namespace wheels {
                     result = redux(result, at_index_const(ind));
                 }
             } else {
-                parallel_for_each(numel(), [this, &result, &redux](size_t ind) {
-                    result = redux(result, at_index_const(ind));
-                }, _parallel_batch);
+                result = parallel_reduce(cbegin(), cend(), base, forward<ReduceT>(redux), 
+                    _parallel_batch);
             }
             return result;
         }
-        auto sum() const { return reduce(value_type(0), binary_op_plus()); }
+        auto sum() const { return reduce(typename LayoutT::value_type(0), binary_op_plus()); }
         auto mean() const { return sum() / numel(); }
-        auto prod() const { return reduce(value_type(1), binary_op_mul()); }
+        auto prod() const { return reduce(typename LayoutT::value_type(1), binary_op_mul()); }
         bool all() const { return reduce(true, binary_op_and()); }
         bool any() const { return reduce(false, binary_op_or()); }
         bool none() const { return !any(); }
 
         // norm_squared
         auto norm_squared() const {
-            value_type result = 0;
+            typename LayoutT::value_type result = 0;
             if (numel() < _parallel_thres) {
                 for (size_t ind = 0; ind < numel(); ind++) {
                     decltype(auto) e = at_index_const(ind);

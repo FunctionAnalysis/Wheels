@@ -57,7 +57,7 @@ namespace wheels {
 
 
     template <class IterT, class T, class ReduceT>
-    T parallel_accumulate(IterT begin, IterT end, const T & initial, ReduceT && redux, size_t batch_num = 1,
+    T parallel_reduce(IterT begin, IterT end, const T & initial, ReduceT && redux, size_t batch_num = 1,
         size_t concurrency_num = std::thread::hardware_concurrency()) {
         std::vector<std::future<T>> futures;
         futures.reserve(concurrency_num);
