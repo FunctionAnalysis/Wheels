@@ -3,6 +3,7 @@
 #include <cassert>
 
 #include "../core/const_expr.hpp"
+#include "../core/parallel.hpp"
 
 #include "tensor_shape.hpp"
 #include "tensor_utility.hpp"
@@ -358,44 +359,32 @@ namespace wheels {
 
 
 
-    
 
+    // reshape
+    template <class CategoryT>
+    using ts_inplace_reshapable_base = ts_nonzero_iteratable<CategoryT>;
 
-
-    // assignable
     namespace ts_props {
         template <class CategoryT>
-        void reserve_impl(const ts_base<CategoryT> & t, size_t s){}
+        struct inplace_reshapable : no {};        
+        template <class ShapeT, class DataProviderT>
+        struct inplace_reshapable<ts_category<ShapeT, DataProviderT>>
+            : const_bool<ShapeT::is_static> {};
     }
 
-    // assign base/impl
-    template <class CategoryT> using ts_assign_inherit = ts_reserve_impl<CategoryT>;
-    template <class CategoryT> class ts_assign_impl;
-    template <class CategoryT>
-    class ts_assign : public ts_assign_inherit<CategoryT> {
-        WHEELS_DEFINE_TS_FRAME_IMPL(ts_assign)
+    template <class CategoryT, 
+        bool InplaceReshapable = ts_props::inplace_reshapable<CategoryT>::value>
+    class ts_inplace_reshapable : public ts_inplace_reshapable_base<CategoryT> {
     public:
-        template <class LayoutFromT>
-        void assign_from(const ts_base<LayoutFromT> & from) { impl().assign_from_impl(to); }
+        template <class ShapeT> 
+        void reshape_inplace(const ShapeT &) {}
     };
     template <class CategoryT>
-    class ts_assign_impl : public ts_assign<CategoryT> {
-        static constexpr size_t _parallel_thres = 70000;
-        static constexpr size_t _parallel_batch = 35000;
+    class ts_inplace_reshapable<CategoryT, true> : public ts_inplace_reshapable_base<CategoryT> {
     public:
-        template <class LayoutFromT>
-        void assign_from_impl(const ts_base<LayoutFromT> & from) {
-            assert(shape() == to.shape());
-            reserve(numel());
-            if (numel() < _parallel_thres) {
-                for (size_t ind = 0; ind < numel(); ind++) {
-                    at_index_nonconst(ind) = from.at_index_const(ind);
-                }
-            } else {
-                parallel_for_each(numel(), [this, &from](size_t ind) {
-                    at_index_nonconst(ind) = from.at_index_const(ind);
-                }, _parallel_batch);
-            }
+        template <class ShapeT> 
+        void reshape_inplace(const ShapeT & s) {
+            category().shape_impl() = s;
         }
     };
 
@@ -403,37 +392,87 @@ namespace wheels {
 
 
 
-    // ext base/impl
-    template <class CategoryT> using ts_ext_inherit = ts_assign_impl<CategoryT>;
+    // assignable
+    template <class CategoryT> 
+    using ts_assignable_base = ts_inplace_reshapable<CategoryT>;
+    
+    namespace ts_props {
+
+        template <class CategoryT>
+        struct assignable : writable<CategoryT> {};
+
+        template <class CategoryT>
+        void reserve_impl(ts_base<CategoryT> & t, size_t s){}
+
+        static constexpr size_t _parallel_thres = 70000;
+        static constexpr size_t _parallel_batch = 35000;
+
+        template <class CategoryT1, bool WInd1, bool WInd2, 
+            class CategoryT2, bool RInd1, bool RInd2>
+        void assign_impl(ts_writable<CategoryT1, WInd1, WInd2, true> & to,
+            const ts_readable<CategoryT2, RInd1, RInd2, true> & from){
+            if (numel() < _parallel_thres) {
+                for (size_t ind = 0; ind < numel(); ind++) {
+                    to.at_index_nonconst(ind) = from.at_index_const(ind);
+                }
+            } else {
+                parallel_for_each(numel(), [&to, &from](size_t ind) {
+                    to.at_index_nonconst(ind) = from.at_index_const(ind);
+                }, _parallel_batch);
+            }
+        }
+    }
+
+    template <class CategoryT, bool Assignable = ts_props::assignable<CategoryT>::value>
+    class ts_assignable : public ts_assignable_base<CategoryT> {};
     template <class CategoryT>
-    class ts_ext : public ts_ext_inherit<CategoryT> {};
+    class ts_assignable<CategoryT, true> : public ts_assignable_base<CategoryT> {
+    public:
+        template <class CategoryT2, bool RInd, bool RSub>
+        CategoryT & operator = (const ts_readable<CategoryT2, RInd, RSub, true> & from) {
+            reshape_inplace(from.shape());
+            assert(shape() == to.shape());
+            ts_props::reserve_impl(*this, numel());
+            ts_props::assign_impl(*this, from);
+            return category();
+        }
+    };
+
+
+
+
+
+    // extensions
+    template <class CategoryT> 
+    using ts_extensions_base = ts_assignable<CategoryT>;
     template <class CategoryT>
-    class ts_ext_impl : public ts_ext<CategoryT> {};
+    class ts_extensions : public ts_extensions_base<CategoryT> {};
+
+
+
 
     // storage
     template <class CategoryT> 
-    using ts_storage_inherit = ts_ext_impl<CategoryT>;
-
-
-    namespace details {
-        template <class T>
-        struct _static_shape_in_category {
-            static constexpr bool value = false;
-        };
-        template <class ShapeT, class DPT>
-        struct _static_shape_in_category<ts_category<ShapeT, DPT>> {
-            static constexpr bool value = ShapeT::is_static;
-        };
-    }
-
+    using ts_storage_base = ts_extensions<CategoryT>;
+    
     template <class CategoryT, 
-        bool ShapeIsStatic = details::_static_shape_in_category<CategoryT>::value> class ts_storage;
+        bool InPlaceReshapable = ts_props::inplace_reshapable<CategoryT>> 
+    class ts_storage {};
+
+
+    struct _with_args {};
+    constexpr _with_args with_args;
+
+    
     template <class ShapeT, class DataProviderT>
-    class ts_storage<ts_category<ShapeT, DataProviderT>, true>
-        : public ts_storage_inherit<ts_category<ShapeT, DataProviderT>> {
+    class ts_storage<ts_category<ShapeT, DataProviderT>, false> 
+        : public ts_storage_base<ts_category<ShapeT, DataProviderT>> {
     public:
+        template <class DPT>
+        constexpr ts_storage(const ShapeT & s, DPT && dp)
+            : _data_provider(forward<DPT>(dp)) {}
         template <class ... ArgTs>
-        constexpr explicit ts_storage(const ShapeT & s, ArgTs && ... args)
+        constexpr explicit ts_storage(const with_args &, const ShapeT & s, ArgTs && ... args)
             : _data_provider(forward<ArgTs>(args) ...) {}
     public:
         constexpr ShapeT shape_impl() const { return ShapeT(); }
@@ -442,16 +481,20 @@ namespace wheels {
     private:
         DataProviderT _data_provider;
     };
+
     template <class ShapeT, class DataProviderT>
-    class ts_storage<ts_category<ShapeT, DataProviderT>, false>
-        : public ts_storage_inherit<ts_category<ShapeT, DataProviderT>> {
+    class ts_storage<ts_category<ShapeT, DataProviderT>, true>
+        : public ts_storage_base<ts_category<ShapeT, DataProviderT>> {
     public:
         using shape_type = ShapeT;
         using data_provider_type = DataProviderT;
         using value_type = typename data_provider_type::value_type;
     public:
+        template <class DPT>
+        constexpr ts_storage(const ShapeT & s, DPT && dp)
+            : _shape(s), _data_provider(forward<DPT>(dp)) {}
         template <class ... ArgTs>
-        constexpr explicit ts_storage(const ShapeT & s, ArgTs && ... args) 
+        constexpr explicit ts_storage(const with_args &, const ShapeT & s, ArgTs && ... args) 
             : _shape(s), _data_provider(forward<ArgTs>(args) ...) {}
     public:
         constexpr const ShapeT & shape_impl() const { return _shape; }
@@ -464,7 +507,12 @@ namespace wheels {
     };
 
     template <class CategoryT> 
-    using ts_category_inherit = ts_storage<CategoryT>;
+    using ts_category_base = ts_storage<CategoryT>;
+
+
+
+
+
 
 
 }
