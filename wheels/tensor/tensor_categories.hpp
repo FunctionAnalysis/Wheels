@@ -9,8 +9,8 @@ namespace wheels {
 
     // array
     template <class ShapeT, class E, size_t N>
-    class ts_ele_reader_impl<ts_category<ShapeT, std::array<E, N>>> 
-        : public ts_ele_reader<ts_category<ShapeT, std::array<E, N>>, true, false> {
+    class ts_element_reader<ts_category<ShapeT, std::array<E, N>>> 
+        : public ts_element_readable<ts_category<ShapeT, std::array<E, N>>, true, false> {
     public:
         // read element at index
         template <class IndexT>
@@ -20,8 +20,8 @@ namespace wheels {
     };
 
     template <class ShapeT, class E, size_t N>
-    class ts_ele_writer_impl<ts_category<ShapeT, std::array<E, N>>>
-        : public ts_ele_writer<ts_category<ShapeT, std::array<E, N>>, true, false> {
+    class ts_element_writer<ts_category<ShapeT, std::array<E, N>>>
+        : public ts_element_writable<ts_category<ShapeT, std::array<E, N>>, true, false> {
     public:
         // read element at index
         template <class IndexT>

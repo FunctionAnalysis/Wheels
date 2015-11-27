@@ -9,6 +9,13 @@ file (GLOB core_sources
 )
 source_group ("core" FILES ${core_sources})
 
+file (GLOB tensor_sources 
+	"${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.cpp" 
+	"${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.hpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.cu" 
+	"${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.cuh")
+source_group ("tensor" FILES ${tensor_sources})
+
 file (GLOB math_sources 
 	"${CMAKE_CURRENT_SOURCE_DIR}/math/*.cpp" 
 	"${CMAKE_CURRENT_SOURCE_DIR}/math/*.hpp"
@@ -17,7 +24,7 @@ file (GLOB math_sources
 source_group ("math" FILES ${math_sources})
 
 
-set (wheels_sources ${core_sources} ${math_sources})
+set (wheels_sources ${core_sources} ${tensor_sources} ${math_sources})
 file (GLOB_RECURSE wheels_test_sources "." *.test.cpp *.test.hpp *.test.cu *.test.cuh)
 # remove test sources from the lib sources
 list (REMOVE_ITEM wheels_sources ${wheels_test_sources})
