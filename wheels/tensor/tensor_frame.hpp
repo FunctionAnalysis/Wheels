@@ -429,11 +429,15 @@ namespace wheels {
     class ts_assignable<CategoryT, true> : public ts_assignable_base<CategoryT> {
     public:
         template <class CategoryT2, bool RInd, bool RSub>
-        CategoryT & operator = (const ts_readable<CategoryT2, RInd, RSub, true> & from) {
+        void assign_from(const ts_readable<CategoryT2, RInd, RSub, true> & from) {
             reshape_inplace(from.shape());
             assert(shape() == to.shape());
             ts_props::reserve_impl(*this, numel());
             ts_props::assign_impl(*this, from);
+        }
+        template <class CategoryT2, bool RInd, bool RSub>
+        CategoryT & operator = (const ts_readable<CategoryT2, RInd, RSub, true> & from) {
+            assign_from(from);
             return category();
         }
     };
@@ -456,7 +460,7 @@ namespace wheels {
     using ts_storage_base = ts_extensions<CategoryT>;
     
     template <class CategoryT, 
-        bool InPlaceReshapable = ts_props::inplace_reshapable<CategoryT>> 
+        bool InPlaceReshapable = ts_props::inplace_reshapable<CategoryT>::value> 
     class ts_storage {};
 
 
@@ -472,7 +476,7 @@ namespace wheels {
         constexpr ts_storage(const ShapeT & s, DPT && dp)
             : _data_provider(forward<DPT>(dp)) {}
         template <class ... ArgTs>
-        constexpr explicit ts_storage(const with_args &, const ShapeT & s, ArgTs && ... args)
+        constexpr explicit ts_storage(const _with_args &, const ShapeT & s, ArgTs && ... args)
             : _data_provider(forward<ArgTs>(args) ...) {}
     public:
         constexpr ShapeT shape_impl() const { return ShapeT(); }
@@ -494,7 +498,7 @@ namespace wheels {
         constexpr ts_storage(const ShapeT & s, DPT && dp)
             : _shape(s), _data_provider(forward<DPT>(dp)) {}
         template <class ... ArgTs>
-        constexpr explicit ts_storage(const with_args &, const ShapeT & s, ArgTs && ... args) 
+        constexpr explicit ts_storage(const _with_args &, const ShapeT & s, ArgTs && ... args)
             : _shape(s), _data_provider(forward<ArgTs>(args) ...) {}
     public:
         constexpr const ShapeT & shape_impl() const { return _shape; }
