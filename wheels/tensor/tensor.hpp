@@ -247,10 +247,12 @@ namespace wheels {
 
 
     // sparse tensor based on 
-    template <class E, class IndexerT = std::map<size_t, E>>
+    template <class E, class IndexerT>
     struct sparse_dictionary {
         using value_type = E;
         static_assert(std::is_same<E, typename IndexerT::value_type::second_type>::value, "invalid IndexerT");
+        using nonzero_iterator = second_in_pair_iterator_of<typename IndexerT::const_iterator>;
+
         IndexerT indexer;
 
         template <class IndexT>
@@ -267,10 +269,10 @@ namespace wheels {
         }
 
         auto nzbegin() const {
-            return second_in_pair_iterator_of<typename IndexerT::const_iterator>(indexer.cbegin());
+            return nonzero_iterator(indexer.cbegin());
         }
         auto nzend() const {
-            return second_in_pair_iterator_of<typename IndexerT::const_iterator>(indexer.cend());
+            return nonzero_iterator(indexer.cend());
         }
 
         void clear() { indexer.clear(); }
@@ -299,7 +301,7 @@ namespace wheels {
         // nonzero iteratable
         template <class ShapeT, class E, class IndexerT>
         struct nonzero_iterator_type<ts_category<ShapeT, sparse_dictionary<E, IndexerT>>> {
-            using type = second_in_pair_iterator_of<typename IndexerT::const_iterator>;
+            using type = typename sparse_dictionary<E, IndexerT>::nonzero_iterator;
         };
 
         template <class ShapeT, class E, class IndexerT>
@@ -372,17 +374,12 @@ namespace wheels {
 
 
     template <class E>
-    using spvec_ = ts_category<tensor_shape<size_t, size_t>, sparse_dictionary<E>>;
+    using spvec_ = ts_category<tensor_shape<size_t, size_t>, sparse_dictionary<E, std::map<size_t, E>>>;
     using spvec = spvec_<double>;
 
     template <class E>
-    using spmat_ = ts_category<tensor_shape<size_t, size_t, size_t>, sparse_dictionary<E>>;
+    using spmat_ = ts_category<tensor_shape<size_t, size_t, size_t>, sparse_dictionary<E, std::map<size_t, E>>>;
     using spmat = spmat_<double>;
-
-
-
-
-
 
 
 }

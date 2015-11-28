@@ -108,6 +108,4 @@ TEST(tensor, sparse) {
         }
     }
 
-
-
 }
