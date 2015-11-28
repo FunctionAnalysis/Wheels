@@ -369,7 +369,7 @@ namespace wheels {
         struct inplace_reshapable : no {};        
         template <class ShapeT, class DataProviderT>
         struct inplace_reshapable<ts_category<ShapeT, DataProviderT>>
-            : const_bool<ShapeT::is_static> {};
+            : const_bool<!ShapeT::is_static> {};
     }
 
     template <class CategoryT, 
