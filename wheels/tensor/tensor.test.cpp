@@ -81,7 +81,7 @@ TEST(tensor, dynamic_sized) {
 
 TEST(tensor, sparse) {
 
-    spvec va(make_shape(100));
+    spvec va(make_shape(1000));
     va[2] = 2;
     va[99] = 99;
     
@@ -89,8 +89,25 @@ TEST(tensor, sparse) {
 
     spvec_<std::complex<double>> vb;
     vb = va;
-
+    ASSERT_TRUE(vb.shape() == va.shape());
     ASSERT_TRUE(vb[2] == 2.0);
     ASSERT_TRUE(vb[99] == 99.0);
+    for (size_t i = 0; i < vb.numel(); i++) {
+        if (i != 2 && i != 99) {
+            ASSERT_TRUE(vb.at_index_const(i) == 0.0);
+        }
+    }
+
+    vecx_<std::complex<double>> vc = vb;
+    ASSERT_TRUE(vc.shape() == vb.shape());
+    ASSERT_TRUE(vc[2] == 2.0);
+    ASSERT_TRUE(vc[99] == 99.0);
+    for (size_t i = 0; i < vc.numel(); i++) {
+        if (i != 2 && i != 99) {
+            ASSERT_TRUE(vc.at_index_const(i) == 0.0);
+        }
+    }
+
+
 
 }

@@ -8,8 +8,11 @@
 
 namespace wheels {
 
+    // category definitions
+
+
     // fix sized tensor based on std::array
-    namespace ts_props {
+    namespace ts_traits {
 
         // readable
         template <class ShapeT, class E, size_t N>
@@ -107,8 +110,13 @@ namespace wheels {
     using mat3x3 = mat_<double, 3, 3>;
 
 
+
+
+
+
+
     // dynamic sized tensor based on std::vector
-    namespace ts_props {
+    namespace ts_traits {
 
         // readable
         template <class ShapeT, class E, class AllocT>
@@ -173,8 +181,8 @@ namespace wheels {
 
         // reserve
         template <class ShapeT, class E, class AllocT>
-        void reserve_impl(ts_base<ts_category<ShapeT, std::vector<E, AllocT>>> & t, size_t s) {
-            t.data_provider().resize(s);
+        void reserve_impl(ts_category<ShapeT, std::vector<E, AllocT>> & t, size_t s) {
+            t.data_provider().resize(s, 0);
         }
 
     }
@@ -184,13 +192,13 @@ namespace wheels {
         : public ts_category_base<ts_category<ShapeT, std::vector<E, AllocT>>> {
         using base_t = ts_category_base<ts_category<ShapeT, std::vector<E, AllocT>>>;
     public:
-        ts_category() {}
+        ts_category() : base_t(with_args, ShapeT(), ShapeT().magnitude()) {}
         template <class ... EleTs>
         explicit ts_category(const ShapeT & shape, EleTs && ... eles)
             : base_t(shape, std::vector<E, AllocT>({(E)forward<EleTs>(eles) ...})) {}
 
         template <class CategoryT, bool RInd, bool RSub>
-        ts_category(const ts_readable<CategoryT, RInd, RSub, true> & t) {
+        ts_category(const ts_readable<CategoryT, RInd, RSub, true> & t) : base_t() {
             assign_from(t);
         }
 
@@ -205,14 +213,14 @@ namespace wheels {
         : public ts_category_base<ts_category<tensor_shape<ST, ST>, std::vector<E, AllocT>>> {
         using base_t = ts_category_base<ts_category<tensor_shape<ST, ST>, std::vector<E, AllocT>>>;
     public:
-        ts_category() {}
+        ts_category() : base_t(tensor_shape<ST, ST>(), std::vector<E, AllocT>()) {}
         template <class EleT, class ... EleTs>
         explicit ts_category(EleT && e, EleTs && ... eles) 
             : base_t(make_shape<ST>(1 + sizeof...(eles)), 
             std::vector<E, AllocT>({ (E)forward<EleT>(e), (E)forward<EleTs>(eles) ... })) {}
 
         template <class CategoryT, bool RInd, bool RSub>
-        ts_category(const ts_readable<CategoryT, RInd, RSub, true> & t) {
+        ts_category(const ts_readable<CategoryT, RInd, RSub, true> & t) : base_t() {
             assign_from(t);
         }
 
@@ -233,6 +241,11 @@ namespace wheels {
 
 
 
+
+
+
+
+
     // sparse tensor based on 
     template <class E, class IndexerT = std::map<size_t, E>>
     struct sparse_dictionary {
@@ -245,8 +258,8 @@ namespace wheels {
             return indexer.find(ind) != indexer.end();
         }
         template <class IndexT>
-        const E & at(const IndexT & ind, const E & default_val) const {
-            return contains(ind) ? ind.at(ind) : default_val;
+        E at(const IndexT & ind, const E & default_val) const {
+            return contains(ind) ? indexer.at(ind) : default_val;
         }
         template <class IndexT>
         E & at(const IndexT & ind) {
@@ -263,14 +276,14 @@ namespace wheels {
         void clear() { indexer.clear(); }
     };
 
-    namespace ts_props {
+    namespace ts_traits {
 
         // readable
         template <class ShapeT, class E, class IndexerT>
         struct readable_at_index<ts_category<ShapeT, sparse_dictionary<E, IndexerT>>> : yes {};
 
         template <class ShapeT, class E, class IndexerT, class IndexT>
-        const E & at_index_const_impl(const ts_category<ShapeT, sparse_dictionary<E, IndexerT>> & a, const IndexT & ind) {
+        E at_index_const_impl(const ts_category<ShapeT, sparse_dictionary<E, IndexerT>> & a, const IndexT & ind) {
             return a.data_provider().at(ind, 0);
         }
 
@@ -308,7 +321,7 @@ namespace wheels {
             const ts_readable<CategoryT2, RInd1, RInd2, true> & from, const no &){
             to.data_provider().clear();
             for (size_t ind = 0; ind < from.numel(); ind++) {
-                decltype(auto) e = from.at_index_const(ind);
+                auto e = from.at_index_const(ind);
                 if (e) {
                     to.at_index_nonconst(ind) = e;
                 }
@@ -322,7 +335,8 @@ namespace wheels {
             to.data_provider().clear();
             for (auto it = from.nzbegin(); it != from.nzend(); ++it) {
                 size_t ind = iter2ind(it);
-                to.at_index_nonconst(ind) = *it;
+                auto e = *it;
+                to.at_index_nonconst(ind) = e;
             }
         }
 
@@ -364,5 +378,11 @@ namespace wheels {
     template <class E>
     using spmat_ = ts_category<tensor_shape<size_t, size_t, size_t>, sparse_dictionary<E>>;
     using spmat = spmat_<double>;
+
+
+
+
+
+
 
 }

@@ -45,7 +45,7 @@ namespace wheels {
     // element readable
     template <class CategoryT> using ts_readable_base = ts_base<CategoryT>;
 
-    namespace ts_props {
+    namespace ts_traits {
         template <class CategoryT>
         struct readable_at_index : no {};
         template <class CategoryT>
@@ -55,8 +55,8 @@ namespace wheels {
     }
 
     template <class CategoryT, 
-        bool EleReadableAtIndex = ts_props::readable_at_index<CategoryT>::value,
-        bool EleReadableAtSubs = ts_props::readable_at_subs<CategoryT>::value,
+        bool EleReadableAtIndex = ts_traits::readable_at_index<CategoryT>::value,
+        bool EleReadableAtSubs = ts_traits::readable_at_subs<CategoryT>::value,
         bool EleReadable = EleReadableAtIndex || EleReadableAtSubs>
     class ts_readable : public ts_readable_base<CategoryT> {
     public:
@@ -64,15 +64,15 @@ namespace wheels {
         constexpr int at_index_const(const IndexT & index) const {
             static_assert(always<bool, false, IndexT>::value,
                 "the data prodiver is not readable, "
-                "explicit instantate ts_props::readable_at_index<CategoryT>/ts_props::readable_at_subs<CategoryT> and "
-                "implement ts_props::at_index_const_impl(...)/ts_props::at_subs_const_impl(...) to fix this");
+                "explicit instantate ts_traits::readable_at_index<CategoryT>/ts_traits::readable_at_subs<CategoryT> and "
+                "implement ts_traits::at_index_const_impl(...)/ts_traits::at_subs_const_impl(...) to fix this");
         }
         template <class ... SubTs>
         constexpr int at_subs_const(const SubTs & ... subs) const {
             static_assert(always<bool, false, SubTs ...>::value,
                 "the data prodiver is not readable, "
-                "explicit instantate ts_props::readable_at_index<CategoryT>/ts_props::readable_at_subs<CategoryT> and "
-                "implement ts_props::at_index_const_impl(...)/ts_props::at_subs_const_impl(...) to fix this");
+                "explicit instantate ts_traits::readable_at_index<CategoryT>/ts_traits::readable_at_subs<CategoryT> and "
+                "implement ts_traits::at_index_const_impl(...)/ts_traits::at_subs_const_impl(...) to fix this");
         }
     };
     template <class CategoryT>
@@ -81,14 +81,14 @@ namespace wheels {
         // read element at index
         template <class IndexT>
         constexpr decltype(auto) at_index_const(const IndexT & index) const {
-            return ts_props::at_index_const_impl(category(), index);
+            return ts_traits::at_index_const_impl(category(), index);
         }
         // read element at subs
         template <class ... SubTs>
         constexpr decltype(auto) at_subs_const(const SubTs & ... subs) const {
             static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
                 "at_subs(...) requires all subs should be integral or const_ints");
-            return ts_props::at_subs_const_impl(category(), subs ...);
+            return ts_traits::at_subs_const_impl(category(), subs ...);
         }
     };
     template <class CategoryT>
@@ -97,14 +97,14 @@ namespace wheels {
         // read element at index
         template <class IndexT>
         constexpr decltype(auto) at_index_const(const IndexT & index) const {
-            return ts_props::at_index_const_impl(category(), index);
+            return ts_traits::at_index_const_impl(category(), index);
         }
         // read element at subs
         template <class ... SubTs>
         constexpr decltype(auto) at_subs_const(const SubTs & ... subs) const {
             static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
                 "at_subs(...) requires all subs should be integral or const_ints");
-            return ts_props::at_index_const_impl(category(), sub2ind(shape(), subs ...));
+            return ts_traits::at_index_const_impl(category(), sub2ind(shape(), subs ...));
         }
     };
     template <class CategoryT>
@@ -114,7 +114,7 @@ namespace wheels {
         template <class IndexT>
         constexpr decltype(auto) at_index_const(const IndexT & index) const {
             return invoke_with_subs(shape(), index, [this](const auto & ... subs) {
-                return ts_props::at_subs_const_impl(category(), subs ...);
+                return ts_traits::at_subs_const_impl(category(), subs ...);
             });
         }
         // read element at subs
@@ -122,7 +122,7 @@ namespace wheels {
         constexpr decltype(auto) at_subs_const(const SubTs & ... subs) const {
             static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
                 "at_subs(...) requires all subs should be integral or const_ints");
-            return ts_props::at_subs_const_impl(category(), subs ...);
+            return ts_traits::at_subs_const_impl(category(), subs ...);
         }
     };
 
@@ -135,7 +135,7 @@ namespace wheels {
     // element writable
     template <class CategoryT> using ts_writable_base = ts_readable<CategoryT>;
 
-    namespace ts_props {
+    namespace ts_traits {
         template <class CategoryT>
         struct writable_at_index : no {};
         template <class CategoryT>
@@ -145,8 +145,8 @@ namespace wheels {
     }
 
     template <class CategoryT, 
-        bool EleWritableAtIndex = ts_props::writable_at_index<CategoryT>::value, 
-        bool EleWritableAtSubs = ts_props::writable_at_subs<CategoryT>::value, 
+        bool EleWritableAtIndex = ts_traits::writable_at_index<CategoryT>::value, 
+        bool EleWritableAtSubs = ts_traits::writable_at_subs<CategoryT>::value, 
         bool EleWritable = EleWritableAtIndex || EleWritableAtSubs>
     class ts_writable : public ts_writable_base<CategoryT> {
     public:
@@ -166,14 +166,14 @@ namespace wheels {
         // write element at index
         template <class IndexT>
         decltype(auto) at_index_nonconst(const IndexT & index) {
-            return ts_props::at_index_nonconst_impl(category(), index);
+            return ts_traits::at_index_nonconst_impl(category(), index);
         }
         // write element at subs
         template <class ... SubTs>
         decltype(auto) at_subs_nonconst(const SubTs & ... subs) {
             static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
                 "at_subs(...) requires all subs should be integral or const_ints");
-            return ts_props::at_subs_nonconst_impl(category(), subs ...);
+            return ts_traits::at_subs_nonconst_impl(category(), subs ...);
         }
     };
     template <class CategoryT>
@@ -182,7 +182,7 @@ namespace wheels {
         // write element at index
         template <class IndexT>
         decltype(auto) at_index_nonconst(const IndexT & index) {
-            return ts_props::at_index_nonconst_impl(category(), index);
+            return ts_traits::at_index_nonconst_impl(category(), index);
         }
         // write element at subs
         template <class ... SubTs>
@@ -190,7 +190,7 @@ namespace wheels {
             using _checks = const_ints<bool, is_int<SubTs>::value ...>;
             static_assert(_checks::all_v,
                 "at_subs(...) requires all subs should be integral or const_ints");
-            return ts_props::at_index_nonconst_impl(category(), sub2ind(shape(), subs ...));
+            return ts_traits::at_index_nonconst_impl(category(), sub2ind(shape(), subs ...));
         }
     };
     template <class CategoryT>
@@ -200,7 +200,7 @@ namespace wheels {
         template <class IndexT>
         decltype(auto) at_index_nonconst(const IndexT & index) {
             return invoke_with_subs(shape(), index, [this](const auto & subs ...) {
-                return ts_props::at_subs_nonconst_impl(category(), subs ...);
+                return ts_traits::at_subs_nonconst_impl(category(), subs ...);
             });
         }
         // write element at subs
@@ -209,7 +209,7 @@ namespace wheels {
             using _checks = const_ints<bool, is_int<SubTs>::value ...>;
             static_assert(_checks::all_v,
                 "at_subs(...) requires all subs should be integral or const_ints");
-            return ts_props::at_subs_nonconst_impl(category(), subs ...);
+            return ts_traits::at_subs_nonconst_impl(category(), subs ...);
         }
     };
     
@@ -262,7 +262,7 @@ namespace wheels {
     template <class CategoryT> 
     using ts_const_iteratable_base = ts_brackets_and_parenthese_behavior<CategoryT>;
 
-    namespace ts_props {
+    namespace ts_traits {
         template <class CategoryT>
         struct const_iterator_type {
             using type = std::conditional_t<readable<CategoryT>::value, ts_const_iterator_naive<CategoryT>, void>;
@@ -277,12 +277,12 @@ namespace wheels {
         }     
     }
 
-    template <class CategoryT, class ConstIterT = typename ts_props::const_iterator_type<CategoryT>::type>
+    template <class CategoryT, class ConstIterT = typename ts_traits::const_iterator_type<CategoryT>::type>
     class ts_const_iteratable : public ts_const_iteratable_base<CategoryT> {
     public:
-        constexpr ConstIterT cbegin() const { return ts_props::cbegin_impl(category()); }
+        constexpr ConstIterT cbegin() const { return ts_traits::cbegin_impl(category()); }
         constexpr ConstIterT begin() const { return cbegin(); }
-        constexpr ConstIterT cend() const { return ts_props::cend_impl(category()); }
+        constexpr ConstIterT cend() const { return ts_traits::cend_impl(category()); }
         constexpr ConstIterT end() const { return cend(); }
     };
     template <class CategoryT>
@@ -296,7 +296,7 @@ namespace wheels {
     template <class CategoryT> 
     using ts_nonconst_iteratable_base = ts_const_iteratable<CategoryT>;
 
-    namespace ts_props {
+    namespace ts_traits {
         template <class CategoryT>
         struct nonconst_iterator_type {
             using type = std::conditional_t<writable<CategoryT>::value, ts_nonconst_iterator_naive<CategoryT>, void>;
@@ -311,11 +311,11 @@ namespace wheels {
         }
     }
 
-    template <class CategoryT, class NonConstIterT = typename ts_props::nonconst_iterator_type<CategoryT>::type>
+    template <class CategoryT, class NonConstIterT = typename ts_traits::nonconst_iterator_type<CategoryT>::type>
     class ts_nonconst_iteratable : public ts_nonconst_iteratable_base<CategoryT> {
     public:
-        NonConstIterT begin() { return ts_props::begin_impl(category()); }
-        NonConstIterT end() { return ts_props::end_impl(category()); }
+        NonConstIterT begin() { return ts_traits::begin_impl(category()); }
+        NonConstIterT end() { return ts_traits::end_impl(category()); }
     };
     template <class CategoryT>
     class ts_nonconst_iteratable<CategoryT, void> : public ts_nonconst_iteratable_base<CategoryT> {
@@ -332,7 +332,7 @@ namespace wheels {
     template <class CategoryT>
     using ts_nonzero_iteratable_base = ts_const_iteratable<CategoryT>;
 
-    namespace ts_props {
+    namespace ts_traits {
         template <class CategoryT>
         struct nonzero_iterator_type {
             using type = std::conditional_t<
@@ -351,11 +351,11 @@ namespace wheels {
         }
     }
 
-    template <class CategoryT, class NonZeroIterT = typename ts_props::nonzero_iterator_type<CategoryT>::type>
+    template <class CategoryT, class NonZeroIterT = typename ts_traits::nonzero_iterator_type<CategoryT>::type>
     class ts_nonzero_iteratable : public ts_nonzero_iteratable_base<CategoryT> {
     public:
-        constexpr NonZeroIterT nzbegin() const { return ts_props::nzbegin_impl(category()); }
-        constexpr NonZeroIterT nzend() const { return ts_props::nzend_impl(category()); }
+        constexpr NonZeroIterT nzbegin() const { return ts_traits::nzbegin_impl(category()); }
+        constexpr NonZeroIterT nzend() const { return ts_traits::nzend_impl(category()); }
     };
     template <class CategoryT>
     class ts_nonzero_iteratable<CategoryT, void> : public ts_nonzero_iteratable_base<CategoryT> {};
@@ -368,7 +368,7 @@ namespace wheels {
     template <class CategoryT>
     using ts_inplace_reshapable_base = ts_nonzero_iteratable<CategoryT>;
 
-    namespace ts_props {
+    namespace ts_traits {
         template <class CategoryT>
         struct inplace_reshapable : no {};        
         template <class ShapeT, class DataProviderT>
@@ -377,7 +377,7 @@ namespace wheels {
     }
 
     template <class CategoryT, 
-        bool InplaceReshapable = ts_props::inplace_reshapable<CategoryT>::value>
+        bool InplaceReshapable = ts_traits::inplace_reshapable<CategoryT>::value>
     class ts_inplace_reshapable : public ts_inplace_reshapable_base<CategoryT> {
     public:
         template <class ShapeT> 
@@ -394,8 +394,10 @@ namespace wheels {
 
 
 
+    // index_accessible_from_iterator
+    // iter2ind
+    namespace ts_traits {
 
-    namespace ts_props {
         template <class IterT>
         struct index_accessible_from_iterator : no {};
 
@@ -427,6 +429,7 @@ namespace wheels {
         constexpr size_t iter2ind(const second_in_pair_iterator_of<IterT> & iter) {
             return iter.iter->first;
         }
+
     }
 
 
@@ -437,7 +440,7 @@ namespace wheels {
     template <class CategoryT> 
     using ts_assignable_base = ts_inplace_reshapable<CategoryT>;
     
-    namespace ts_props {
+    namespace ts_traits {
 
         template <class CategoryT>
         struct assignable : writable<CategoryT> {};
@@ -453,26 +456,21 @@ namespace wheels {
         void assign_impl(ts_writable<CategoryT1, WInd1, WInd2, true> & to,
             const ts_readable<CategoryT2, RInd1, RInd2, true> & from){
             if (from.numel() < _parallel_thres) {
+                auto & toc = to.category();
                 for (size_t ind = 0; ind < from.numel(); ind++) {
-                    to.at_index_nonconst(ind) = from.at_index_const(ind);
+                    auto e = from.at_index_const(ind);
+                    to.at_index_nonconst(ind) = e;
                 }
             } else {
                 parallel_for_each(from.numel(), [&to, &from](size_t ind) {
-                    to.at_index_nonconst(ind) = from.at_index_const(ind);
+                    auto e = from.at_index_const(ind);
+                    to.at_index_nonconst(ind) = e;
                 }, _parallel_batch);
             }
         }
-
-        template <class DPT, class ShapeT1, class ShapeT2, 
-            bool WInd1, bool WInd2,
-            bool RInd1, bool RInd2>
-        void assign_impl(ts_writable<ts_category<ShapeT1, DPT>, WInd1, WInd2, true> & to,
-            const ts_readable<ts_category<ShapeT2, DPT>, RInd1, RInd2, true> & from) {
-            to.data_provider() = from.data_provider();
-        }
     }
 
-    template <class CategoryT, bool Assignable = ts_props::assignable<CategoryT>::value>
+    template <class CategoryT, bool Assignable = ts_traits::assignable<CategoryT>::value>
     class ts_assignable : public ts_assignable_base<CategoryT> {};
     template <class CategoryT>
     class ts_assignable<CategoryT, true> : public ts_assignable_base<CategoryT> {
@@ -482,8 +480,8 @@ namespace wheels {
             static_assert(CategoryT::rank == CategoryT2::rank, "rank mismatch");
             reshape_inplace(from.shape());
             assert(shape() == from.shape());
-            ts_props::reserve_impl(*this, numel());
-            ts_props::assign_impl(*this, from);
+            ts_traits::reserve_impl(category(), numel());
+            ts_traits::assign_impl(category(), from);
         }
         template <class CategoryT2, bool RInd, bool RSub>
         CategoryT & operator = (const ts_readable<CategoryT2, RInd, RSub, true> & from) {
@@ -510,7 +508,7 @@ namespace wheels {
     using ts_storage_base = ts_extensions<CategoryT>;
     
     template <class CategoryT, 
-        bool InPlaceReshapable = ts_props::inplace_reshapable<CategoryT>::value> 
+        bool InPlaceReshapable = ts_traits::inplace_reshapable<CategoryT>::value> 
     class ts_storage {};
 
 
