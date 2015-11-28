@@ -35,7 +35,7 @@ message(STATUS "wheels_sources:")
 foreach(i ${wheels_sources})
 	message (STATUS ${i})  
 endforeach()
-wheels_add_library(Wheels ${wheels_sources} ./core.hpp ./math.hpp ./dummy.cpp)
+wheels_add_library(Wheels ${wheels_sources} ./dummy.cpp)
 
 
 
