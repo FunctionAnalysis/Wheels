@@ -28,7 +28,7 @@ namespace wheels {
         // size(...)
         template <class T, T Idx>
         constexpr auto size(const const_ints<T, Idx> & i) const {
-            static_assert(Idx >= 0 && Idx < rank(), "invalid Idx");
+            static_assert(Idx >= 0 && Idx < CategoryT::rank, "invalid Idx");
             return shape().at(i);
         }
         // numel()
@@ -81,14 +81,14 @@ namespace wheels {
         // read element at index
         template <class IndexT>
         constexpr decltype(auto) at_index_const(const IndexT & index) const {
-            return ts_props::at_index_const_impl(data_provider(), index);
+            return ts_props::at_index_const_impl(category(), index);
         }
         // read element at subs
         template <class ... SubTs>
         constexpr decltype(auto) at_subs_const(const SubTs & ... subs) const {
             static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
                 "at_subs(...) requires all subs should be integral or const_ints");
-            return ts_props::at_subs_const_impl(data_provider(), subs ...);
+            return ts_props::at_subs_const_impl(category(), subs ...);
         }
     };
     template <class CategoryT>
@@ -97,14 +97,14 @@ namespace wheels {
         // read element at index
         template <class IndexT>
         constexpr decltype(auto) at_index_const(const IndexT & index) const {
-            return ts_props::at_index_const_impl(data_provider(), index);
+            return ts_props::at_index_const_impl(category(), index);
         }
         // read element at subs
         template <class ... SubTs>
         constexpr decltype(auto) at_subs_const(const SubTs & ... subs) const {
             static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
                 "at_subs(...) requires all subs should be integral or const_ints");
-            return ts_props::at_index_const_impl(data_provider(), sub2ind(shape(), subs ...));
+            return ts_props::at_index_const_impl(category(), sub2ind(shape(), subs ...));
         }
     };
     template <class CategoryT>
@@ -114,7 +114,7 @@ namespace wheels {
         template <class IndexT>
         constexpr decltype(auto) at_index_const(const IndexT & index) const {
             return invoke_with_subs(shape(), index, [this](const auto & ... subs) {
-                return ts_props::at_subs_const_impl(data_provider(), subs ...);
+                return ts_props::at_subs_const_impl(category(), subs ...);
             });
         }
         // read element at subs
@@ -122,7 +122,7 @@ namespace wheels {
         constexpr decltype(auto) at_subs_const(const SubTs & ... subs) const {
             static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
                 "at_subs(...) requires all subs should be integral or const_ints");
-            return ts_props::at_subs_const_impl(data_provider(), subs ...);
+            return ts_props::at_subs_const_impl(category(), subs ...);
         }
     };
 
@@ -166,14 +166,14 @@ namespace wheels {
         // write element at index
         template <class IndexT>
         decltype(auto) at_index_nonconst(const IndexT & index) {
-            return ts_props::at_index_nonconst_impl(data_provider(), index);
+            return ts_props::at_index_nonconst_impl(category(), index);
         }
         // write element at subs
         template <class ... SubTs>
         decltype(auto) at_subs_nonconst(const SubTs & ... subs) {
             static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
                 "at_subs(...) requires all subs should be integral or const_ints");
-            return ts_props::at_subs_nonconst_impl(data_provider(), subs ...);
+            return ts_props::at_subs_nonconst_impl(category(), subs ...);
         }
     };
     template <class CategoryT>
@@ -182,7 +182,7 @@ namespace wheels {
         // write element at index
         template <class IndexT>
         decltype(auto) at_index_nonconst(const IndexT & index) {
-            return ts_props::at_index_nonconst_impl(data_provider(), index);
+            return ts_props::at_index_nonconst_impl(category(), index);
         }
         // write element at subs
         template <class ... SubTs>
@@ -190,7 +190,7 @@ namespace wheels {
             using _checks = const_ints<bool, is_int<SubTs>::value ...>;
             static_assert(_checks::all_v,
                 "at_subs(...) requires all subs should be integral or const_ints");
-            return ts_props::at_index_nonconst_impl(data_provider(), sub2ind(shape(), subs ...));
+            return ts_props::at_index_nonconst_impl(category(), sub2ind(shape(), subs ...));
         }
     };
     template <class CategoryT>
@@ -200,7 +200,7 @@ namespace wheels {
         template <class IndexT>
         decltype(auto) at_index_nonconst(const IndexT & index) {
             return invoke_with_subs(shape(), index, [this](const auto & subs ...) {
-                return ts_props::at_subs_nonconst_impl(data_provider(), subs ...);
+                return ts_props::at_subs_nonconst_impl(category(), subs ...);
             });
         }
         // write element at subs
@@ -209,7 +209,7 @@ namespace wheels {
             using _checks = const_ints<bool, is_int<SubTs>::value ...>;
             static_assert(_checks::all_v,
                 "at_subs(...) requires all subs should be integral or const_ints");
-            return ts_props::at_subs_nonconst_impl(data_provider(), subs ...);
+            return ts_props::at_subs_nonconst_impl(category(), subs ...);
         }
     };
     
@@ -274,7 +274,7 @@ namespace wheels {
         template <class CategoryT>
         constexpr auto cend_impl(const ts_base<CategoryT> & t) {
             return ts_const_iterator_naive<CategoryT>(t.category(), t.numel());
-        }
+        }     
     }
 
     template <class CategoryT, class ConstIterT = typename ts_props::const_iterator_type<CategoryT>::type>
@@ -335,23 +335,27 @@ namespace wheels {
     namespace ts_props {
         template <class CategoryT>
         struct nonzero_iterator_type {
-            using type = std::conditional_t<readable<CategoryT>::value, ts_nonzero_iterator_naive<CategoryT>, void>;
+            using type = std::conditional_t<
+                readable<CategoryT>::value, 
+                nonzero_iterator_of<typename const_iterator_type<CategoryT>::type>, 
+                void
+            >;
         };
-        template <class CategoryT>
-        auto nzbegin_impl(const ts_base<CategoryT> & t) {
-            return ts_nonzero_iterator_naive<CategoryT>(t.category(), 0);
+        template <class CategoryT, class ConstIterT>
+        constexpr nonzero_iterator_of<ConstIterT> nzbegin_impl(const ts_const_iteratable<CategoryT, ConstIterT> & t) {
+            return nonzero_iterator_of<ConstIterT>(t.cbegin(), t.cend());
         }
-        template <class CategoryT>
-        auto nzend_impl(const ts_base<CategoryT> & t) {
-            return ts_nonzero_iterator_naive<CategoryT>(t.category(), t.numel());
+        template <class CategoryT, class ConstIterT>
+        constexpr nonzero_iterator_of<ConstIterT> nzend_impl(const ts_const_iteratable<CategoryT, ConstIterT> & t) {
+            return nonzero_iterator_of<ConstIterT>(t.cend(), t.cend());
         }
     }
 
     template <class CategoryT, class NonZeroIterT = typename ts_props::nonzero_iterator_type<CategoryT>::type>
     class ts_nonzero_iteratable : public ts_nonzero_iteratable_base<CategoryT> {
     public:
-        NonZeroIterT nzbegin() { return ts_props::nzbegin_impl(category()); }
-        NonZeroIterT nzend() { return ts_props::nzend_impl(category()); }
+        constexpr NonZeroIterT nzbegin() const { return ts_props::nzbegin_impl(category()); }
+        constexpr NonZeroIterT nzend() const { return ts_props::nzend_impl(category()); }
     };
     template <class CategoryT>
     class ts_nonzero_iteratable<CategoryT, void> : public ts_nonzero_iteratable_base<CategoryT> {};
@@ -391,6 +395,43 @@ namespace wheels {
 
 
 
+    namespace ts_props {
+        template <class IterT>
+        struct index_accessible_from_iterator : no {};
+
+        template <class CategoryT>
+        struct index_accessible_from_iterator<ts_const_iterator_naive<CategoryT>> : yes {};
+        template <class CategoryT>
+        constexpr size_t iter2ind(const ts_const_iterator_naive<CategoryT> & iter) {
+            return iter.ind;
+        }
+
+        template <class CategoryT>
+        struct index_accessible_from_iterator<ts_nonconst_iterator_naive<CategoryT>> : yes {};
+        template <class CategoryT>
+        constexpr size_t iter2ind(const ts_nonconst_iterator_naive<CategoryT> & iter) {
+            return iter.ind;
+        }
+
+        template <class IterT>
+        struct index_accessible_from_iterator<nonzero_iterator_of<IterT>>
+            : index_accessible_from_iterator<IterT> {};
+        template <class IterT>
+        constexpr size_t iter2ind(const nonzero_iterator_of<IterT> & iter) {
+            return iter2ind(iter.iter);
+        }
+
+        template <class IterT>
+        struct index_accessible_from_iterator<second_in_pair_iterator_of<IterT>> : yes {};
+        template <class IterT>
+        constexpr size_t iter2ind(const second_in_pair_iterator_of<IterT> & iter) {
+            return iter.iter->first;
+        }
+    }
+
+
+
+
 
     // assignable
     template <class CategoryT> 
@@ -411,15 +452,23 @@ namespace wheels {
             class CategoryT2, bool RInd1, bool RInd2>
         void assign_impl(ts_writable<CategoryT1, WInd1, WInd2, true> & to,
             const ts_readable<CategoryT2, RInd1, RInd2, true> & from){
-            if (numel() < _parallel_thres) {
-                for (size_t ind = 0; ind < numel(); ind++) {
+            if (from.numel() < _parallel_thres) {
+                for (size_t ind = 0; ind < from.numel(); ind++) {
                     to.at_index_nonconst(ind) = from.at_index_const(ind);
                 }
             } else {
-                parallel_for_each(numel(), [&to, &from](size_t ind) {
+                parallel_for_each(from.numel(), [&to, &from](size_t ind) {
                     to.at_index_nonconst(ind) = from.at_index_const(ind);
                 }, _parallel_batch);
             }
+        }
+
+        template <class DPT, class ShapeT1, class ShapeT2, 
+            bool WInd1, bool WInd2,
+            bool RInd1, bool RInd2>
+        void assign_impl(ts_writable<ts_category<ShapeT1, DPT>, WInd1, WInd2, true> & to,
+            const ts_readable<ts_category<ShapeT2, DPT>, RInd1, RInd2, true> & from) {
+            to.data_provider() = from.data_provider();
         }
     }
 
@@ -430,8 +479,9 @@ namespace wheels {
     public:
         template <class CategoryT2, bool RInd, bool RSub>
         void assign_from(const ts_readable<CategoryT2, RInd, RSub, true> & from) {
+            static_assert(CategoryT::rank == CategoryT2::rank, "rank mismatch");
             reshape_inplace(from.shape());
-            assert(shape() == to.shape());
+            assert(shape() == from.shape());
             ts_props::reserve_impl(*this, numel());
             ts_props::assign_impl(*this, from);
         }
@@ -472,6 +522,13 @@ namespace wheels {
     class ts_storage<ts_category<ShapeT, DataProviderT>, false> 
         : public ts_storage_base<ts_category<ShapeT, DataProviderT>> {
     public:
+        using shape_type = ShapeT;
+        using data_provider_type = DataProviderT;
+        using value_type = typename data_provider_type::value_type;
+        static constexpr size_t rank = ShapeT::rank;
+
+    public:
+        constexpr ts_storage() {}
         template <class DPT>
         constexpr ts_storage(const ShapeT & s, DPT && dp)
             : _data_provider(forward<DPT>(dp)) {}
@@ -482,6 +539,10 @@ namespace wheels {
         constexpr ShapeT shape_impl() const { return ShapeT(); }
         constexpr const DataProviderT & data_provider_impl() const { return _data_provider; }
         DataProviderT & data_provider_impl() { return _data_provider; }
+
+        template <class Archiver>
+        void serialize(Archiver & ar) { ar(_data_provider); }
+
     private:
         DataProviderT _data_provider;
     };
@@ -493,7 +554,10 @@ namespace wheels {
         using shape_type = ShapeT;
         using data_provider_type = DataProviderT;
         using value_type = typename data_provider_type::value_type;
+        static constexpr size_t rank = ShapeT::rank;
+
     public:
+        constexpr ts_storage() {}
         template <class DPT>
         constexpr ts_storage(const ShapeT & s, DPT && dp)
             : _shape(s), _data_provider(forward<DPT>(dp)) {}
@@ -505,6 +569,10 @@ namespace wheels {
         ShapeT & shape_impl() { return _shape; }
         constexpr const DataProviderT & data_provider_impl() const { return _data_provider; }
         DataProviderT & data_provider_impl() { return _data_provider; }
+
+        template <class Archiver> 
+        void serialize(Archiver & ar) { ar(_shape, _data_provider); }
+
     private:
         ShapeT _shape;
         DataProviderT _data_provider;
