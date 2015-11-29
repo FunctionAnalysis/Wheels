@@ -394,47 +394,6 @@ namespace wheels {
 
 
 
-    // index_accessible_from_iterator
-    // iter2ind
-    namespace ts_traits {
-
-        template <class IterT>
-        struct index_accessible_from_iterator : no {};
-
-        template <class CategoryT>
-        struct index_accessible_from_iterator<ts_const_iterator_naive<CategoryT>> : yes {};
-        template <class CategoryT>
-        constexpr size_t iter2ind(const ts_const_iterator_naive<CategoryT> & iter) {
-            return iter.ind;
-        }
-
-        template <class CategoryT>
-        struct index_accessible_from_iterator<ts_nonconst_iterator_naive<CategoryT>> : yes {};
-        template <class CategoryT>
-        constexpr size_t iter2ind(const ts_nonconst_iterator_naive<CategoryT> & iter) {
-            return iter.ind;
-        }
-
-        template <class IterT>
-        struct index_accessible_from_iterator<nonzero_iterator_of<IterT>>
-            : index_accessible_from_iterator<IterT> {};
-        template <class IterT>
-        constexpr size_t iter2ind(const nonzero_iterator_of<IterT> & iter) {
-            return iter2ind(iter.iter);
-        }
-
-        template <class IterT>
-        struct index_accessible_from_iterator<second_in_pair_iterator_of<IterT>> : yes {};
-        template <class IterT>
-        constexpr size_t iter2ind(const second_in_pair_iterator_of<IterT> & iter) {
-            return iter.iter->first;
-        }
-
-    }
-
-
-
-
 
     // assignable
     template <class CategoryT> 
@@ -494,18 +453,18 @@ namespace wheels {
 
 
 
-    // extensions
+    // special shape
     template <class CategoryT> 
-    using ts_extensions_base = ts_assignable<CategoryT>;
+    using ts_special_shape_base = ts_assignable<CategoryT>;
     template <class CategoryT>
-    class ts_extensions : public ts_extensions_base<CategoryT> {};
+    class ts_special_shape : public ts_special_shape_base<CategoryT> {};
 
 
 
 
     // storage
     template <class CategoryT> 
-    using ts_storage_base = ts_extensions<CategoryT>;
+    using ts_storage_base = ts_special_shape<CategoryT>;
     
     template <class CategoryT, 
         bool InPlaceReshapable = ts_traits::inplace_reshapable<CategoryT>::value> 
@@ -519,12 +478,6 @@ namespace wheels {
     template <class ShapeT, class DataProviderT>
     class ts_storage<ts_category<ShapeT, DataProviderT>, false> 
         : public ts_storage_base<ts_category<ShapeT, DataProviderT>> {
-    public:
-        using shape_type = ShapeT;
-        using data_provider_type = DataProviderT;
-        using value_type = typename data_provider_type::value_type;
-        static constexpr size_t rank = ShapeT::rank;
-
     public:
         constexpr ts_storage() {}
         template <class DPT>
@@ -549,12 +502,6 @@ namespace wheels {
     class ts_storage<ts_category<ShapeT, DataProviderT>, true>
         : public ts_storage_base<ts_category<ShapeT, DataProviderT>> {
     public:
-        using shape_type = ShapeT;
-        using data_provider_type = DataProviderT;
-        using value_type = typename data_provider_type::value_type;
-        static constexpr size_t rank = ShapeT::rank;
-
-    public:
         constexpr ts_storage() {}
         template <class DPT>
         constexpr ts_storage(const ShapeT & s, DPT && dp)
@@ -576,13 +523,39 @@ namespace wheels {
         DataProviderT _data_provider;
     };
 
+
+    // category
     template <class CategoryT> 
     using ts_category_base = ts_storage<CategoryT>;
 
+#define WHEELS_TS_CATEGORY_COMMON_DEFINITION \
+    template <class DPT> \
+    constexpr ts_category(const shape_type & s, DPT && dpt) \
+        : ts_category_base<ts_category>(s, forward<DPT>(dpt)) {} \
+    template <class CategoryT, bool RInd, bool RSub> \
+    constexpr ts_category(const ts_readable<CategoryT, RInd, RSub, true> & t) { \
+        assign_from(t); \
+    } \
+    constexpr ts_category(const ts_category &) = default; \
+    ts_category(ts_category &&) = default; \
+    ts_category & operator = (const ts_category &) = default; \
+    ts_category & operator = (ts_category &&) = default;
 
 
+    template <class ShapeT, class DataProviderT>
+    class ts_category : public ts_category_base<ts_category<ShapeT, DataProviderT>> {
+    public:
+        using shape_type = ShapeT;
+        using data_provider_type = DataProviderT;
+        using value_type = typename data_provider_type::value_type;
+        static constexpr size_t rank = ShapeT::rank;
+        WHEELS_TS_CATEGORY_COMMON_DEFINITION
+    };
 
-
+    template <class ShapeT, class DPT>
+    constexpr ts_category<ShapeT, std::decay_t<DPT>> compose_category(const ShapeT & s, DPT && dp) {
+        return ts_category<ShapeT, std::decay_t<DPT>>(s, forward<DPT>(dp));
+    }
 
 
 }

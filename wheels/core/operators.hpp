@@ -6,6 +6,17 @@
 
 namespace wheels {
 
+    template <class T>
+    struct constant {
+        using value_type = T;
+        T val;
+        template <class TT>
+        constexpr constant(TT && v) : val(forward<TT>(v)){}
+        template <class ... ArgTs>
+        constexpr const T & operator()(ArgTs && ...) const { return val; }
+        template <class Archive> void serialize(Archive & ar) { ar(val); }
+    };
+
 #define WHEELS_DEFINE_UNARY_OP(op, name) \
         struct unary_op_##name { \
             constexpr unary_op_##name () {} \

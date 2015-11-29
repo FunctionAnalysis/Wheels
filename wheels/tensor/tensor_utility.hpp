@@ -76,7 +76,9 @@ namespace wheels {
         IterT iter;
         IterT end;
         constexpr nonzero_iterator_of(const IterT & it, const IterT & e)
-            : iter(it), end(e) {}
+            : iter(it), end(e) {
+            skip_zeros();
+        }
         
         constexpr decltype(auto) operator * () const { return * iter; }
         constexpr decltype(auto) operator -> () const { return iter; }
@@ -84,9 +86,7 @@ namespace wheels {
         nonzero_iterator_of & operator ++() {
             assert(iter != end);
             ++iter;
-            while (iter != end && !*iter) {
-                ++iter;
-            }
+            skip_zeros();
             return *this; 
         }
         constexpr bool operator == (const nonzero_iterator_of & it) const {
@@ -95,7 +95,17 @@ namespace wheels {
         constexpr bool operator != (const nonzero_iterator_of & it) const {
             return iter != it.iter;
         }
+
+        void skip_zeros() {
+            while (iter != end && !*iter) {
+                ++iter;
+            }
+        }
     };
+    template <class IterT>
+    constexpr auto make_nonzero_iterator(const IterT & it, const IterT & end) {
+        return nonzero_iterator_of<IterT>(it, end);
+    }
 
 
     // second in pair iterator wrapper
@@ -117,6 +127,55 @@ namespace wheels {
             return iter != it.iter;
         }
     };
+    template <class IterT>
+    constexpr auto make_second_in_pair_iterator(const IterT & it) {
+        return second_in_pair_iterator_of<IterT>(it);
+    }
+
+
+
+
+
+    // index_accessible_from_iterator
+    // iter2ind
+    namespace ts_traits {
+
+        template <class IterT>
+        struct index_accessible_from_iterator : no {};
+
+        template <class CategoryT>
+        struct index_accessible_from_iterator<ts_const_iterator_naive<CategoryT>> : yes {};
+        template <class CategoryT>
+        constexpr size_t iter2ind(const ts_const_iterator_naive<CategoryT> & iter) {
+            return iter.ind;
+        }
+
+        template <class CategoryT>
+        struct index_accessible_from_iterator<ts_nonconst_iterator_naive<CategoryT>> : yes {};
+        template <class CategoryT>
+        constexpr size_t iter2ind(const ts_nonconst_iterator_naive<CategoryT> & iter) {
+            return iter.ind;
+        }
+
+        template <class IterT>
+        struct index_accessible_from_iterator<nonzero_iterator_of<IterT>>
+            : index_accessible_from_iterator<IterT> {};
+        template <class IterT>
+        constexpr size_t iter2ind(const nonzero_iterator_of<IterT> & iter) {
+            return iter2ind(iter.iter);
+        }
+
+        template <class IterT>
+        struct index_accessible_from_iterator<second_in_pair_iterator_of<IterT>> : yes {};
+        template <class IterT>
+        constexpr size_t iter2ind(const second_in_pair_iterator_of<IterT> & iter) {
+            return iter.iter->first;
+        }
+
+    }
+
+
+
 
 
 

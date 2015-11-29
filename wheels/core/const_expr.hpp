@@ -6,11 +6,12 @@
 namespace wheels {
 
     template <class T> struct is_const_expr : no {};
+
     template <class DerivedT>
     struct const_expr_base {
         constexpr const_expr_base() {}
         constexpr const DerivedT & derived() const { 
-            return (const DerivedT &)(*this); 
+            return static_cast<const DerivedT &>(*this); 
         }
     };
 

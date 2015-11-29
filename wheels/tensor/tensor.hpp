@@ -9,8 +9,6 @@
 namespace wheels {
 
     // category definitions
-
-
     // fix sized tensor based on std::array
     namespace ts_traits {
 
@@ -80,19 +78,16 @@ namespace wheels {
         using base_t = ts_category_base<ts_category<ShapeT, std::array<E, N>>>;
         static_assert(ShapeT::is_static, "");
     public:
+        using shape_type = ShapeT;
+        using data_provider_type = std::array<E, N>;
+        using value_type = E;
+        static constexpr size_t rank = ShapeT::rank;
+
         template <class ... EleTs>
         constexpr explicit ts_category(EleTs && ... eles)
             : base_t(ShapeT(), std::array<E, N>{{(E)forward<EleTs>(eles) ...}}) {}
 
-        template <class CategoryT, bool RInd, bool RSub>
-        constexpr ts_category(const ts_readable<CategoryT, RInd, RSub, true> & t) {
-            assign_from(t);
-        }
-
-        constexpr ts_category(const ts_category &) = default;
-        ts_category(ts_category &&) = default;
-        ts_category & operator = (const ts_category &) = default;
-        ts_category & operator = (ts_category &&) = default;
+        WHEELS_TS_CATEGORY_COMMON_DEFINITION
     };
 
 
@@ -192,20 +187,19 @@ namespace wheels {
         : public ts_category_base<ts_category<ShapeT, std::vector<E, AllocT>>> {
         using base_t = ts_category_base<ts_category<ShapeT, std::vector<E, AllocT>>>;
     public:
+        using shape_type = ShapeT;
+        using data_provider_type = std::vector<E, AllocT>;
+        using value_type = E;
+        static constexpr size_t rank = ShapeT::rank;
+
         ts_category() : base_t(with_args, ShapeT(), ShapeT().magnitude()) {}
         template <class ... EleTs>
         explicit ts_category(const ShapeT & shape, EleTs && ... eles)
-            : base_t(shape, std::vector<E, AllocT>({(E)forward<EleTs>(eles) ...})) {}
-
-        template <class CategoryT, bool RInd, bool RSub>
-        ts_category(const ts_readable<CategoryT, RInd, RSub, true> & t) : base_t() {
-            assign_from(t);
+            : base_t(shape, std::vector<E, AllocT>({(E)forward<EleTs>(eles) ...})) {
+            data_provider().resize(numel());
         }
 
-        ts_category(const ts_category &) = default;
-        ts_category(ts_category &&) = default;
-        ts_category & operator = (const ts_category &) = default;
-        ts_category & operator = (ts_category &&) = default;
+        WHEELS_TS_CATEGORY_COMMON_DEFINITION
     };
 
     template <class ST, class E, class AllocT>
@@ -213,21 +207,20 @@ namespace wheels {
         : public ts_category_base<ts_category<tensor_shape<ST, ST>, std::vector<E, AllocT>>> {
         using base_t = ts_category_base<ts_category<tensor_shape<ST, ST>, std::vector<E, AllocT>>>;
     public:
+        using shape_type = tensor_shape<ST, ST>;
+        using data_provider_type = std::vector<E, AllocT>;
+        using value_type = E;
+        static constexpr size_t rank = 1;
+
         ts_category() : base_t(tensor_shape<ST, ST>(), std::vector<E, AllocT>()) {}
         template <class EleT, class ... EleTs>
         explicit ts_category(EleT && e, EleTs && ... eles) 
             : base_t(make_shape<ST>(1 + sizeof...(eles)), 
-            std::vector<E, AllocT>({ (E)forward<EleT>(e), (E)forward<EleTs>(eles) ... })) {}
-
-        template <class CategoryT, bool RInd, bool RSub>
-        ts_category(const ts_readable<CategoryT, RInd, RSub, true> & t) : base_t() {
-            assign_from(t);
+            std::vector<E, AllocT>({ (E)forward<EleT>(e), (E)forward<EleTs>(eles) ... })) {
+            data_provider().resize(numel());
         }
 
-        ts_category(const ts_category &) = default;
-        ts_category(ts_category &&) = default;
-        ts_category & operator = (const ts_category &) = default;
-        ts_category & operator = (ts_category &&) = default;
+        WHEELS_TS_CATEGORY_COMMON_DEFINITION
     };
 
 
@@ -251,7 +244,9 @@ namespace wheels {
     struct sparse_dictionary {
         using value_type = E;
         static_assert(std::is_same<E, typename IndexerT::value_type::second_type>::value, "invalid IndexerT");
-        using nonzero_iterator = second_in_pair_iterator_of<typename IndexerT::const_iterator>;
+        using nonzero_iterator = nonzero_iterator_of<
+            second_in_pair_iterator_of<typename IndexerT::const_iterator>
+        >;
 
         IndexerT indexer;
 
@@ -269,10 +264,14 @@ namespace wheels {
         }
 
         auto nzbegin() const {
-            return nonzero_iterator(indexer.cbegin());
+            return make_nonzero_iterator(
+                make_second_in_pair_iterator(indexer.cbegin()),
+                make_second_in_pair_iterator(indexer.cend()));
         }
         auto nzend() const {
-            return nonzero_iterator(indexer.cend());
+            return make_nonzero_iterator(
+                make_second_in_pair_iterator(indexer.cend()),
+                make_second_in_pair_iterator(indexer.cend()));
         }
 
         void clear() { indexer.clear(); }
@@ -356,20 +355,17 @@ namespace wheels {
         : public ts_category_base<ts_category<ShapeT, sparse_dictionary<E, IndexerT>>> {
         using base_t = ts_category_base<ts_category<ShapeT, sparse_dictionary<E, IndexerT>>>;
     public:
+        using shape_type = ShapeT;
+        using data_provider_type = sparse_dictionary<E, IndexerT>;
+        using value_type = E;
+        static constexpr size_t rank = ShapeT::rank;
+
         ts_category() {}
         template <class ... ElePairTs>
         explicit ts_category(const ShapeT & shape, ElePairTs && ... ele_pairs)
             : base_t(shape, sparse_dictionary<E, IndexerT>{{ele_pairs ...}}) {}
 
-        template <class CategoryT, bool RInd, bool RSub>
-        ts_category(const ts_readable<CategoryT, RInd, RSub, true> & t) {
-            assign_from(t);
-        }
-
-        ts_category(const ts_category &) = default;
-        ts_category(ts_category &&) = default;
-        ts_category & operator = (const ts_category &) = default;
-        ts_category & operator = (ts_category &&) = default;
+        WHEELS_TS_CATEGORY_COMMON_DEFINITION
     };
 
 
@@ -380,6 +376,36 @@ namespace wheels {
     template <class E>
     using spmat_ = ts_category<tensor_shape<size_t, size_t, size_t>, sparse_dictionary<E, std::map<size_t, E>>>;
     using spmat = spmat_<double>;
+
+
+
+
+
+
+
+
+    // ts_category_default
+    template <class E, class ShapeT, bool Dense, 
+        bool StaticShape = ShapeT::is_static>
+    struct ts_category_default {
+        using type = ts_category<ShapeT, std::vector<E>>;
+    };
+    template <class E, class ShapeT>
+    struct ts_category_default<E, ShapeT, true, true> {
+        using type = ts_category<ShapeT, std::array<E, ShapeT::static_magnitude>>;
+    };
+    template <class E, class ShapeT, bool StaticShape>
+    struct ts_category_default<E, ShapeT, false, StaticShape> {
+        using type = ts_category<ShapeT, sparse_dictionary<E, std::map<size_t, E>>>;
+    };
+
+    // eval
+    template <bool Dense = true, class ShapeT, class DataProviderT, bool RInd, bool RSub>
+    constexpr auto eval(const ts_readable<ts_category<ShapeT, DataProviderT>, RInd, RSub, true> & t) {
+        using value_t = typename ts_category<ShapeT, DataProviderT>::value_type;
+        using eval_t = typename ts_category_default<value_t, ShapeT, Dense>::type;
+        return eval_t(t);
+    }
 
 
 }

@@ -109,3 +109,14 @@ TEST(tensor, sparse) {
     }
 
 }
+
+
+TEST(tensor, eval) {
+
+    matx m(make_shape(100, 100));
+    m(0, 0) = 1;
+    m(last, last) = 9;
+
+    auto spm = eval<false>(m);
+
+}
