@@ -16,6 +16,7 @@ namespace wheels {
         using value_type = T;
         static constexpr size_t rank = 0;
         static constexpr bool is_static = true;
+        static constexpr T static_magnitude = 1;
         static constexpr size_t static_size_num = 0;
 
         constexpr const_ints<T, 1> magnitude() const { return const_ints<T, 1>(); }
@@ -38,6 +39,8 @@ namespace wheels {
         using value_type = T;
         static constexpr size_t rank = sizeof...(SizeTs)+1;
         static constexpr bool is_static = rest_tensor_shape_t::is_static;
+        static constexpr T static_value = S;
+        static constexpr T static_magnitude = S * rest_tensor_shape_t::static_magnitude;
         static constexpr size_t static_size_num = rest_tensor_shape_t::static_size_num + 1;
 
         const rest_tensor_shape_t & rest() const { return (const rest_tensor_shape_t &)(*this); }
@@ -130,6 +133,8 @@ namespace wheels {
         using value_type = T;
         static constexpr size_t rank = sizeof...(SizeTs)+1;
         static constexpr bool is_static = false;
+        static constexpr T static_value = 0;
+        static constexpr T static_magnitude = 0;
         static constexpr size_t static_size_num = rest_tensor_shape_t::static_size_num;
 
         constexpr const rest_tensor_shape_t & rest() const { return (const rest_tensor_shape_t &)(*this); }

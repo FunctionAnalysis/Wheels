@@ -87,7 +87,8 @@ namespace wheels {
 
         static constexpr auto decay() { return types<std::decay_t<T>>(); }
         static constexpr auto declval() { return std::declval<T>(); }
-        static constexpr auto defaultval() { return T(); }
+        static constexpr auto defaultv() { return T(); }
+        static constexpr auto zero() { return T(); }
 
         template <class ... ArgTs>
         static constexpr auto construct(ArgTs && ... args) {

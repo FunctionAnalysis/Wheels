@@ -2,6 +2,8 @@
 
 #include <cassert>
 
+#include "../core/types.hpp"
+
 #include "tensor_shape.hpp"
 
 namespace wheels {
@@ -66,57 +68,79 @@ namespace wheels {
     };
 
 
-    // nonzero iterator wrapper
+    // get only the nonzero values in iteration
     template <class IterT>
-    struct nonzero_iterator_of : std::iterator<std::forward_iterator_tag,
+    struct nonzero_iterator_wrapper : std::iterator<std::forward_iterator_tag,
         typename IterT::value_type,
         typename IterT::difference_type,
         typename IterT::pointer,
         typename IterT::reference> {
+
+        using value_type = typename IterT::value_type;
+
         IterT iter;
         IterT end;
-        constexpr nonzero_iterator_of(const IterT & it, const IterT & e)
-            : iter(it), end(e) {}
+        constexpr nonzero_iterator_wrapper(const IterT & it, const IterT & e)
+            : iter(it), end(e) {
+            skip_zeros();
+        }
         
         constexpr decltype(auto) operator * () const { return * iter; }
         constexpr decltype(auto) operator -> () const { return iter; }
 
-        nonzero_iterator_of & operator ++() {
+        nonzero_iterator_wrapper & operator ++() {
             assert(iter != end);
             ++iter;
-            while (iter != end && !*iter) {
-                ++iter;
-            }
+            skip_zeros();
             return *this; 
         }
-        constexpr bool operator == (const nonzero_iterator_of & it) const {
+        constexpr bool operator == (const nonzero_iterator_wrapper & it) const {
             return iter == it.iter;
         }
-        constexpr bool operator != (const nonzero_iterator_of & it) const {
+        constexpr bool operator != (const nonzero_iterator_wrapper & it) const {
             return iter != it.iter;
         }
+
+        void skip_zeros() {
+            while (iter != end && *iter == types<value_type>::zero()) {
+                ++iter;
+            }
+        }
     };
-
-
-    // second in pair iterator wrapper
     template <class IterT>
-    struct second_in_pair_iterator_of : std::iterator<std::forward_iterator_tag,
+    constexpr auto wrap_nonzero_iterator(const IterT & it, const IterT & end) {
+        return nonzero_iterator_wrapper<IterT>(it, end);
+    }
+
+
+    // get the value (second) part of a pair in iteration
+    template <class IterT>
+    struct value_iterator_wrapper : std::iterator<std::forward_iterator_tag,
         typename IterT::value_type::second_type> {
+        using value_type = typename IterT::value_type::second_type;
+
         IterT iter;
-        constexpr second_in_pair_iterator_of(const IterT & it)
+        constexpr value_iterator_wrapper(const IterT & it)
             : iter(it) {}
 
         constexpr decltype(auto) operator * () const { return iter->second; }
         constexpr decltype(auto) operator -> () const { return &(iter->second); }
 
-        second_in_pair_iterator_of & operator ++() { ++iter; return *this; }
-        constexpr bool operator == (const second_in_pair_iterator_of & it) const {
+        value_iterator_wrapper & operator ++() { ++iter; return *this; }
+        constexpr bool operator == (const value_iterator_wrapper & it) const {
             return iter == it.iter;
         }
-        constexpr bool operator != (const second_in_pair_iterator_of & it) const {
+        constexpr bool operator != (const value_iterator_wrapper & it) const {
             return iter != it.iter;
         }
     };
+    template <class IterT>
+    constexpr auto wrap_value_iterator(const IterT & it) {
+        return value_iterator_wrapper<IterT>(it);
+    }
+
+
+
 
 
     // index_accessible_from_iterator
@@ -141,17 +165,17 @@ namespace wheels {
         }
 
         template <class IterT>
-        struct index_accessible_from_iterator<nonzero_iterator_of<IterT>>
+        struct index_accessible_from_iterator<nonzero_iterator_wrapper<IterT>>
             : index_accessible_from_iterator<IterT> {};
         template <class IterT>
-        constexpr size_t iter2ind(const nonzero_iterator_of<IterT> & iter) {
+        constexpr size_t iter2ind(const nonzero_iterator_wrapper<IterT> & iter) {
             return iter2ind(iter.iter);
         }
 
         template <class IterT>
-        struct index_accessible_from_iterator<second_in_pair_iterator_of<IterT>> : yes {};
+        struct index_accessible_from_iterator<value_iterator_wrapper<IterT>> : yes {};
         template <class IterT>
-        constexpr size_t iter2ind(const second_in_pair_iterator_of<IterT> & iter) {
+        constexpr size_t iter2ind(const value_iterator_wrapper<IterT> & iter) {
             return iter.iter->first;
         }
 

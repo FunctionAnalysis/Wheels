@@ -2,6 +2,7 @@
 
 #include <cassert>
 
+#include "../core/types.hpp"
 #include "../core/const_expr.hpp"
 #include "../core/parallel.hpp"
 
@@ -11,6 +12,12 @@
 namespace wheels {
 
     template <class ShapeT, class DataProviderT> class ts_category;
+
+    // is_tensor
+    template <class T>
+    struct is_tensor : no {};
+    template <class ShapeT, class DataProviderT>
+    struct is_tensor<ts_category<ShapeT, DataProviderT>> : yes {};
 
 
     // base
@@ -337,17 +344,17 @@ namespace wheels {
         struct nonzero_iterator_type {
             using type = std::conditional_t<
                 readable<CategoryT>::value, 
-                nonzero_iterator_of<typename const_iterator_type<CategoryT>::type>, 
+                nonzero_iterator_wrapper<typename const_iterator_type<CategoryT>::type>, 
                 void
             >;
         };
         template <class CategoryT, class ConstIterT>
-        constexpr nonzero_iterator_of<ConstIterT> nzbegin_impl(const ts_const_iteratable<CategoryT, ConstIterT> & t) {
-            return nonzero_iterator_of<ConstIterT>(t.cbegin(), t.cend());
+        constexpr auto nzbegin_impl(const ts_const_iteratable<CategoryT, ConstIterT> & t) {
+            return wrap_nonzero_iterator(t.cbegin(), t.cend());
         }
         template <class CategoryT, class ConstIterT>
-        constexpr nonzero_iterator_of<ConstIterT> nzend_impl(const ts_const_iteratable<CategoryT, ConstIterT> & t) {
-            return nonzero_iterator_of<ConstIterT>(t.cend(), t.cend());
+        constexpr auto nzend_impl(const ts_const_iteratable<CategoryT, ConstIterT> & t) {
+            return wrap_nonzero_iterator(t.cend(), t.cend());
         }
     }
 
@@ -382,9 +389,9 @@ namespace wheels {
         class NonZeroIterT = typename ts_traits::nonzero_iterator_type<CategoryT>::type>
     class ts_nonzero_reducible : public ts_reducible<CategoryT> {
     public:
-        auto sum() const { return std::accumulate(nzbegin(), nzend(), typename CategoryT::value_type(0)); }
+        auto sum() const { return std::accumulate(nzbegin(), nzend(), types<typename CategoryT::value_type>::zero()); }
         auto norm_squared() const {
-            typename CategoryT::value_type r = 0;
+            auto r = types<typename CategoryT::value_type>::zero();
             for (auto it = nzbegin(); it != nzend(); ++it) {
                 auto e = *it;
                 r += e * e;
@@ -428,7 +435,6 @@ namespace wheels {
             category().shape_impl() = s;
         }
     };
-
 
 
 
@@ -509,7 +515,7 @@ namespace wheels {
         decltype(auto) blue() const { return at_index_const(2); }
         decltype(auto) alpha() const { return at_index_const(3); }
     };
-    template <class CategoryT>
+    template <class CategoryT> 
     class vector<CategoryT, true> : public vector<CategoryT, false> {
     public:
         decltype(auto) x() { return at_index_nonconst(0); }
@@ -572,12 +578,6 @@ namespace wheels {
     class ts_storage<ts_category<ShapeT, DataProviderT>, false> 
         : public ts_storage_base<ts_category<ShapeT, DataProviderT>> {
     public:
-        using shape_type = ShapeT;
-        using data_provider_type = DataProviderT;
-        using value_type = typename data_provider_type::value_type;
-        static constexpr size_t rank = ShapeT::rank;
-
-    public:
         constexpr ts_storage() {}
         template <class DPT>
         constexpr ts_storage(const ShapeT & s, DPT && dp)
@@ -601,12 +601,6 @@ namespace wheels {
     class ts_storage<ts_category<ShapeT, DataProviderT>, true>
         : public ts_storage_base<ts_category<ShapeT, DataProviderT>> {
     public:
-        using shape_type = ShapeT;
-        using data_provider_type = DataProviderT;
-        using value_type = typename data_provider_type::value_type;
-        static constexpr size_t rank = ShapeT::rank;
-
-    public:
         constexpr ts_storage() {}
         template <class DPT>
         constexpr ts_storage(const ShapeT & s, DPT && dp)
@@ -628,13 +622,39 @@ namespace wheels {
         DataProviderT _data_provider;
     };
 
+
+    // category
     template <class CategoryT> 
     using ts_category_base = ts_storage<CategoryT>;
 
+#define WHEELS_TS_CATEGORY_COMMON_DEFINITION \
+    template <class DPT> \
+    constexpr ts_category(const shape_type & s, DPT && dpt) \
+        : ts_category_base<ts_category>(s, forward<DPT>(dpt)) {} \
+    template <class CategoryT, bool RInd, bool RSub> \
+    constexpr ts_category(const ts_readable<CategoryT, RInd, RSub, true> & t) { \
+        assign_from(t); \
+    } \
+    constexpr ts_category(const ts_category &) = default; \
+    ts_category(ts_category &&) = default; \
+    ts_category & operator = (const ts_category &) = default; \
+    ts_category & operator = (ts_category &&) = default;
 
 
+    template <class ShapeT, class DataProviderT>
+    class ts_category : public ts_category_base<ts_category<ShapeT, DataProviderT>> {
+    public:
+        using shape_type = ShapeT;
+        using data_provider_type = DataProviderT;
+        using value_type = typename data_provider_type::value_type;
+        static constexpr size_t rank = ShapeT::rank;
+        WHEELS_TS_CATEGORY_COMMON_DEFINITION
+    };
 
-
+    template <class ShapeT, class DPT>
+    constexpr ts_category<ShapeT, std::decay_t<DPT>> compose_category(const ShapeT & s, DPT && dp) {
+        return ts_category<ShapeT, std::decay_t<DPT>>(s, forward<DPT>(dp));
+    }
 
 
 }

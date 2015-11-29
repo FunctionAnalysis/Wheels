@@ -10,17 +10,6 @@ namespace wheels {
     // forward
     using std::forward;
 
-    template <class T>
-    constexpr T && forward(std::remove_reference_t<T> & arg) restrict(amp) {
-        return (static_cast<T &&>(arg));
-    }
-    template <class T>
-    constexpr T && forward(std::remove_reference_t<T> && arg) restrict(amp) {
-        static_assert(!std::is_lvalue_reference<T>::value, "bad forward call");
-        return (static_cast<T &&>(arg));
-    }
-
-
 
     // if_then_else for enumulating ?:
     template <class ThenT, class ElseT>
