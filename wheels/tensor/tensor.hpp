@@ -65,6 +65,7 @@ namespace wheels {
     template <class ShapeT, class E, size_t N>
     class ts_category<ShapeT, std::array<E, N>> 
         : public ts_category_base<ts_category<ShapeT, std::array<E, N>>> {
+
         using base_t = ts_category_base<ts_category<ShapeT, std::array<E, N>>>;
         static_assert(ShapeT::is_static, "");
     public:

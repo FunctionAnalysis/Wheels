@@ -381,6 +381,14 @@ namespace wheels {
     public:
         decltype(auto) max() const { return *std::max_element(cbegin(), cend()); }
         decltype(auto) min() const { return *std::min_element(cbegin(), cend()); }
+        bool all() const {
+            for (auto it = cbegin(); it != cend(); ++it) {
+                if (*it == types<typename CategoryT::value_type>::zero()) {
+                    return false;
+                }
+            }
+            return true;
+        }
     };
     template <class CategoryT>
     class ts_reducible<CategoryT, void> : public ts_reducible_base<CategoryT> {};
@@ -389,16 +397,18 @@ namespace wheels {
         class NonZeroIterT = typename ts_traits::nonzero_iterator_type<CategoryT>::type>
     class ts_nonzero_reducible : public ts_reducible<CategoryT> {
     public:
+        bool any() const { return nzbegin() != nzend(); }
+        bool none() const { return nzbegin() == nzend(); }
         auto sum() const { return std::accumulate(nzbegin(), nzend(), types<typename CategoryT::value_type>::zero()); }
         auto norm_squared() const {
-            auto r = types<typename CategoryT::value_type>::zero();
+            typename CategoryT::value_type r = types<typename CategoryT::value_type>::zero();
             for (auto it = nzbegin(); it != nzend(); ++it) {
                 auto e = *it;
                 r += e * e;
             }
             return r;
         }
-        auto norm() const { return sqrt(norm_squared()); }
+        auto norm() const { return std::sqrt(norm_squared()); }
     };
     template <class CategoryT>
     class ts_nonzero_reducible<CategoryT, void> : public ts_reducible<CategoryT> {};
@@ -496,74 +506,42 @@ namespace wheels {
 
 
 
-
-    // special shapes
-    template <class CategoryT> 
-    using ts_special_shape_base = ts_assignable<CategoryT>;
-
-    // vector shape
-    template <class CategoryT,
-        bool Writable = ts_traits::writable<CategoryT>::value>
-    class vector : public ts_special_shape_base<CategoryT> {
-    public:
-        decltype(auto) x() const { return at_index_const(0); }
-        decltype(auto) y() const { return at_index_const(1); }
-        decltype(auto) z() const { return at_index_const(2); }
-        decltype(auto) w() const { return at_index_const(3); }
-        decltype(auto) red() const { return at_index_const(0); }
-        decltype(auto) green() const { return at_index_const(1); }
-        decltype(auto) blue() const { return at_index_const(2); }
-        decltype(auto) alpha() const { return at_index_const(3); }
-    };
-    template <class CategoryT> 
-    class vector<CategoryT, true> : public vector<CategoryT, false> {
-    public:
-        decltype(auto) x() { return at_index_nonconst(0); }
-        decltype(auto) y() { return at_index_nonconst(1); }
-        decltype(auto) z() { return at_index_nonconst(2); }
-        decltype(auto) w() { return at_index_nonconst(3); }
-        decltype(auto) red() { return at_index_nonconst(0); }
-        decltype(auto) green() { return at_index_nonconst(1); }
-        decltype(auto) blue() { return at_index_nonconst(2); }
-        decltype(auto) alpha() { return at_index_nonconst(3); }
-    };
-    
-    // matrix shape
-    template <class CategoryT,
-        bool Writable = ts_traits::writable<CategoryT>::value>
-    class matrix : public ts_special_shape_base<CategoryT> {
-    public:
-        auto rows() const { return size(const_index<0>()); }
-        auto cols() const { return size(const_index<1>()); }
-    };
-
-    // cube shape
-    template <class CategoryT,
-        bool Writable = ts_traits::writable<CategoryT>::value>
-    class cube : public ts_special_shape_base<CategoryT> {};
+    namespace details {
+        template <class CategoryT>
+        struct _used_types {
+            using shape_type = void;
+            using data_provider_type = void;
+            using value_type = void;
+        };
+        template <class ShapeT, class DataProviderT>
+        struct _used_types<ts_category<ShapeT, DataProviderT>> {
+            using shape_type = ShapeT;
+            using data_provider_type = DataProviderT;
+            using value_type = typename DataProviderT::value_type;
+        };
+    }
 
 
+    // specific shape
     template <class CategoryT>
-    class ts_special_shape
-        : public ts_special_shape_base<CategoryT> {};
-    template <class ST, class SizeT, class DataProviderT>
-    class ts_special_shape<ts_category<tensor_shape<ST, SizeT>, DataProviderT>> 
-        : public vector<ts_category<tensor_shape<ST, SizeT>, DataProviderT>> {};
-    template <class ST, class MT, class NT, class DataProviderT>
-    class ts_special_shape<ts_category<tensor_shape<ST, MT, NT>, DataProviderT>>
-        : public matrix<ts_category<tensor_shape<ST, MT, NT>, DataProviderT>> {};
-    template <class ST, class N1T, class N2T, class N3T, class DataProviderT>
-    class ts_special_shape<ts_category<tensor_shape<ST, N1T, N2T, N3T>, DataProviderT>>
-        : public cube<ts_category<tensor_shape<ST, N1T, N2T, N3T>, DataProviderT>> {};
+    using ts_specific_shape_base = ts_assignable<CategoryT>;
+    template <class CategoryT, 
+        class ShapeT = typename details::_used_types<CategoryT>::shape_type>
+    class ts_specific_shape : public ts_specific_shape_base<CategoryT> {};
 
-
+    // specific value_type
+    template <class CategoryT>
+    using ts_specific_value_type_base = ts_specific_shape<CategoryT>;
+    template <class CategoryT, 
+        class ValueT = typename details::_used_types<CategoryT>::value_type>
+    class ts_specific_value_type : public ts_specific_value_type_base<CategoryT> {};
 
 
 
 
     // storage
     template <class CategoryT> 
-    using ts_storage_base = ts_special_shape<CategoryT>;
+    using ts_storage_base = ts_specific_value_type<CategoryT>;
     
     template <class CategoryT, 
         bool InPlaceReshapable = ts_traits::inplace_reshapable<CategoryT>::value> 
@@ -578,6 +556,10 @@ namespace wheels {
     class ts_storage<ts_category<ShapeT, DataProviderT>, false> 
         : public ts_storage_base<ts_category<ShapeT, DataProviderT>> {
     public:
+        using shape_type = ShapeT;
+        using data_provider_type = DataProviderT;
+        using value_type = typename data_provider_type::value_type;
+
         constexpr ts_storage() {}
         template <class DPT>
         constexpr ts_storage(const ShapeT & s, DPT && dp)

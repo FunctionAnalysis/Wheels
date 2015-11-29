@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../core/operators.hpp"
+
 #include "tensor.hpp"
 
 namespace wheels {
@@ -92,6 +93,43 @@ namespace wheels {
 
 
 
+    // unit axis vector
+    template <class T, size_t Idx>
+    struct unit_at {
+        using value_type = T;
+        constexpr unit_at() {}
+        template <class Archiver>
+        void serialize(Archiver &) {}
+    };
+
+    namespace ts_traits {
+        template <class ShapeT, class T, size_t Idx>
+        struct readable_at_index<ts_category<ShapeT, unit_at<T, Idx>>> : yes {};
+
+        template <class ShapeT, class T, size_t Idx, class IndexT>
+        constexpr T at_index_const_impl(const ts_category<ShapeT, unit_at<T, Idx>> & a, const IndexT & index) {
+            return index == Idx ? 1 : 0;
+        }
+    }
+
+    // unit_x/y/z
+    template <class T = double, class ST = size_t, class SizeT = const_ints<ST, 3>>
+    constexpr auto unit_x(const SizeT & s = SizeT()) {
+        return compose_category(make_shape<ST>(s), unit_at<T, 0>());
+    }
+    template <class T = double, class ST = size_t, class SizeT = const_ints<ST, 3>>
+    constexpr auto unit_y(const SizeT & s = SizeT()) {
+        return compose_category(make_shape<ST>(s), unit_at<T, 1>());
+    }
+    template <class T = double, class ST = size_t, class SizeT = const_ints<ST, 3>>
+    constexpr auto unit_z(const SizeT & s = SizeT()) {
+        return compose_category(make_shape<ST>(s), unit_at<T, 2>());
+    }
+
+
+
+
+
     
     // ewise op
     template <class T, class OpT, class ... InputTs>
@@ -101,9 +139,9 @@ namespace wheels {
         OpT op;
         std::tuple<InputTs ...> inputs;
         
-        template <class OpTT>
-        constexpr explicit ewise_op_result(OpTT && o, InputTs && ... ins)
-            : op(forward<OpTT>(o)), inputs(std::forward_as_tuple(ins) ...) {}
+        template <class OpTT, class ... InputTTs>
+        constexpr explicit ewise_op_result(OpTT && o, InputTTs && ... ins)
+            : op(forward<OpTT>(o)), inputs(std::forward<InputTTs>(ins) ...) {}
         
         template <class Archive> 
         void serialize(Archive & ar) { 
@@ -114,7 +152,8 @@ namespace wheels {
     template <class OpT, class ... InputTs>
     constexpr auto compose_ewise_op_result(OpT && op, InputTs && ... inputs) {
         using result_t = std::decay_t<decltype(op(inputs.at_index_const(0) ...))>;
-        return ewise_op_result<result_t, std::decay_t<OpT>, InputTs...>(forward<OpT>(op), forward<InputTs>(inputs) ...);
+        return ewise_op_result<result_t, std::decay_t<OpT>, InputTs...>(forward<OpT>(op), 
+            forward<InputTs>(inputs) ...);
     }
 
     namespace ts_traits {
@@ -293,7 +332,30 @@ namespace wheels {
     WHEELS_TS_OVERLOAD_EWISE_BINARY_FUNC(min)
     WHEELS_TS_OVERLOAD_EWISE_BINARY_FUNC(pow)
     WHEELS_TS_OVERLOAD_EWISE_BINARY_FUNC(atan2)
-    
+
+
+    // dot product
+    template <class C1, class C2, bool RInd1, bool RSub1, bool RInd2, bool RSub2>
+    constexpr auto dot(const ts_readable<C1, RInd1, RSub1, true> & a,
+        const ts_readable<C2, RInd2, RSub2, true> & b) {
+        return ewise_mul(a.category(), b.category()).sum();
+    }   
+
+
+    // reshape
+
+
+
+    // cat
+
+
+    // repeat
+
+
+    // permute
+
+
+    // 
 
 
 }

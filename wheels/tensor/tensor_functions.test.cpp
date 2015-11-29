@@ -1,8 +1,13 @@
 #include <gtest/gtest.h>
+
+#include <complex>
+
 #include "tensor_functions.hpp"
+#include "tensor_specific.hpp"
 
 using namespace wheels;
 using namespace wheels::literals;
+using namespace std::complex_literals;
 
 TEST(tensor, constants) {
 
@@ -24,8 +29,17 @@ TEST(tensor, constants) {
 TEST(tensor, meshgrid) {
 
     matx x, y;
-    std::tie(x, y) = meshgrid(3, 3);
+    std::tie(x, y) = meshgrid(100, 100);
 
+    for_each_subscript(x.shape(), [&x, &y](size_t s1, size_t s2) {
+        ASSERT_TRUE(x(s1, s2) == s1);
+        ASSERT_TRUE(y(s1, s2) == s2);
+    });
+
+    spmat x2, y2;
+    std::tie(x2, y2) = meshgrid(make_shape(100_c, 100_c));
+
+    ASSERT_TRUE(x + y * 1i == x2 + y2 * 1i);
 
 }
 
