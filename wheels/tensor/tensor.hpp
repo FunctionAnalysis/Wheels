@@ -62,16 +62,6 @@ namespace wheels {
             return a.data_provider().begin() + N;
         }
 
-        // iter2ind
-        template <class ShapeT, class E, size_t N>
-        constexpr size_t iter2ind(const ts_category<ShapeT, std::array<E, N>> & a, const E * iter) {
-            return iter - a.data_provider().begin();
-        }
-        template <class ShapeT, class E, size_t N>
-        constexpr size_t iter2ind(const ts_category<ShapeT, std::array<E, N>> & a, E * iter) {
-            return iter - a.data_provider().begin();
-        }
-
     }
     
     template <class ShapeT, class E, size_t N>
@@ -164,18 +154,6 @@ namespace wheels {
         template <class ShapeT, class E, class AllocT>
         typename std::vector<E, AllocT>::iterator end_impl(ts_category<ShapeT, std::vector<E, AllocT>> & a) {
             return a.data_provider().end();
-        }
-
-        // iter2ind
-        template <class ShapeT, class E, class AllocT>
-        size_t iter2ind(const ts_category<ShapeT, std::vector<E, AllocT>> & a, 
-            typename std::vector<E, AllocT>::const_iterator iter) {
-            return iter - a.data_provider().cbegin();
-        }
-        template <class ShapeT, class E, class AllocT>
-        size_t iter2ind(const ts_category<ShapeT, std::vector<E, AllocT>> & a, 
-            typename std::vector<E, AllocT>::iterator iter) {
-            return iter - const_cast<std::vector<E, AllocT>&>(a.data_provider()).begin();
         }
 
 

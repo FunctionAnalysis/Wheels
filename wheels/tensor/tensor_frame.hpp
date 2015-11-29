@@ -364,9 +364,46 @@ namespace wheels {
 
 
 
+    // reduce
+    template <class CategoryT>
+    using ts_reducible_base = ts_nonzero_iteratable<CategoryT>;
+
+    template <class CategoryT,
+        class ConstIterT = typename ts_traits::const_iterator_type<CategoryT>::type>
+    class ts_reducible : public ts_reducible_base<CategoryT> {
+    public:
+        decltype(auto) max() const { return *std::max_element(cbegin(), cend()); }
+        decltype(auto) min() const { return *std::min_element(cbegin(), cend()); }
+    };
+    template <class CategoryT>
+    class ts_reducible<CategoryT, void> : public ts_reducible_base<CategoryT> {};
+
+    template <class CategoryT,
+        class NonZeroIterT = typename ts_traits::nonzero_iterator_type<CategoryT>::type>
+    class ts_nonzero_reducible : public ts_reducible<CategoryT> {
+    public:
+        auto sum() const { return std::accumulate(nzbegin(), nzend(), typename CategoryT::value_type(0)); }
+        auto norm_squared() const {
+            typename CategoryT::value_type r = 0;
+            for (auto it = nzbegin(); it != nzend(); ++it) {
+                auto e = *it;
+                r += e * e;
+            }
+            return r;
+        }
+        auto norm() const { return sqrt(norm_squared()); }
+    };
+    template <class CategoryT>
+    class ts_nonzero_reducible<CategoryT, void> : public ts_reducible<CategoryT> {};
+
+
+
+
+
+
     // reshape
     template <class CategoryT>
-    using ts_inplace_reshapable_base = ts_nonzero_iteratable<CategoryT>;
+    using ts_inplace_reshapable_base = ts_nonzero_reducible<CategoryT>;
 
     namespace ts_traits {
         template <class CategoryT>
@@ -392,45 +429,6 @@ namespace wheels {
         }
     };
 
-
-
-    // index_accessible_from_iterator
-    // iter2ind
-    namespace ts_traits {
-
-        template <class IterT>
-        struct index_accessible_from_iterator : no {};
-
-        template <class CategoryT>
-        struct index_accessible_from_iterator<ts_const_iterator_naive<CategoryT>> : yes {};
-        template <class CategoryT>
-        constexpr size_t iter2ind(const ts_const_iterator_naive<CategoryT> & iter) {
-            return iter.ind;
-        }
-
-        template <class CategoryT>
-        struct index_accessible_from_iterator<ts_nonconst_iterator_naive<CategoryT>> : yes {};
-        template <class CategoryT>
-        constexpr size_t iter2ind(const ts_nonconst_iterator_naive<CategoryT> & iter) {
-            return iter.ind;
-        }
-
-        template <class IterT>
-        struct index_accessible_from_iterator<nonzero_iterator_of<IterT>>
-            : index_accessible_from_iterator<IterT> {};
-        template <class IterT>
-        constexpr size_t iter2ind(const nonzero_iterator_of<IterT> & iter) {
-            return iter2ind(iter.iter);
-        }
-
-        template <class IterT>
-        struct index_accessible_from_iterator<second_in_pair_iterator_of<IterT>> : yes {};
-        template <class IterT>
-        constexpr size_t iter2ind(const second_in_pair_iterator_of<IterT> & iter) {
-            return iter.iter->first;
-        }
-
-    }
 
 
 
@@ -493,19 +491,73 @@ namespace wheels {
 
 
 
-
-    // extensions
+    // special shapes
     template <class CategoryT> 
-    using ts_extensions_base = ts_assignable<CategoryT>;
+    using ts_special_shape_base = ts_assignable<CategoryT>;
+
+    // vector shape
+    template <class CategoryT,
+        bool Writable = ts_traits::writable<CategoryT>::value>
+    class vector : public ts_special_shape_base<CategoryT> {
+    public:
+        decltype(auto) x() const { return at_index_const(0); }
+        decltype(auto) y() const { return at_index_const(1); }
+        decltype(auto) z() const { return at_index_const(2); }
+        decltype(auto) w() const { return at_index_const(3); }
+        decltype(auto) red() const { return at_index_const(0); }
+        decltype(auto) green() const { return at_index_const(1); }
+        decltype(auto) blue() const { return at_index_const(2); }
+        decltype(auto) alpha() const { return at_index_const(3); }
+    };
     template <class CategoryT>
-    class ts_extensions : public ts_extensions_base<CategoryT> {};
+    class vector<CategoryT, true> : public vector<CategoryT, false> {
+    public:
+        decltype(auto) x() { return at_index_nonconst(0); }
+        decltype(auto) y() { return at_index_nonconst(1); }
+        decltype(auto) z() { return at_index_nonconst(2); }
+        decltype(auto) w() { return at_index_nonconst(3); }
+        decltype(auto) red() { return at_index_nonconst(0); }
+        decltype(auto) green() { return at_index_nonconst(1); }
+        decltype(auto) blue() { return at_index_nonconst(2); }
+        decltype(auto) alpha() { return at_index_nonconst(3); }
+    };
+    
+    // matrix shape
+    template <class CategoryT,
+        bool Writable = ts_traits::writable<CategoryT>::value>
+    class matrix : public ts_special_shape_base<CategoryT> {
+    public:
+        auto rows() const { return size(const_index<0>()); }
+        auto cols() const { return size(const_index<1>()); }
+    };
+
+    // cube shape
+    template <class CategoryT,
+        bool Writable = ts_traits::writable<CategoryT>::value>
+    class cube : public ts_special_shape_base<CategoryT> {};
+
+
+    template <class CategoryT>
+    class ts_special_shape
+        : public ts_special_shape_base<CategoryT> {};
+    template <class ST, class SizeT, class DataProviderT>
+    class ts_special_shape<ts_category<tensor_shape<ST, SizeT>, DataProviderT>> 
+        : public vector<ts_category<tensor_shape<ST, SizeT>, DataProviderT>> {};
+    template <class ST, class MT, class NT, class DataProviderT>
+    class ts_special_shape<ts_category<tensor_shape<ST, MT, NT>, DataProviderT>>
+        : public matrix<ts_category<tensor_shape<ST, MT, NT>, DataProviderT>> {};
+    template <class ST, class N1T, class N2T, class N3T, class DataProviderT>
+    class ts_special_shape<ts_category<tensor_shape<ST, N1T, N2T, N3T>, DataProviderT>>
+        : public cube<ts_category<tensor_shape<ST, N1T, N2T, N3T>, DataProviderT>> {};
+
+
 
 
 
 
     // storage
     template <class CategoryT> 
-    using ts_storage_base = ts_extensions<CategoryT>;
+    using ts_storage_base = ts_special_shape<CategoryT>;
     
     template <class CategoryT, 
         bool InPlaceReshapable = ts_traits::inplace_reshapable<CategoryT>::value> 

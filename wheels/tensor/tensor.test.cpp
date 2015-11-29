@@ -58,9 +58,12 @@ TEST(tensor, dynamic_sized) {
     vecx v3 = sv3;
 
     ASSERT_EQ(v3[0], 1);
+    ASSERT_EQ(v3.x(), 1);
     ASSERT_EQ(v3[first], 1);
     ASSERT_EQ(v3[1], 2);
+    ASSERT_EQ(v3.y(), 2);
     ASSERT_EQ(v3[2], 3);
+    ASSERT_EQ(v3.z(), 3);
     ASSERT_EQ(v3[last], 3);
     ASSERT_EQ(v3[first + 1], 2);
     ASSERT_EQ(v3[first + 1_c], 2);
@@ -75,6 +78,10 @@ TEST(tensor, dynamic_sized) {
     ASSERT_EQ(m32(last, last), 1);
 
     ASSERT_EQ(std::accumulate(m32.nzbegin(), m32.nzend(), 0.0), 21);
+    ASSERT_EQ(m32.sum(), 21);
+
+    ASSERT_EQ(m32.rows(), 3);
+    ASSERT_EQ(m32.cols(), 2);
 
 }
 
@@ -86,6 +93,7 @@ TEST(tensor, sparse) {
     va[99] = 99;
     
     ASSERT_EQ(std::accumulate(va.nzbegin(), va.nzend(), 0.0), 101);
+    ASSERT_EQ(va.sum(), 101);
 
     spvec_<std::complex<double>> vb;
     vb = va;
@@ -97,6 +105,7 @@ TEST(tensor, sparse) {
             ASSERT_TRUE(vb.at_index_const(i) == 0.0);
         }
     }
+    ASSERT_TRUE(vb.sum() == 101.0);
 
     vecx_<std::complex<double>> vc = vb;
     ASSERT_TRUE(vc.shape() == vb.shape());

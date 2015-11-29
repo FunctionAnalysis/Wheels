@@ -119,6 +119,46 @@ namespace wheels {
     };
 
 
+    // index_accessible_from_iterator
+    // iter2ind
+    namespace ts_traits {
+
+        template <class IterT>
+        struct index_accessible_from_iterator : no {};
+
+        template <class CategoryT>
+        struct index_accessible_from_iterator<ts_const_iterator_naive<CategoryT>> : yes {};
+        template <class CategoryT>
+        constexpr size_t iter2ind(const ts_const_iterator_naive<CategoryT> & iter) {
+            return iter.ind;
+        }
+
+        template <class CategoryT>
+        struct index_accessible_from_iterator<ts_nonconst_iterator_naive<CategoryT>> : yes {};
+        template <class CategoryT>
+        constexpr size_t iter2ind(const ts_nonconst_iterator_naive<CategoryT> & iter) {
+            return iter.ind;
+        }
+
+        template <class IterT>
+        struct index_accessible_from_iterator<nonzero_iterator_of<IterT>>
+            : index_accessible_from_iterator<IterT> {};
+        template <class IterT>
+        constexpr size_t iter2ind(const nonzero_iterator_of<IterT> & iter) {
+            return iter2ind(iter.iter);
+        }
+
+        template <class IterT>
+        struct index_accessible_from_iterator<second_in_pair_iterator_of<IterT>> : yes {};
+        template <class IterT>
+        constexpr size_t iter2ind(const second_in_pair_iterator_of<IterT> & iter) {
+            return iter.iter->first;
+        }
+
+    }
+
+
+
 
 
     namespace index_tags {
