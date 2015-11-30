@@ -4,7 +4,7 @@
 
 #include "../core/operators.hpp"
 
-#include "tensor.hpp"
+#include "tensor_categories.hpp"
 
 namespace wheels {
 
