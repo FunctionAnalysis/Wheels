@@ -348,47 +348,6 @@ namespace wheels {
 
 
 
-    // ewise_mul
-    template <class A, class B,
-        class = std::enable_if_t<is_tensor<std::decay_t<A>>::value &&
-        is_tensor<std::decay_t<B>>::value >>
-    constexpr auto ewise_mul(A && a, B && b) {
-        assert(a.shape() == b.shape());
-        return make_tensor(a.shape(),
-            make_tensor_ewise_op_result(binary_op_mul(), forward<A>(a), forward<B>(b)));
-    }
-
-    // ewise_div
-    template <class A, class B,
-        class = std::enable_if_t<is_tensor<std::decay_t<A>>::value &&
-        is_tensor<std::decay_t<B>>::value >>
-    constexpr auto ewise_div(A && a, B && b) {
-        assert(a.shape() == b.shape());
-        return make_tensor(a.shape(),
-            make_tensor_ewise_op_result(binary_op_div(), forward<A>(a), forward<B>(b)));
-    }
-
-
-
-#define WHEELS_TS_OVERLOAD_EWISE_BINARY_FUNC(func) \
-    template <class A, class B, \
-        class = std::enable_if_t<is_tensor<std::decay_t<A>>::value &&  \
-        is_tensor<std::decay_t<B>>::value>> \
-    constexpr auto ewise_##func (A && a, B && b) { \
-        assert(a.shape() == b.shape()); \
-        return make_tensor(a.shape(), \
-            make_tensor_ewise_op_result(binary_func_##func(), forward<A>(a), forward<B>(b))); \
-    }
-
-    WHEELS_TS_OVERLOAD_EWISE_BINARY_FUNC(max)
-    WHEELS_TS_OVERLOAD_EWISE_BINARY_FUNC(min)
-    WHEELS_TS_OVERLOAD_EWISE_BINARY_FUNC(pow)
-    WHEELS_TS_OVERLOAD_EWISE_BINARY_FUNC(atan2)
-
-
-
-
-
 
 
     // special shapes
