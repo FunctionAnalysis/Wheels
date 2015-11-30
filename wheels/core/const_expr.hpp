@@ -1,31 +1,29 @@
 #pragma once
 
-#include "constants.hpp"
-#include "functors.hpp"
+#include "overloads.hpp"
 
 namespace wheels {
 
-    template <class T> struct is_const_expr : no {};
-
-    template <class DerivedT>
-    struct const_expr_base {
-        constexpr const_expr_base() {}
-        constexpr const DerivedT & derived() const { 
-            return static_cast<const DerivedT &>(*this); 
-        }
-    };
+    struct info_const_expr {};
 
     // const_symbol
     template <size_t Idx>
-    struct const_symbol : const_expr_base<const_symbol<Idx>> {
+    struct const_symbol {
         constexpr const_symbol() {}
         template <class ... ArgTs>
-        constexpr auto operator()(const ArgTs & ... args) const {
-            return std::get<Idx>(std::forward_as_tuple(args...));
+        constexpr auto operator()(ArgTs && ... args) const {
+            return std::get<Idx>(std::forward_as_tuple(forward<ArgTs>(args)...));
         }
-        template <class Archive> void serialize(Archive &) {}
+        template <class Archive> 
+        void serialize(Archive &) {}
     };
-    template <size_t Idx> struct is_const_expr<const_symbol<Idx>> : yes {};
+
+    template <size_t Idx>
+    struct join_overloading<const_symbol<Idx>> : yes {};
+    template <size_t Idx>
+    struct info_for_overloading<const_symbol<Idx>> {
+        using type = info_const_expr;
+    };
 
     namespace literals {
         // ""_symbol
@@ -38,43 +36,62 @@ namespace wheels {
 
     // const_coeff
     template <class T>
-    struct const_coeff : const_expr_base<const_coeff<T>> {
-        static_assert(!is_const_expr<T>::value, "const_coeff should not be nested");
+    struct const_coeff {
         T val;
         template <class TT>
         constexpr const_coeff(TT && v) : val(forward<TT>(v)) {}
         template <class ... ArgTs>
-        constexpr T operator()(const ArgTs & ...) const {
+        constexpr T operator()(ArgTs && ...) const {
             return val;
         }
-        template <class Archive> void serialize(Archive & ar) { ar(val); }
+        template <class Archive> 
+        void serialize(Archive & ar) { 
+            ar(val);
+        }
     };
-    template <class T> struct is_const_expr<const_coeff<T>> : yes {};
-    template <class T> 
+
+    template <class T>
+    struct join_overloading<const_coeff<T>> : yes {};
+    template <class T>
+    struct info_for_overloading<const_coeff<T>> {
+        using type = info_const_expr;
+    };
+
+    template <class T>
     constexpr const_coeff<std::decay_t<T>> as_const_coeff(T && v) {
         return const_coeff<std::decay_t<T>>(forward<T>(v));
     }
 
+
     // const_unary_op
     template <class Op, class E>
-    struct const_unary_op : const_expr_base<const_unary_op<Op, E>>{
+    struct const_unary_op {
         Op op;
         E e;
         template <class OpT, class T>
-        constexpr const_unary_op(OpT && op, T && e) 
+        constexpr const_unary_op(OpT && op, T && e)
             : op(forward<OpT>(op)), e(forward<T>(e)) {}
         template <class ... ArgTs>
-        constexpr auto operator()(const ArgTs & ... args) const {
-            return op(e(args...));
+        constexpr auto operator()(ArgTs && ... args) const {
+            return op(e(forward<ArgTs>(args)...));
         }
-        template <class Archive> void serialize(Archive & ar) { ar(op, e); }
+        template <class Archive> 
+        void serialize(Archive & ar) { 
+            ar(op, e); 
+        }
     };
-    template <class Op, class E> 
-    struct is_const_expr<const_unary_op<Op, E>> : yes {};
+
+    template <class Op, class E>
+    struct join_overloading<const_unary_op<Op, E>> : yes {};
+    template <class Op, class E>
+    struct info_for_overloading<const_unary_op<Op, E>> {
+        using type = info_const_expr;
+    };
+  
 
     // const_binary_op
     template <class Op, class E1, class E2>
-    struct const_binary_op : const_expr_base<const_binary_op<Op, E1, E2>>{
+    struct const_binary_op {
         Op op;
         E1 e1;
         E2 e2;
@@ -82,48 +99,69 @@ namespace wheels {
         constexpr const_binary_op(OpT && op, T1 && e1, T2 && e2)
             : op(forward<OpT>(op)), e1(forward<T1>(e1)), e2(forward<T2>(e2)) {}
         template <class ... ArgTs>
-        constexpr auto operator()(const ArgTs & ... args) const {
-            return op(e1(args...), e2(args...));
+        constexpr auto operator()(ArgTs && ... args) const {
+            return op(e1(forward<ArgTs>(args)...), e2(forward<ArgTs>(args)...));
         }
-        template <class Archive> void serialize(Archive & ar) { ar(op, e1, e2); }
+        template <class Archive> 
+        void serialize(Archive & ar) { 
+            ar(op, e1, e2); 
+        }
     };
+
     template <class Op, class E1, class E2>
-    struct is_const_expr<const_binary_op<Op, E1, E2>> : yes {};
+    struct join_overloading<const_binary_op<Op, E1, E2>> : yes {};
+    template <class Op, class E1, class E2>
+    struct info_for_overloading<const_binary_op<Op, E1, E2>> {
+        using type = info_const_expr;
+    };
 
 
-#define WHEELS_CONST_EXPR_OVERLOAD_UNARY_OP(op, name) \
-    template <class E> \
-    constexpr auto operator op (const const_expr_base<E> & e) { \
-        using _op_t = unary_op_##name; \
-        return const_unary_op<_op_t, E> (_op_t(), e.derived()); \
-    }
-    WHEELS_CONST_EXPR_OVERLOAD_UNARY_OP(-, minus)
+    // overload operators
+    template <class Op>
+    struct overloaded<Op, info_const_expr> {
+        constexpr overloaded() {}
+        template <class TT>
+        constexpr decltype(auto) operator()(TT && v) const {
+            return const_unary_op<Op, TT>(Op(), forward<TT>(v));
+        }
+        template <class Archive>
+        void serialize(Archive &) {}
+    };
 
+    template <class Op>
+    struct overloaded<Op, info_const_expr, info_const_expr> {
+        constexpr overloaded() {}
+        template <class TT1, class TT2>
+        constexpr decltype(auto) operator()(TT1 && v1, TT2 && v2) const {
+            return const_binary_op<Op, TT1, TT2>(Op(), forward<TT1>(v1), forward<TT2>(v2));
+        }
+        template <class Archive>
+        void serialize(Archive &) {}
+    };
 
-#define WHEELS_CONST_EXPR_OVERLOAD_BINARY_OP(op, name) \
-    template <class E1, class E2>  \
-    constexpr auto operator op (const const_expr_base<E1> & e1, const const_expr_base<E2> & e2) { \
-        using _op_t = binary_op_##name; \
-        return const_binary_op<_op_t, E1, E2> (_op_t(), e1.derived(), e2.derived()); \
-    } \
-    template <class E1, class E2, class = \
-        std::enable_if_t<!(is_const_expr<E2>::value)>, \
-        class = void> \
-    constexpr auto operator op (const const_expr_base<E1> & e1, const E2 & e2) { \
-        return e1.derived() op as_const_coeff(e2); \
-    } \
-    template <class E1, class E2, class = \
-        std::enable_if_t<!(is_const_expr<E1>::value)>, \
-        class = void, class = void> \
-    constexpr auto operator op (const E1 & e1, const const_expr_base<E2> & e2) { \
-        return as_const_coeff(e1) op e2.derived(); \
-    } 
+    template <class Op, class NotConstExprT>
+    struct overloaded<Op, info_const_expr, NotConstExprT> {
+        constexpr overloaded() {}
+        template <class TT1, class TT2>
+        constexpr decltype(auto) operator()(TT1 && v1, TT2 && v2) const {
+            return const_binary_op<Op, TT1, const_coeff<std::decay_t<TT2>>>(Op(), 
+                forward<TT1>(v1), as_const_coeff(forward<TT2>(v2)));
+        }
+        template <class Archive>
+        void serialize(Archive &) {}
+    };
 
-    WHEELS_CONST_EXPR_OVERLOAD_BINARY_OP(+, plus)
-    WHEELS_CONST_EXPR_OVERLOAD_BINARY_OP(-, minus)
-    WHEELS_CONST_EXPR_OVERLOAD_BINARY_OP(*, mul)
-    WHEELS_CONST_EXPR_OVERLOAD_BINARY_OP(/, div)
-    WHEELS_CONST_EXPR_OVERLOAD_BINARY_OP(%, mod)
+    template <class Op, class NotConstExprT>
+    struct overloaded<Op, NotConstExprT, info_const_expr> {
+        constexpr overloaded() {}
+        template <class TT1, class TT2>
+        constexpr decltype(auto) operator()(TT1 && v1, TT2 && v2) const {
+            return const_binary_op<Op, const_coeff<std::decay_t<TT1>>, TT2>(Op(),
+                as_const_coeff(forward<TT1>(v2)), forward<TT2>(v1));
+        }
+        template <class Archive>
+        void serialize(Archive &) {}
+    };
 
 
 }

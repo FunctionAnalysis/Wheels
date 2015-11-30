@@ -3,6 +3,7 @@
 #include <cassert>
 
 #include "../core/types.hpp"
+#include "../core/const_expr.hpp"
 
 #include "tensor_shape.hpp"
 
@@ -10,29 +11,33 @@ namespace wheels {
 
     // default const iterator
     template <class CategoryT>
-    struct ts_const_iterator_naive: std::iterator<std::random_access_iterator_tag,
+    struct tensor_const_iterator_naive: std::iterator<std::random_access_iterator_tag,
         typename CategoryT::value_type,
         std::ptrdiff_t> {
         const CategoryT & self;
         size_t ind;
-        constexpr ts_const_iterator_naive(const CategoryT & s, size_t i = 0) : self(s), ind(i) {}
+        constexpr tensor_const_iterator_naive(const CategoryT & s, size_t i = 0) : self(s), ind(i) {}
         constexpr decltype(auto) operator * () const { return self.at_index_const(ind); }
         constexpr decltype(auto) operator -> () const { return &(self.at_index_const(ind)); }
-        ts_const_iterator_naive & operator ++() { ++ind; return *this; }
-        ts_const_iterator_naive & operator --() { assert(ind != 0);  --ind; return *this; }
-        ts_const_iterator_naive & operator +=(size_t s) { ind += s; return *this; }
-        ts_const_iterator_naive & operator -=(size_t s) { ind -= s; return *this; }
-        constexpr ts_const_iterator_naive operator + (size_t s) const { return ts_const_iterator_naive(self, ind + s); }
-        constexpr ts_const_iterator_naive operator - (size_t s) const { return ts_const_iterator_naive(self, ind - s); }
-        std::ptrdiff_t operator - (const ts_const_iterator_naive & it) const { return ind - it.ind; }
-        constexpr bool operator == (const ts_const_iterator_naive & it) const {
+        tensor_const_iterator_naive & operator ++() { ++ind; return *this; }
+        tensor_const_iterator_naive & operator --() { assert(ind != 0);  --ind; return *this; }
+        tensor_const_iterator_naive & operator +=(size_t s) { ind += s; return *this; }
+        tensor_const_iterator_naive & operator -=(size_t s) { ind -= s; return *this; }
+        constexpr tensor_const_iterator_naive operator + (size_t s) const { 
+            return tensor_const_iterator_naive(self, ind + s);
+        }
+        constexpr tensor_const_iterator_naive operator - (size_t s) const { 
+            return tensor_const_iterator_naive(self, ind - s);
+        }
+        std::ptrdiff_t operator - (const tensor_const_iterator_naive & it) const { return ind - it.ind; }
+        constexpr bool operator == (const tensor_const_iterator_naive & it) const {
             assert(&self == &(it.self));
             return ind == it.ind;
         }
-        constexpr bool operator != (const ts_const_iterator_naive & it) const {
+        constexpr bool operator != (const tensor_const_iterator_naive & it) const {
             return ind != it.ind;
         }
-        constexpr bool operator < (const ts_const_iterator_naive & it) const {
+        constexpr bool operator < (const tensor_const_iterator_naive & it) const {
             return ind < it.ind;
         }
     };
@@ -40,29 +45,33 @@ namespace wheels {
 
     // default nonconst iterator
     template <class CategoryT>
-    struct ts_nonconst_iterator_naive : std::iterator<std::random_access_iterator_tag,
+    struct tensor_nonconst_iterator_naive : std::iterator<std::random_access_iterator_tag,
         typename CategoryT::value_type,
         std::ptrdiff_t> {
         CategoryT & self;
         size_t ind;
-        constexpr ts_nonconst_iterator_naive(CategoryT & s, size_t i = 0) : self(s), ind(i) {}
+        constexpr tensor_nonconst_iterator_naive(CategoryT & s, size_t i = 0) : self(s), ind(i) {}
         decltype(auto) operator * () const { return self.at_index_nonconst(ind); }
         decltype(auto) operator -> () const { return &(self.at_index_nonconst(ind)); }
-        ts_nonconst_iterator_naive & operator ++() { ++ind; return *this; }
-        ts_nonconst_iterator_naive & operator --() { assert(ind != 0);  --ind; return *this; }
-        ts_nonconst_iterator_naive & operator +=(size_t s) { ind += s; return *this; }
-        ts_nonconst_iterator_naive & operator -=(size_t s) { ind -= s; return *this; }
-        constexpr ts_nonconst_iterator_naive operator + (size_t s) const { return ts_nonconst_iterator_naive(self, ind + s); }
-        constexpr ts_nonconst_iterator_naive operator - (size_t s) const { return ts_nonconst_iterator_naive(self, ind - s); }
-        std::ptrdiff_t operator - (const ts_nonconst_iterator_naive & it) const { return ind - it.ind; }
-        constexpr bool operator == (const ts_nonconst_iterator_naive & it) const {
+        tensor_nonconst_iterator_naive & operator ++() { ++ind; return *this; }
+        tensor_nonconst_iterator_naive & operator --() { assert(ind != 0);  --ind; return *this; }
+        tensor_nonconst_iterator_naive & operator +=(size_t s) { ind += s; return *this; }
+        tensor_nonconst_iterator_naive & operator -=(size_t s) { ind -= s; return *this; }
+        constexpr tensor_nonconst_iterator_naive operator + (size_t s) const { 
+            return tensor_nonconst_iterator_naive(self, ind + s); 
+        }
+        constexpr tensor_nonconst_iterator_naive operator - (size_t s) const { 
+            return tensor_nonconst_iterator_naive(self, ind - s); 
+        }
+        std::ptrdiff_t operator - (const tensor_nonconst_iterator_naive & it) const { return ind - it.ind; }
+        constexpr bool operator == (const tensor_nonconst_iterator_naive & it) const {
             assert(&self == &(it.self));
             return ind == it.ind;
         }
-        constexpr bool operator != (const ts_nonconst_iterator_naive & it) const {
+        constexpr bool operator != (const tensor_nonconst_iterator_naive & it) const {
             return ind != it.ind;
         }
-        constexpr bool operator < (const ts_nonconst_iterator_naive & it) const {
+        constexpr bool operator < (const tensor_nonconst_iterator_naive & it) const {
             return ind < it.ind;
         }
     };
@@ -142,7 +151,7 @@ namespace wheels {
 
 
     // constant value iterator base
-    template <class T, class IterT>
+    template <class T, class DerivedIterT>
     struct constant_value_iterator_base : std::iterator<std::random_access_iterator_tag, T> {
         using value_type = T;
 
@@ -151,55 +160,59 @@ namespace wheels {
         constexpr constant_value_iterator_base(size_t i, size_t e, const T & v)
             : ind(i), end_ind(e), val(v) {}
 
-        constexpr const IterT & derived() const { return static_cast<const IterT &>(*this); }
-        IterT & derived() { return static_cast<IterT &>(*this); }
+        constexpr const DerivedIterT & derived() const { return static_cast<const DerivedIterT &>(*this); }
+        DerivedIterT & derived() { return static_cast<DerivedIterT &>(*this); }
 
         constexpr const T & operator *() const { return val; }
-        constexpr const T * operator *() const { return &val; }
-
-        IterT & operator ++() { ++ind;  return derived(); }
-        IterT & operator --() { --ind;  return derived(); }
-
-        IterT & operator +=(size_t s) { ind += s; return derived(); }
-        IterT & operator -=(size_t s) { ind -= s; return derived(); }
-
-        constexpr IterT operator + (size_t s) const { return IterT(ind + s, end_ind, val); }
-        constexpr IterT operator - (size_t s) const { return IterT(ind - s, end_ind, val); }
-
-        std::ptrdiff_t operator - (const IterT & it) const { return ind - it.ind; }
-        constexpr bool operator == (const IterT & it) const {
+        constexpr const T * operator ->() const { return &val; }
+        DerivedIterT & operator ++() { ++ind;  return derived(); }
+        DerivedIterT & operator --() { --ind;  return derived(); }
+        DerivedIterT & operator +=(size_t s) { ind += s; return derived(); }
+        DerivedIterT & operator -=(size_t s) { ind -= s; return derived(); }
+        constexpr DerivedIterT operator + (size_t s) const { 
+            return DerivedIterT(ind + s, end_ind, val);
+        }
+        constexpr DerivedIterT operator - (size_t s) const { 
+            return DerivedIterT(ind - s, end_ind, val); 
+        }
+        std::ptrdiff_t operator - (const DerivedIterT & it) const { return ind - it.ind; }
+        constexpr bool operator == (const DerivedIterT & it) const {
             return ind == it.ind;
         }
-        constexpr bool operator != (const IterT & it) const {
+        constexpr bool operator != (const DerivedIterT & it) const {
             return ind != it.ind;
         }
-        constexpr bool operator < (const IterT & it) const {
+        constexpr bool operator < (const DerivedIterT & it) const {
             return ind < it.ind;
         }
     };
-
+    template <class T>
+    struct constant_value_iterator : constant_value_iterator_base<T, constant_value_iterator<T>> {
+        constexpr constant_value_iterator(size_t ind, size_t end, const T & val)
+            : constant_value_iterator_base<T, constant_value_iterator>(ind, end, val) {}
+    };
 
 
 
 
     // index_accessible_from_iterator
     // iter2ind
-    namespace ts_traits {
+    namespace tensor_traits {
 
         template <class IterT>
         struct index_accessible_from_iterator : no {};
 
         template <class CategoryT>
-        struct index_accessible_from_iterator<ts_const_iterator_naive<CategoryT>> : yes {};
+        struct index_accessible_from_iterator<tensor_const_iterator_naive<CategoryT>> : yes {};
         template <class CategoryT>
-        constexpr size_t iter2ind(const ts_const_iterator_naive<CategoryT> & iter) {
+        constexpr size_t iter2ind(const tensor_const_iterator_naive<CategoryT> & iter) {
             return iter.ind;
         }
 
         template <class CategoryT>
-        struct index_accessible_from_iterator<ts_nonconst_iterator_naive<CategoryT>> : yes {};
+        struct index_accessible_from_iterator<tensor_nonconst_iterator_naive<CategoryT>> : yes {};
         template <class CategoryT>
-        constexpr size_t iter2ind(const ts_nonconst_iterator_naive<CategoryT> & iter) {
+        constexpr size_t iter2ind(const tensor_nonconst_iterator_naive<CategoryT> & iter) {
             return iter.ind;
         }
 
@@ -227,15 +240,15 @@ namespace wheels {
     namespace index_tags {
         constexpr auto first = const_index<0>();
         constexpr auto length = const_symbol<0>();
-        const auto last = length - const_index<1>();
+        constexpr auto last = length - const_index<1>();
     }
 
     namespace details {
-        template <class E, class SizeT, class = std::enable_if_t<is_const_expr<E>::value>>
+        template <class E, class SizeT, class = std::enable_if_t<!is_int<E>::value>>
         constexpr auto _eval_const_expr(const E & e, const SizeT & sz) {
             return e(sz);
         }
-        template <class T, class SizeT, class = std::enable_if_t<!is_const_expr<T>::value>, class = void>
+        template <class T, class SizeT, class = std::enable_if_t<is_int<T>::value>, class = void>
         constexpr auto _eval_const_expr(const T & t, const SizeT &) {
             return t;
         }

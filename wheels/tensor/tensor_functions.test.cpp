@@ -52,6 +52,6 @@ TEST(tensor, eye) {
 
 
 TEST(tensor, ewise_op_result) {
-    auto a = ones(make_shape(5, 5, 5)) - 1;
-    
+    auto a = eval<false>(ones(make_shape(5, 5, 5)) - 1);
+    ASSERT_TRUE(a.data_provider().size() == 0);
 }

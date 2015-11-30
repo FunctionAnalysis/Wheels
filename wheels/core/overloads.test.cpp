@@ -14,8 +14,8 @@ namespace wheels {
     struct join_overloading<B<T>> : yes {};
 
     template <class T>
-    struct overloaded_unary_op_minus<A<T>> {
-        constexpr overloaded_unary_op_minus() {}
+    struct overloaded<unary_op_minus, A<T>> {
+        constexpr overloaded() {}
         const char * operator()(A<T> && v) const {
             return "rvalue";
         } 
@@ -32,14 +32,14 @@ namespace wheels {
     };
 
     template <class T>
-    struct overloaded_binary_op_plus<A<T>, int> {
+    struct overloaded<binary_op_plus, A<T>, int> {
         template <class TT, class II>
         const char * operator()(TT &&, II &&) const {
             return "A<T> + int";
         }
     };
     template <class T>
-    struct overloaded_binary_op_plus<int, A<T>> {
+    struct overloaded<binary_op_plus, int, A<T>> {
         template <class TT, class II>
         const char * operator()(TT &&, II &&) const {
             return "int + A<T>";

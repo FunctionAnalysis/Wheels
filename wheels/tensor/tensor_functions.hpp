@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "../core/functors.hpp"
+#include "../core/overloads.hpp"
 
 #include "tensor_categories.hpp"
 
@@ -10,21 +10,33 @@ namespace wheels {
 
 
     // constants
-    namespace ts_traits {
+    template <class T>
+    class constant {
+    public:
+        using value_type = T;
+        T val;
+        template <class TT>
+        constexpr constant(TT && v) : val(forward<TT>(v)) {}
+        template <class ... ArgTs>
+        constexpr const T & operator()(ArgTs && ...) const { return val; }
+        template <class Archive> void serialize(Archive & ar) { ar(val); }
+    };
+
+    namespace tensor_traits {
         // readable
         template <class ShapeT, class E>
-        struct readable_at_index<ts_category<ShapeT, constant<E>>> : yes {};
+        struct readable_at_index<tensor_category<ShapeT, constant<E>>> : yes {};
 
         template <class ShapeT, class E, class IndexT>
-        constexpr const E & at_index_const_impl(const ts_category<ShapeT, constant<E>> & a, const IndexT & ind) {
+        constexpr const E & at_index_const_impl(const tensor_category<ShapeT, constant<E>> & a, const IndexT & ind) {
             return a.data_provider().val;
         }
 
         template <class ShapeT, class E>
-        struct readable_at_subs<ts_category<ShapeT, constant<E>>> : yes {};
+        struct readable_at_subs<tensor_category<ShapeT, constant<E>>> : yes {};
 
         template <class ShapeT, class E, class ... SubTs>
-        constexpr const E & at_subs_const_impl(const ts_category<ShapeT, constant<E>> & a, const SubTs & ... subs) {
+        constexpr const E & at_subs_const_impl(const tensor_category<ShapeT, constant<E>> & a, const SubTs & ... subs) {
             return a.data_provider().val;
         }
     }
@@ -65,13 +77,13 @@ namespace wheels {
         void serialize(Archive & ar) {}
     };
 
-    namespace ts_traits {
+    namespace tensor_traits {
         template <class ShapeT, class T, size_t Idx>
-        struct readable_at_subs<ts_category<ShapeT, meshgrid_result<T, Idx>>> : yes {};
+        struct readable_at_subs<tensor_category<ShapeT, meshgrid_result<T, Idx>>> : yes {};
 
         template <class ShapeT, class T, size_t Idx, class ... SubTs>
         constexpr T at_subs_const_impl(
-            const ts_category<ShapeT, meshgrid_result<T, Idx>> & a,
+            const tensor_category<ShapeT, meshgrid_result<T, Idx>> & a,
             const SubTs & ... subs) {
             return (T)std::get<Idx>(std::forward_as_tuple(subs ...));
         }
@@ -105,12 +117,12 @@ namespace wheels {
         void serialize(Archiver &) {}
     };
 
-    namespace ts_traits {
+    namespace tensor_traits {
         template <class ShapeT, class T, size_t Idx>
-        struct readable_at_index<ts_category<ShapeT, unit_axis_result<T, Idx>>> : yes {};
+        struct readable_at_index<tensor_category<ShapeT, unit_axis_result<T, Idx>>> : yes {};
 
         template <class ShapeT, class T, size_t Idx, class IndexT>
-        constexpr T at_index_const_impl(const ts_category<ShapeT, unit_axis_result<T, Idx>> & a, const IndexT & index) {
+        constexpr T at_index_const_impl(const tensor_category<ShapeT, unit_axis_result<T, Idx>> & a, const IndexT & index) {
             return index == Idx ? 1 : 0;
         }
     }
@@ -150,19 +162,19 @@ namespace wheels {
             shape(s) {}
     };
 
-    namespace ts_traits {
+    namespace tensor_traits {
         template <class ShapeT, class T>
-        struct readable_at_subs<ts_category<ShapeT, eye_result<T>>> : yes {};
+        struct readable_at_subs<tensor_category<ShapeT, eye_result<T>>> : yes {};
 
         template <class ShapeT, class T, class ... SubTs>
         constexpr T at_subs_const_impl(
-            const ts_category<ShapeT, eye_result<T>> & a,
+            const tensor_category<ShapeT, eye_result<T>> & a,
             const SubTs & ... subs) {
             return all_same(subs ...) ? 1.0 : types<T>::zero();
         }
 
         template <class ShapeT, class T>
-        struct nonzero_iterator_type<ts_category<ShapeT, eye_result<T>>> {
+        struct nonzero_iterator_type<tensor_category<ShapeT, eye_result<T>>> {
             using type = eye_result_nonzero_iterator<ShapeT, T>;
         };
         template <class ShapeT, class T, size_t ... Is>
@@ -175,11 +187,11 @@ namespace wheels {
         }
 
         template <class ShapeT, class T>
-        constexpr auto nzbegin_impl(const ts_category<ShapeT, eye_result<T>> & t) {
+        constexpr auto nzbegin_impl(const tensor_category<ShapeT, eye_result<T>> & t) {
             return eye_result_nonzero_iterator<ShapeT, T>(0, t.shape());
         }
         template <class ShapeT, class T>
-        constexpr auto nzend_impl(const ts_category<ShapeT, eye_result<T>> & t) {
+        constexpr auto nzend_impl(const tensor_category<ShapeT, eye_result<T>> & t) {
             return eye_result_nonzero_iterator<ShapeT, T>(min_shape_size(t.shape()), t.shape());
         }
     }
@@ -222,38 +234,38 @@ namespace wheels {
             forward<InputTs>(inputs) ...);
     }
 
-    namespace ts_traits {
+    namespace tensor_traits {
        
         // readable
         template <class ShapeT, class T, class OpT, class ... InputTs>
-        struct readable_at_index<ts_category<ShapeT, ewise_op_result<T, OpT, InputTs ...>>> : yes {};
+        struct readable_at_index<tensor_category<ShapeT, ewise_op_result<T, OpT, InputTs ...>>> : yes {};
 
         template <class ShapeT, class T, class OpT, class IndexT, class ... InputTs, size_t ... Is>
         constexpr decltype(auto) _ewise_op_result_at_index_const_impl_seq(
-            const ts_category<ShapeT, ewise_op_result<T, OpT, InputTs ...>> & a,
+            const tensor_category<ShapeT, ewise_op_result<T, OpT, InputTs ...>> & a,
             const IndexT & ind, const const_ints<size_t, Is...> &) {
             return a.data_provider().op(std::get<Is>(a.data_provider().inputs).at_index_const(ind) ...);
         }
         template <class ShapeT, class T, class OpT, class IndexT, class ... InputTs>
         constexpr decltype(auto) at_index_const_impl(
-            const ts_category<ShapeT, ewise_op_result<T, OpT, InputTs ...>> & a, 
+            const tensor_category<ShapeT, ewise_op_result<T, OpT, InputTs ...>> & a, 
             const IndexT & ind) {
             return _ewise_op_result_at_index_const_impl_seq(a, ind, 
                 make_const_sequence(const_size<sizeof...(InputTs)>()));
         }
 
         template <class ShapeT, class T, class OpT, class ... InputTs>
-        struct readable_at_subs<ts_category<ShapeT, ewise_op_result<T, OpT, InputTs ...>>> : yes {};
+        struct readable_at_subs<tensor_category<ShapeT, ewise_op_result<T, OpT, InputTs ...>>> : yes {};
 
         template <class ShapeT, class T, class OpT, class ... InputTs, size_t ... Is, class ... SubTs>
         constexpr decltype(auto) _ewise_op_result_at_subs_const_impl_seq(
-            const ts_category<ShapeT, ewise_op_result<T, OpT, InputTs ...>> & a,
+            const tensor_category<ShapeT, ewise_op_result<T, OpT, InputTs ...>> & a,
             const const_ints<size_t, Is...> &, const SubTs & ... subs) {
             return a.data_provider().op(std::get<Is>(a.data_provider().inputs).at_subs_const(subs ...) ...);
         }
         template <class ShapeT, class T, class OpT, class ... InputTs, class ... SubTs>
         constexpr decltype(auto) at_subs_const_impl(
-            const ts_category<ShapeT, ewise_op_result<T, OpT, InputTs ...>> & a,
+            const tensor_category<ShapeT, ewise_op_result<T, OpT, InputTs ...>> & a,
             const SubTs & ... subs) {
             return _ewise_op_result_at_subs_const_impl_seq(a, 
                 make_const_sequence(const_size<sizeof...(InputTs)>()), subs ...);
@@ -261,105 +273,79 @@ namespace wheels {
     }
 
 
-#define WHEELS_TS_OVERLOAD_EWISE_UNARY_OP(op, name) \
-    template <class A, \
-        class = std::enable_if_t<is_tensor<std::decay_t<A>>::value>, \
-        wheels_distinguish_1>  \
-    constexpr auto operator op (A && a) { \
-        return make_tensor(a.shape(), make_tensor_ewise_op_result(unary_op_##name(), forward<A>(a))); \
-    }
 
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_OP(+, plus)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_OP(-, minus)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_OP(!, not)
+    // overloads operators concerning tensor_category
+    template <class ShapeT, class DataProviderT>
+    struct join_overloading<tensor_category<ShapeT, DataProviderT>> : yes {};
+
+    // unary
+    // tensor -> tensor
+    template <class OpT, class ShapeT, class DataProviderT>
+    struct overloaded<OpT, tensor_category<ShapeT, DataProviderT>> {
+        constexpr overloaded() {}
+        template <class A>
+        constexpr auto operator()(A && ta) const {
+            return make_tensor(a.shape(), make_tensor_ewise_op_result(OpT(), forward<A>(a)));
+        }
+    };
+    
+    // binary
+    // tensor + tensor -> tensor
+    template <class OpT, class ShapeT1, class DataProviderT1, class ShapeT2, class DataProviderT2>
+    struct overloaded<OpT, tensor_category<ShapeT1, DataProviderT1>, tensor_category<ShapeT2, DataProviderT2>> {
+        constexpr overloaded() {}
+        template <class A, class B>
+        constexpr auto operator()(A && a, B && b) const {
+            assert(a.shape() == b.shape());
+            return make_tensor(a.shape(), 
+                make_tensor_ewise_op_result(OpT(), forward<A>(a), forward<B>(b)));
+        }
+    };
+    // tensor + const_expr -> const_expr
+    template <class OpT, class ShapeT1, class DataProviderT1>
+    struct overloaded<OpT, tensor_category<ShapeT1, DataProviderT1>, info_const_expr> {
+        constexpr overloaded() {}
+        template <class A, class B>
+        constexpr auto operator()(A && a, B && b) const {
+            return const_binary_op<OpT, const_coeff<std::decay_t<A>>, B>(OpT(),
+                as_const_coeff(forward<A>(a)), forward<B>(b));
+        }
+    };
+    // const_expr + tensor -> const_expr
+    template <class OpT, class ShapeT2, class DataProviderT2>
+    struct overloaded<OpT, info_const_expr, tensor_category<ShapeT2, DataProviderT2>> {
+        constexpr overloaded() {}
+        template <class A, class B>
+        constexpr auto operator()(A && a, B && b) const {
+            return const_binary_op<OpT, A, const_coeff<std::decay_t<B>>>(OpT(),
+                forward<A>(a), as_const_coeff(forward<B>(b)));
+        }
+    };
+    // tensor + other -> tensor
+    template <class OpT, class ShapeT1, class DataProviderT1, class OtherT>
+    struct overloaded<OpT, tensor_category<ShapeT1, DataProviderT1>, OtherT> {
+        constexpr overloaded() {}
+        template <class A, class B>
+        constexpr auto operator()(A && a, B && b) const {
+            return make_tensor(a.shape(),
+                make_tensor_ewise_op_result(OpT()(const_symbol<0>(),
+                    forward<B>(b)), forward<A>(a)));
+        }
+    };
+    // other + tensor -> tensor
+    template <class OpT, class ShapeT2, class DataProviderT2, class OtherT>
+    struct overloaded<OpT, OtherT, tensor_category<ShapeT2, DataProviderT2>> {
+        constexpr overloaded() {}
+        template <class A, class B>
+        constexpr auto operator()(A && a, B && b) const {
+            return make_tensor(b.shape(),
+                make_tensor_ewise_op_result(OpT()(const_symbol<0>(), 
+                    forward<A>(a)), forward<B>(b)));
+        }
+    };
 
 
-#define WHEELS_TS_OVERLOAD_EWISE_BINARY_OP(op, name) \
-    template <class A, class B, \
-        class = std::enable_if_t<is_tensor<std::decay_t<A>>::value && is_tensor<std::decay_t<B>>::value>, \
-        wheels_distinguish_3> \
-    constexpr auto operator op (A && a, B && b) { \
-        assert(a.shape() == b.shape()); \
-        return make_tensor(a.shape(),  \
-            make_tensor_ewise_op_result(binary_op_##name(), forward<A>(a), forward<B>(b))); \
-    }
 
-   WHEELS_TS_OVERLOAD_EWISE_BINARY_OP(+, plus)
-   WHEELS_TS_OVERLOAD_EWISE_BINARY_OP(-, minus)
-           
-   WHEELS_TS_OVERLOAD_EWISE_BINARY_OP(== , eq)
-   WHEELS_TS_OVERLOAD_EWISE_BINARY_OP(!= , neq)
-   WHEELS_TS_OVERLOAD_EWISE_BINARY_OP(<, lt)
-   WHEELS_TS_OVERLOAD_EWISE_BINARY_OP(<= , lte)
-   WHEELS_TS_OVERLOAD_EWISE_BINARY_OP(>, gt)
-   WHEELS_TS_OVERLOAD_EWISE_BINARY_OP(>= , gte)
-           
-   WHEELS_TS_OVERLOAD_EWISE_BINARY_OP(&&, and)
-   WHEELS_TS_OVERLOAD_EWISE_BINARY_OP(|| , or )
-   WHEELS_TS_OVERLOAD_EWISE_BINARY_OP(&, bitwise_and)
-   WHEELS_TS_OVERLOAD_EWISE_BINARY_OP(| , bitwise_or)
-
-
-
-#define WHEELS_TS_OVERLOAD_EWISE_UNARY_OP_WITH_SCALAR(op, name) \
-    template <class A, class B, class = \
-        std::enable_if_t<\
-         is_tensor<std::decay_t<A>>::value &&  \
-        !is_tensor<std::decay_t<B>>::value && \
-        !is_const_expr<std::decay_t<B>>::value>, wheels_distinguish_4> \
-    constexpr auto operator op (A && a, B && b) { \
-        return make_tensor(a.shape(), \
-            make_tensor_ewise_op_result(unary_op_##name##_with<std::decay_t<B>>(forward<B>(b)), forward<A>(a))); \
-    } \
-    template <class A, class B, class = \
-        std::enable_if_t<\
-         is_tensor<std::decay_t<B>>::value && \
-        !is_tensor<std::decay_t<A>>::value && \
-        !is_const_expr<std::decay_t<A>>::value>, wheels_distinguish_5> \
-        constexpr auto operator op (A && a, B && b) { \
-        return make_tensor(b.shape(), \
-            make_tensor_ewise_op_result(unary_op_##name##_with_<std::decay_t<A>>(forward<A>(a)), forward<B>(b))); \
-    }
-
-
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_OP_WITH_SCALAR(+, plus)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_OP_WITH_SCALAR(-, minus)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_OP_WITH_SCALAR(*, mul)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_OP_WITH_SCALAR(/, div)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_OP_WITH_SCALAR(%, mod)
-
-
-#define WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(func) \
-    template <class A, \
-        class = std::enable_if_t<is_tensor<std::decay_t<A>>::value>> \
-    constexpr auto func(A && a) { \
-        return make_tensor(a.shape(), \
-            make_tensor_ewise_op_result(unary_func_##func(), forward<A>(a))); \
-    }
-
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(sin)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(cos)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(tan)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(sinh)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(cosh)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(tanh)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(asin)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(acos)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(atan)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(asinh)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(acosh)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(atanh)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(exp)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(exp2)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(log)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(log10)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(log2)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(abs)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(sqrt)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(cbrt)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(ceil)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(floor)
-    WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(round)
 
 
     // ewise_mul
@@ -408,7 +394,7 @@ namespace wheels {
     // special shapes
     // vector shape
     template <class CategoryT, bool Writable>
-    class vector : public ts_specific_shape_base<CategoryT> {
+    class vector : public tensor_specific_shape_base<CategoryT> {
     public:
         constexpr decltype(auto) x() const { return at_index_const(0); }
         constexpr decltype(auto) y() const { return at_index_const(1); }
@@ -421,7 +407,7 @@ namespace wheels {
         constexpr auto normalized() const { return category() / norm(); }
     };
     template <class CategoryT>
-    class vector<CategoryT, true> : public ts_specific_shape_base<CategoryT> {
+    class vector<CategoryT, true> : public tensor_specific_shape_base<CategoryT> {
     public:
         constexpr decltype(auto) x() const { return at_index_const(0); }
         constexpr decltype(auto) y() const { return at_index_const(1); }
@@ -442,8 +428,8 @@ namespace wheels {
         constexpr auto normalized() const { return category() / norm(); }
     };
     template <class CategoryT, class ST, class SizeT>
-    class ts_specific_shape<CategoryT, tensor_shape<ST, SizeT>>
-        : public vector<CategoryT, ts_traits::writable<CategoryT>::value> {};
+    class tensor_specific_shape<CategoryT, tensor_shape<ST, SizeT>>
+        : public vector<CategoryT, tensor_traits::writable<CategoryT>::value> {};
 
     // cross
     template <class CategoryT1, class CategoryT2, bool W1, bool W2>
@@ -474,14 +460,14 @@ namespace wheels {
 
     // matrix shape
     template <class CategoryT, bool Writable>
-    class matrix : public ts_specific_shape_base<CategoryT> {
+    class matrix : public tensor_specific_shape_base<CategoryT> {
     public:
         constexpr auto rows() const { return size(const_index<0>()); }
         constexpr auto cols() const { return size(const_index<1>()); }
     };
     template <class CategoryT, class ST, class MT, class NT>
-    class ts_specific_shape<CategoryT, tensor_shape<ST, MT, NT>>
-        : public matrix<CategoryT, ts_traits::writable<CategoryT>::value> {};
+    class tensor_specific_shape<CategoryT, tensor_shape<ST, MT, NT>>
+        : public matrix<CategoryT, tensor_traits::writable<CategoryT>::value> {};
 
     // matrix mul
     
@@ -503,15 +489,15 @@ namespace wheels {
 
     // cube shape
     template <class CategoryT, bool Writable>
-    class cube : public ts_specific_shape_base<CategoryT> {
+    class cube : public tensor_specific_shape_base<CategoryT> {
     public:
         constexpr auto volume() const {
             return size(const_index<0>()) * size(const_index<1>()) * size(const_index<2>());
         }
     };
     template <class CategoryT, class ST, class N1T, class N2T, class N3T>
-    class ts_specific_shape<CategoryT, tensor_shape<ST, N1T, N2T, N3T>>
-        : public cube<CategoryT, ts_traits::writable<CategoryT>::value> {};
+    class tensor_specific_shape<CategoryT, tensor_shape<ST, N1T, N2T, N3T>>
+        : public cube<CategoryT, tensor_traits::writable<CategoryT>::value> {};
 
 
 
@@ -521,13 +507,13 @@ namespace wheels {
 
     // special value types
     template <class CategoryT>
-    class boolean_tensor : public ts_specific_value_type_base<CategoryT> {
+    class boolean_tensor : public tensor_specific_value_type_base<CategoryT> {
     public:
         // conversion to bool value
         constexpr operator bool() const { return all(); }
     };
     template <class CategoryT>
-    class ts_specific_value_type<CategoryT, bool>
+    class tensor_specific_value_type<CategoryT, bool>
         : public boolean_tensor<CategoryT> {};
 
 
@@ -538,8 +524,8 @@ namespace wheels {
 
     // dot product
     template <class C1, class C2, bool RInd1, bool RSub1, bool RInd2, bool RSub2>
-    constexpr auto dot(const ts_readable<C1, RInd1, RSub1, true> & a,
-        const ts_readable<C2, RInd2, RSub2, true> & b) {
+    constexpr auto dot(const tensor_readable<C1, RInd1, RSub1, true> & a,
+        const tensor_readable<C2, RInd2, RSub2, true> & b) {
         return ewise_mul(a.category(), b.category()).sum();
     }   
 
