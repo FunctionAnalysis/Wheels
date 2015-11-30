@@ -632,7 +632,7 @@ namespace wheels {
     };
 
     template <class ShapeT, class DPT>
-    constexpr ts_category<ShapeT, std::decay_t<DPT>> compose_category(const ShapeT & s, DPT && dp) {
+    constexpr ts_category<ShapeT, std::decay_t<DPT>> make_tensor(const ShapeT & s, DPT && dp) {
         return ts_category<ShapeT, std::decay_t<DPT>>(s, forward<DPT>(dp));
     }
 

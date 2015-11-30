@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "../core/operators.hpp"
+#include "../core/functors.hpp"
 
 #include "tensor_categories.hpp"
 
@@ -31,47 +31,47 @@ namespace wheels {
 
     template <class T, class ST, class ... SizeTs>
     constexpr auto constants(const tensor_shape<ST, SizeTs ...> & shape, T && val) {
-        return compose_category(shape, constant<std::decay_t<T>>(forward<T>(val)));
+        return make_tensor(shape, constant<std::decay_t<T>>(forward<T>(val)));
     }
 
     // zeros
     template <class T = double, class ST, class ... SizeTs>
     constexpr auto zeros(const tensor_shape<ST, SizeTs ...> & shape) {
-        return compose_category(shape, constant<T>(0));
+        return make_tensor(shape, constant<T>(0));
     }
     template <class T = double, class ST = size_t, class ... SizeTs>
     constexpr auto zeros(const SizeTs & ... sizes) {
-        return compose_category(make_shape<ST>(sizes...), constant<T>(types<T>::zero()));
+        return make_tensor(make_shape<ST>(sizes...), constant<T>(types<T>::zero()));
     }
 
     // ones
     template <class T = double, class ST, class ... SizeTs>
     constexpr auto ones(const tensor_shape<ST, SizeTs ...> & shape) {
-        return compose_category(shape, constant<T>(1));
+        return make_tensor(shape, constant<T>(1));
     }
     template <class T = double, class ST = size_t, class ... SizeTs>
     constexpr auto ones(const SizeTs & ... sizes) {
-        return compose_category(make_shape<ST>(sizes...), constant<T>(1));
+        return make_tensor(make_shape<ST>(sizes...), constant<T>(1));
     }
 
 
 
     // meshgrid
     template <class T, size_t Idx>
-    struct subs_component {
+    struct meshgrid_result {
         using value_type = T;
-        constexpr subs_component(){}
+        constexpr meshgrid_result(){}
         template <class Archive>
         void serialize(Archive & ar) {}
     };
 
     namespace ts_traits {
         template <class ShapeT, class T, size_t Idx>
-        struct readable_at_subs<ts_category<ShapeT, subs_component<T, Idx>>> : yes {};
+        struct readable_at_subs<ts_category<ShapeT, meshgrid_result<T, Idx>>> : yes {};
 
         template <class ShapeT, class T, size_t Idx, class ... SubTs>
         constexpr T at_subs_const_impl(
-            const ts_category<ShapeT, subs_component<T, Idx>> & a,
+            const ts_category<ShapeT, meshgrid_result<T, Idx>> & a,
             const SubTs & ... subs) {
             return (T)std::get<Idx>(std::forward_as_tuple(subs ...));
         }
@@ -80,7 +80,7 @@ namespace wheels {
     namespace details {
         template <class T, class ShapeT, size_t ... Is>
         constexpr auto _meshgrid_seq(const ShapeT & shape, const_ints<size_t, Is...>) {
-            return std::make_tuple(compose_category(shape, subs_component<T, Is>())...);
+            return std::make_tuple(make_tensor(shape, meshgrid_result<T, Is>())...);
         }
     }
 
@@ -98,19 +98,19 @@ namespace wheels {
 
     // unit axis vector
     template <class T, size_t Idx>
-    struct unit_at {
+    struct unit_axis_result {
         using value_type = T;
-        constexpr unit_at() {}
+        constexpr unit_axis_result() {}
         template <class Archiver>
         void serialize(Archiver &) {}
     };
 
     namespace ts_traits {
         template <class ShapeT, class T, size_t Idx>
-        struct readable_at_index<ts_category<ShapeT, unit_at<T, Idx>>> : yes {};
+        struct readable_at_index<ts_category<ShapeT, unit_axis_result<T, Idx>>> : yes {};
 
         template <class ShapeT, class T, size_t Idx, class IndexT>
-        constexpr T at_index_const_impl(const ts_category<ShapeT, unit_at<T, Idx>> & a, const IndexT & index) {
+        constexpr T at_index_const_impl(const ts_category<ShapeT, unit_axis_result<T, Idx>> & a, const IndexT & index) {
             return index == Idx ? 1 : 0;
         }
     }
@@ -118,17 +118,80 @@ namespace wheels {
     // unit_x/y/z
     template <class T = double, class ST = size_t, class SizeT = const_ints<ST, 3>>
     constexpr auto unit_x(const SizeT & s = SizeT()) {
-        return compose_category(make_shape<ST>(s), unit_at<T, 0>());
+        return make_tensor(make_shape<ST>(s), unit_axis_result<T, 0>());
     }
     template <class T = double, class ST = size_t, class SizeT = const_ints<ST, 3>>
     constexpr auto unit_y(const SizeT & s = SizeT()) {
-        return compose_category(make_shape<ST>(s), unit_at<T, 1>());
+        return make_tensor(make_shape<ST>(s), unit_axis_result<T, 1>());
     }
     template <class T = double, class ST = size_t, class SizeT = const_ints<ST, 3>>
     constexpr auto unit_z(const SizeT & s = SizeT()) {
-        return compose_category(make_shape<ST>(s), unit_at<T, 2>());
+        return make_tensor(make_shape<ST>(s), unit_axis_result<T, 2>());
     }
 
+
+
+
+    // eye
+    template <class T>
+    struct eye_result {
+        using value_type = T;
+        constexpr eye_result() {}
+        template <class Archiver>
+        void serialize(Archiver &) {}
+    };
+
+    template <class ShapeT, class T>
+    struct eye_result_nonzero_iterator 
+        : constant_value_iterator_base<T, eye_result_nonzero_iterator<ShapeT, T>> {
+        const ShapeT & shape;
+        constexpr eye_result_nonzero_iterator(size_t ind, const T & val, const ShapeT & s)
+            : constant_value_iterator_base<T, eye_result_nonzero_iterator>(ind, min_shape_size(s), val),
+            shape(s) {}
+    };
+
+    namespace ts_traits {
+        template <class ShapeT, class T>
+        struct readable_at_subs<ts_category<ShapeT, eye_result<T>>> : yes {};
+
+        template <class ShapeT, class T, class ... SubTs>
+        constexpr T at_subs_const_impl(
+            const ts_category<ShapeT, eye_result<T>> & a,
+            const SubTs & ... subs) {
+            return all_same(subs ...) ? 1.0 : types<T>::zero();
+        }
+
+        template <class ShapeT, class T>
+        struct nonzero_iterator_type<ts_category<ShapeT, eye_result<T>>> {
+            using type = eye_result_nonzero_iterator<ShapeT, T>;
+        };
+        template <class ShapeT, class T, size_t ... Is>
+        constexpr size_t _iter2ind_seq(const eye_result_nonzero_iterator<ShapeT, T> & iter, const_ints<size_t, Is...>) {
+            return sub2ind(iter.shape, constant<size_t>(iter.ind)(Is) ...);
+        }
+        template <class ShapeT, class T>
+        constexpr size_t iter2ind(const eye_result_nonzero_iterator<ShapeT, T> & iter) {
+            return _iter2ind_seq(iter, make_rank_sequence(iter.shape));
+        }
+
+        template <class ShapeT, class T>
+        constexpr auto nzbegin_impl(const ts_category<ShapeT, eye_result<T>> & t) {
+            return eye_result_nonzero_iterator<ShapeT, T>(0, t.shape());
+        }
+        template <class ShapeT, class T>
+        constexpr auto nzend_impl(const ts_category<ShapeT, eye_result<T>> & t) {
+            return eye_result_nonzero_iterator<ShapeT, T>(min_shape_size(t.shape()), t.shape());
+        }
+    }
+
+    template <class T = double, class ST, class ... SizeTs>
+    constexpr auto eye(const tensor_shape<ST, SizeTs ...> & shape) {
+        return make_tensor(shape, eye_result<T>());
+    }
+    template <class T = double, class ST = size_t, class ... SizeTs>
+    constexpr auto eye(const SizeTs & ... sizes) {
+        return make_tensor(make_shape<ST>(sizes ...), eye_result<T>());
+    }
 
 
 
@@ -153,7 +216,7 @@ namespace wheels {
     };
 
     template <class OpT, class ... InputTs>
-    constexpr auto compose_ewise_op_result(OpT && op, InputTs && ... inputs) {
+    constexpr auto make_tensor_ewise_op_result(OpT && op, InputTs && ... inputs) {
         using result_t = std::decay_t<decltype(op(inputs.at_index_const(0) ...))>;
         return ewise_op_result<result_t, std::decay_t<OpT>, InputTs...>(forward<OpT>(op), 
             forward<InputTs>(inputs) ...);
@@ -203,7 +266,7 @@ namespace wheels {
         class = std::enable_if_t<is_tensor<std::decay_t<A>>::value>, \
         wheels_distinguish_1>  \
     constexpr auto operator op (A && a) { \
-        return compose_category(a.shape(), compose_ewise_op_result(unary_op_##name(), forward<A>(a))); \
+        return make_tensor(a.shape(), make_tensor_ewise_op_result(unary_op_##name(), forward<A>(a))); \
     }
 
     WHEELS_TS_OVERLOAD_EWISE_UNARY_OP(+, plus)
@@ -217,8 +280,8 @@ namespace wheels {
         wheels_distinguish_3> \
     constexpr auto operator op (A && a, B && b) { \
         assert(a.shape() == b.shape()); \
-        return compose_category(a.shape(),  \
-            compose_ewise_op_result(binary_op_##name(), forward<A>(a), forward<B>(b))); \
+        return make_tensor(a.shape(),  \
+            make_tensor_ewise_op_result(binary_op_##name(), forward<A>(a), forward<B>(b))); \
     }
 
    WHEELS_TS_OVERLOAD_EWISE_BINARY_OP(+, plus)
@@ -245,8 +308,8 @@ namespace wheels {
         !is_tensor<std::decay_t<B>>::value && \
         !is_const_expr<std::decay_t<B>>::value>, wheels_distinguish_4> \
     constexpr auto operator op (A && a, B && b) { \
-        return compose_category(a.shape(), \
-            compose_ewise_op_result(unary_op_##name##_with<std::decay_t<B>>(forward<B>(b)), forward<A>(a))); \
+        return make_tensor(a.shape(), \
+            make_tensor_ewise_op_result(unary_op_##name##_with<std::decay_t<B>>(forward<B>(b)), forward<A>(a))); \
     } \
     template <class A, class B, class = \
         std::enable_if_t<\
@@ -254,8 +317,8 @@ namespace wheels {
         !is_tensor<std::decay_t<A>>::value && \
         !is_const_expr<std::decay_t<A>>::value>, wheels_distinguish_5> \
         constexpr auto operator op (A && a, B && b) { \
-        return compose_category(b.shape(), \
-            compose_ewise_op_result(unary_op_##name##_with_<std::decay_t<A>>(forward<A>(a)), forward<B>(b))); \
+        return make_tensor(b.shape(), \
+            make_tensor_ewise_op_result(unary_op_##name##_with_<std::decay_t<A>>(forward<A>(a)), forward<B>(b))); \
     }
 
 
@@ -270,8 +333,8 @@ namespace wheels {
     template <class A, \
         class = std::enable_if_t<is_tensor<std::decay_t<A>>::value>> \
     constexpr auto func(A && a) { \
-        return compose_category(a.shape(), \
-            compose_ewise_op_result(unary_func_##func(), forward<A>(a))); \
+        return make_tensor(a.shape(), \
+            make_tensor_ewise_op_result(unary_func_##func(), forward<A>(a))); \
     }
 
     WHEELS_TS_OVERLOAD_EWISE_UNARY_FUNC(sin)
@@ -305,8 +368,8 @@ namespace wheels {
         is_tensor<std::decay_t<B>>::value >>
     constexpr auto ewise_mul(A && a, B && b) {
         assert(a.shape() == b.shape());
-        return compose_category(a.shape(),
-            compose_ewise_op_result(binary_op_mul(), forward<A>(a), forward<B>(b)));
+        return make_tensor(a.shape(),
+            make_tensor_ewise_op_result(binary_op_mul(), forward<A>(a), forward<B>(b)));
     }
 
     // ewise_div
@@ -315,8 +378,8 @@ namespace wheels {
         is_tensor<std::decay_t<B>>::value >>
     constexpr auto ewise_div(A && a, B && b) {
         assert(a.shape() == b.shape());
-        return compose_category(a.shape(),
-            compose_ewise_op_result(binary_op_div(), forward<A>(a), forward<B>(b)));
+        return make_tensor(a.shape(),
+            make_tensor_ewise_op_result(binary_op_div(), forward<A>(a), forward<B>(b)));
     }
 
 
@@ -327,8 +390,8 @@ namespace wheels {
         is_tensor<std::decay_t<B>>::value>> \
     constexpr auto ewise_##func (A && a, B && b) { \
         assert(a.shape() == b.shape()); \
-        return compose_category(a.shape(), \
-            compose_ewise_op_result(binary_func_##func(), forward<A>(a), forward<B>(b))); \
+        return make_tensor(a.shape(), \
+            make_tensor_ewise_op_result(binary_func_##func(), forward<A>(a), forward<B>(b))); \
     }
 
     WHEELS_TS_OVERLOAD_EWISE_BINARY_FUNC(max)
@@ -415,11 +478,13 @@ namespace wheels {
     public:
         constexpr auto rows() const { return size(const_index<0>()); }
         constexpr auto cols() const { return size(const_index<1>()); }
-        constexpr auto area() const { return rows() * cols(); }
     };
     template <class CategoryT, class ST, class MT, class NT>
     class ts_specific_shape<CategoryT, tensor_shape<ST, MT, NT>>
         : public matrix<CategoryT, ts_traits::writable<CategoryT>::value> {};
+
+    // matrix mul
+    
 
     // print
     template <class CategoryT, bool Writable>
@@ -482,6 +547,8 @@ namespace wheels {
 
 
     // reshape
+
+
 
 
 

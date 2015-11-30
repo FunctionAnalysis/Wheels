@@ -118,6 +118,7 @@ namespace wheels {
         void resize(const const_ints<K, Idx> &, T ns) { 
             resize(const_index<Idx>(), ns);
         }
+
         
         template <class Archive> void serialize(Archive & ar) { ar(rest()); }
     };
@@ -342,6 +343,37 @@ namespace wheels {
     }
 
 
+    // max_shape_size
+    namespace details {
+        template <class ShapeT, size_t ... Is>
+        constexpr auto _max_shape_size_seq(const ShapeT & shape, const_ints<size_t, Is...>) {
+            return max(shape.at(const_index<Is>()) ...);
+        }
+    }
+    template <class T, class SizeT, class ... SizeTs>
+    constexpr auto max_shape_size(const tensor_shape<T, SizeT, SizeTs ...> & shape) {
+        return details::_max_shape_size_seq(shape, make_const_sequence(const_size<1 + sizeof...(SizeTs)>()));
+    }
+
+
+    // min_shape_size
+    namespace details {
+        template <class ShapeT, size_t ... Is>
+        constexpr auto _min_shape_size_seq(const ShapeT & shape, const_ints<size_t, Is...>) {
+            return min(shape.at(const_index<Is>()) ...);
+        }
+    }
+    template <class T, class SizeT, class ... SizeTs>
+    constexpr auto min_shape_size(const tensor_shape<T, SizeT, SizeTs ...> & shape) {
+        return details::_min_shape_size_seq(shape, make_const_sequence(const_size<1 + sizeof...(SizeTs)>()));
+    }
+
+
+    // make_rank_sequence
+    template <class T, class ... SizeTs>
+    constexpr auto make_rank_sequence(const tensor_shape<T, SizeTs...> & shape) {
+        return make_const_sequence(const_size<sizeof...(SizeTs)>());
+    }
 
 
 

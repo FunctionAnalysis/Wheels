@@ -1,7 +1,7 @@
 #pragma once
 
 #include "constants.hpp"
-#include "operators.hpp"
+#include "functors.hpp"
 
 namespace wheels {
 

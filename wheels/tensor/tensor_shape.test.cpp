@@ -17,6 +17,8 @@ TEST(math, tensor_shape) {
     ASSERT_TRUE(s1.at(2_c) == 4);
     ASSERT_TRUE(s1.magnitude() == 40);
 
+    ASSERT_TRUE(max_shape_size(s1) == 5);
+
     s1.resize(2_c, 5);
     ASSERT_TRUE(s1[2_c] == 5);
 
@@ -26,6 +28,7 @@ TEST(math, tensor_shape) {
     std::cout << s2 << std::endl;
 
     ASSERT_TRUE(s1 == s2);
+    ASSERT_TRUE(max_shape_size(s2) == 5);
 
     std::vector<size_t> inds;
     for_each_subscript(s2, [&s2, &inds](auto ... subs) {
@@ -38,6 +41,7 @@ TEST(math, tensor_shape) {
 
     constexpr auto s3 = make_shape<size_t>(1_sizec, 5_c);
     auto m3 = s3.magnitude();
+    ASSERT_TRUE(max_shape_size(s3) == 5);
 
 
     auto ss1 = make_shape(1_c, 2_c, 3);

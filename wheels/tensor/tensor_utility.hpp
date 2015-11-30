@@ -141,6 +141,45 @@ namespace wheels {
 
 
 
+    // constant value iterator base
+    template <class T, class IterT>
+    struct constant_value_iterator_base : std::iterator<std::random_access_iterator_tag, T> {
+        using value_type = T;
+
+        size_t ind, end_ind;
+        T val;
+        constexpr constant_value_iterator_base(size_t i, size_t e, const T & v)
+            : ind(i), end_ind(e), val(v) {}
+
+        constexpr const IterT & derived() const { return static_cast<const IterT &>(*this); }
+        IterT & derived() { return static_cast<IterT &>(*this); }
+
+        constexpr const T & operator *() const { return val; }
+        constexpr const T * operator *() const { return &val; }
+
+        IterT & operator ++() { ++ind;  return derived(); }
+        IterT & operator --() { --ind;  return derived(); }
+
+        IterT & operator +=(size_t s) { ind += s; return derived(); }
+        IterT & operator -=(size_t s) { ind -= s; return derived(); }
+
+        constexpr IterT operator + (size_t s) const { return IterT(ind + s, end_ind, val); }
+        constexpr IterT operator - (size_t s) const { return IterT(ind - s, end_ind, val); }
+
+        std::ptrdiff_t operator - (const IterT & it) const { return ind - it.ind; }
+        constexpr bool operator == (const IterT & it) const {
+            return ind == it.ind;
+        }
+        constexpr bool operator != (const IterT & it) const {
+            return ind != it.ind;
+        }
+        constexpr bool operator < (const IterT & it) const {
+            return ind < it.ind;
+        }
+    };
+
+
+
 
 
     // index_accessible_from_iterator
