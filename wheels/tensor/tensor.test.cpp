@@ -3,7 +3,7 @@
 #include <complex>
 
 #include "tensor.hpp"
-#include "tensor_specific.hpp"
+#include "tensor_functions.hpp"
 
 using namespace wheels;
 using namespace wheels::literals;
@@ -103,9 +103,7 @@ TEST(tensor, dynamic_sized) {
 
 TEST(tensor, sparse) {
 
-    spvec va(make_shape(1000));
-    va[2] = 2;
-    va[99] = 99;
+    spvec va(make_shape(1000), { {1, 0}, { 2, 2 }, {10, 0}, {99, 99} });
     
     ASSERT_EQ(std::accumulate(va.nzbegin(), va.nzend(), 0.0), 101);
     ASSERT_EQ(va.sum(), 101);

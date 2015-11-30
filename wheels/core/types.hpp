@@ -41,7 +41,6 @@ namespace wheels {
         static constexpr auto is() {
             return const_ints<bool, std::is_same<Ts, K>::value ...>();
         }
-
         static constexpr auto is_class() {
             return const_ints<bool, std::is_class<Ts>::value ...>();
         }
@@ -74,7 +73,6 @@ namespace wheels {
         static constexpr auto is() {
             return const_bool<std::is_same<T, K>::value>();
         }
-
         static constexpr auto is_class() {
             return const_bool<std::is_class<T>::value>();
         }
@@ -87,8 +85,8 @@ namespace wheels {
 
         static constexpr auto decay() { return types<std::decay_t<T>>(); }
         static constexpr auto declval() { return std::declval<T>(); }
-        static constexpr auto defaultv() { return T(); }
-        static constexpr auto zero() { return T(); }
+        static constexpr T defaultv() { return T(); }
+        static constexpr T zero() { return T(); }
 
         template <class ... ArgTs>
         static constexpr auto construct(ArgTs && ... args) {

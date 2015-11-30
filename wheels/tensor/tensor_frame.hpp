@@ -194,8 +194,8 @@ namespace wheels {
         // write element at subs
         template <class ... SubTs>
         decltype(auto) at_subs_nonconst(const SubTs & ... subs) {
-            using _checks = const_ints<bool, is_int<SubTs>::value ...>;
-            static_assert(_checks::all_v,
+            using checks_t = const_ints<bool, is_int<SubTs>::value ...>;
+            static_assert(checks_t::all_v,
                 "at_subs(...) requires all subs should be integral or const_ints");
             return ts_traits::at_index_nonconst_impl(category(), sub2ind(shape(), subs ...));
         }
@@ -213,8 +213,8 @@ namespace wheels {
         // write element at subs
         template <class ... SubTs>
         decltype(auto) at_subs_nonconst(const SubTs & ... subs) {
-            using _checks = const_ints<bool, is_int<SubTs>::value ...>;
-            static_assert(_checks::all_v,
+            using checks_t = const_ints<bool, is_int<SubTs>::value ...>;
+            static_assert(checks_t::all_v,
                 "at_subs(...) requires all subs should be integral or const_ints");
             return ts_traits::at_subs_nonconst_impl(category(), subs ...);
         }
@@ -462,14 +462,11 @@ namespace wheels {
         template <class CategoryT>
         void reserve_impl(ts_base<CategoryT> & t, size_t s){}
 
-        static constexpr size_t _parallel_thres = 70000;
-        static constexpr size_t _parallel_batch = 35000;
-
         template <class CategoryT1, bool WInd1, bool WInd2, 
             class CategoryT2, bool RInd1, bool RInd2>
         void assign_impl(ts_writable<CategoryT1, WInd1, WInd2, true> & to,
             const ts_readable<CategoryT2, RInd1, RInd2, true> & from){
-            if (from.numel() < _parallel_thres) {
+            if (from.numel() < 70000) {
                 auto & toc = to.category();
                 for (size_t ind = 0; ind < from.numel(); ind++) {
                     auto e = from.at_index_const(ind);
@@ -479,7 +476,7 @@ namespace wheels {
                 parallel_for_each(from.numel(), [&to, &from](size_t ind) {
                     auto e = from.at_index_const(ind);
                     to.at_index_nonconst(ind) = e;
-                }, _parallel_batch);
+                }, 35000);
             }
         }
     }
@@ -508,13 +505,13 @@ namespace wheels {
 
     namespace details {
         template <class CategoryT>
-        struct _used_types {
+        struct _types_in_ts_category {
             using shape_type = void;
             using data_provider_type = void;
             using value_type = void;
         };
         template <class ShapeT, class DataProviderT>
-        struct _used_types<ts_category<ShapeT, DataProviderT>> {
+        struct _types_in_ts_category<ts_category<ShapeT, DataProviderT>> {
             using shape_type = ShapeT;
             using data_provider_type = DataProviderT;
             using value_type = typename DataProviderT::value_type;
@@ -526,14 +523,14 @@ namespace wheels {
     template <class CategoryT>
     using ts_specific_shape_base = ts_assignable<CategoryT>;
     template <class CategoryT, 
-        class ShapeT = typename details::_used_types<CategoryT>::shape_type>
+        class ShapeT = typename details::_types_in_ts_category<CategoryT>::shape_type>
     class ts_specific_shape : public ts_specific_shape_base<CategoryT> {};
 
     // specific value_type
     template <class CategoryT>
     using ts_specific_value_type_base = ts_specific_shape<CategoryT>;
     template <class CategoryT, 
-        class ValueT = typename details::_used_types<CategoryT>::value_type>
+        class ValueT = typename details::_types_in_ts_category<CategoryT>::value_type>
     class ts_specific_value_type : public ts_specific_value_type_base<CategoryT> {};
 
 
@@ -548,8 +545,8 @@ namespace wheels {
     class ts_storage {};
 
 
-    struct _with_args {};
-    constexpr _with_args with_args;
+    namespace details { struct _with_args {};  }
+    constexpr details::_with_args with_args;
 
     
     template <class ShapeT, class DataProviderT>
@@ -565,7 +562,7 @@ namespace wheels {
         constexpr ts_storage(const ShapeT & s, DPT && dp)
             : _data_provider(forward<DPT>(dp)) {}
         template <class ... ArgTs>
-        constexpr explicit ts_storage(const _with_args &, const ShapeT & s, ArgTs && ... args)
+        constexpr explicit ts_storage(const details::_with_args &, const ShapeT & s, ArgTs && ... args)
             : _data_provider(forward<ArgTs>(args) ...) {}
     public:
         constexpr ShapeT shape_impl() const { return ShapeT(); }
@@ -588,7 +585,7 @@ namespace wheels {
         constexpr ts_storage(const ShapeT & s, DPT && dp)
             : _shape(s), _data_provider(forward<DPT>(dp)) {}
         template <class ... ArgTs>
-        constexpr explicit ts_storage(const _with_args &, const ShapeT & s, ArgTs && ... args)
+        constexpr explicit ts_storage(const details::_with_args &, const ShapeT & s, ArgTs && ... args)
             : _shape(s), _data_provider(forward<ArgTs>(args) ...) {}
     public:
         constexpr const ShapeT & shape_impl() const { return _shape; }
@@ -608,6 +605,7 @@ namespace wheels {
     // category
     template <class CategoryT> 
     using ts_category_base = ts_storage<CategoryT>;
+
 
 #define WHEELS_TS_CATEGORY_COMMON_DEFINITION \
     template <class DPT> \

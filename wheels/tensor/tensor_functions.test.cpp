@@ -3,7 +3,6 @@
 #include <complex>
 
 #include "tensor_functions.hpp"
-#include "tensor_specific.hpp"
 
 using namespace wheels;
 using namespace wheels::literals;
@@ -18,10 +17,10 @@ TEST(tensor, constants) {
     auto eb = eval<false>(b);
     eb(5, 5) = 1;
     eb(0, 0) = 0;
-    ASSERT_TRUE(eb.data_provider().indexer.size() == 2); // {1, 0}
+    ASSERT_TRUE(eb.data_provider().size() == 2); // {1, 0}
 
     auto eeb = eval<false>(eb);
-    ASSERT_TRUE(eeb.data_provider().indexer.size() == 1); // {1} 
+    ASSERT_TRUE(eeb.data_provider().size() == 1); // {1} 
 
 }
 

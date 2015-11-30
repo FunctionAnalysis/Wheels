@@ -219,41 +219,69 @@ namespace wheels {
 
 
     // sparse tensor based on 
-    template <class E, class IndexerT>
-    struct sparse_dictionary {
+    template <class E, class IndexerT = std::map<size_t, E>>
+    class sparse_dictionary {
+        static_assert(std::is_same<E, typename IndexerT::value_type::second_type>::value, 
+            "invalid IndexerT value type");
+    public:
+        using key_type = typename IndexerT::value_type::first_type;
         using value_type = E;
-        static_assert(std::is_same<E, typename IndexerT::value_type::second_type>::value, "invalid IndexerT");
+        using key_value_pair_type = std::pair<key_type, value_type>;
         using nonzero_iterator = nonzero_iterator_wrapper<
             value_iterator_wrapper<typename IndexerT::const_iterator>
         >;
 
-        IndexerT indexer;
+    public:
+        constexpr sparse_dictionary() {}
+        constexpr sparse_dictionary(const IndexerT & ind) : _indexer(ind) {
+            clear_zeros();
+        }
+        constexpr sparse_dictionary(IndexerT && ind) : _indexer(std::move(ind)) {}
+        constexpr sparse_dictionary(std::initializer_list<key_value_pair_type> ilist)
+            : _indexer(ilist) {
+            clear_zeros();
+        }
 
+    public:
+        constexpr auto size() const { return _indexer.size(); }
         template <class IndexT>
-        bool contains(const IndexT & ind) const {
-            return indexer.find(ind) != indexer.end();
+        constexpr bool contains(const IndexT & ind) const {
+            return _indexer.find(ind) != _indexer.end();
         }
         template <class IndexT>
-        E at(const IndexT & ind, const E & default_val) const {
-            return contains(ind) ? indexer.at(ind) : default_val;
+        constexpr E at(const IndexT & ind, const E & default_val) const {
+            return contains(ind) ? _indexer.at(ind) : default_val;
         }
         template <class IndexT>
         E & at(const IndexT & ind) {
-            return indexer[ind];
+            return _indexer[ind];
         }
 
-        auto nzbegin() const {
+        constexpr nonzero_iterator nzbegin() const {
             return wrap_nonzero_iterator(
-                wrap_value_iterator(indexer.cbegin()),
-                wrap_value_iterator(indexer.cend()));
+                wrap_value_iterator(_indexer.cbegin()),
+                wrap_value_iterator(_indexer.cend()));
         }
-        auto nzend() const {
+        constexpr nonzero_iterator nzend() const {
             return wrap_nonzero_iterator(
-                wrap_value_iterator(indexer.cend()),
-                wrap_value_iterator(indexer.cend()));
+                wrap_value_iterator(_indexer.cend()),
+                wrap_value_iterator(_indexer.cend()));
         }
 
-        void clear() { indexer.clear(); }
+        void clear_zeros() {
+            auto it = _indexer.begin();
+            while (it != _indexer.end()) {
+                if (it->second == types<value_type>::zero()) {
+                    it = _indexer.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+        }
+        void clear() { _indexer.clear(); }
+
+    private:
+        IndexerT _indexer;
     };
 
     namespace ts_traits {
@@ -290,15 +318,16 @@ namespace wheels {
         decltype(auto) nzend_impl(const ts_category<ShapeT, sparse_dictionary<E, IndexerT>> & a) {
             return a.data_provider().nzend();
         }
+    }
 
-
+    namespace details {
         // iterate all elements of 'from' 
         // since the 'from' does not have a nonzero iterator or 
         // index is inaccessible from the input nonzero iterator
-        template <class ShapeT1, class E, class IndexerT, bool WInd1, bool WInd2, 
-            class CategoryT2, bool RInd1, bool RInd2>
-        void _assign_impl(ts_writable<ts_category<ShapeT1, sparse_dictionary<E, IndexerT>>, WInd1, WInd2, true> & to,
-            const ts_readable<CategoryT2, RInd1, RInd2, true> & from, const no &){
+        template <class ShapeT1, class E, class IndexerT, bool WInd1, bool WInd2,
+        class CategoryT2, bool RInd1, bool RInd2>
+            void _assign_impl(ts_writable<ts_category<ShapeT1, sparse_dictionary<E, IndexerT>>, WInd1, WInd2, true> & to,
+                const ts_readable<CategoryT2, RInd1, RInd2, true> & from, const no &) {
             to.data_provider().clear();
             for (size_t ind = 0; ind < from.numel(); ind++) {
                 auto e = from.at_index_const(ind);
@@ -308,23 +337,25 @@ namespace wheels {
             }
         }
         // use nonzero iterator of 'from'
-        template <class ShapeT1, class E, class IndexerT, bool WInd1, bool WInd2, 
-            class CategoryT2, class NZIterT2>
-        void _assign_impl(ts_writable<ts_category<ShapeT1, sparse_dictionary<E, IndexerT>>, WInd1, WInd2, true> & to,
-            const ts_nonzero_iteratable<CategoryT2, NZIterT2> & from, const yes &){
+        template <class ShapeT1, class E, class IndexerT, bool WInd1, bool WInd2,
+        class CategoryT2, class NZIterT2>
+            void _assign_impl(ts_writable<ts_category<ShapeT1, sparse_dictionary<E, IndexerT>>, WInd1, WInd2, true> & to,
+                const ts_nonzero_iteratable<CategoryT2, NZIterT2> & from, const yes &) {
             to.data_provider().clear();
             for (auto it = from.nzbegin(); it != from.nzend(); ++it) {
-                size_t ind = iter2ind(it);
+                size_t ind = ts_traits::iter2ind(it);
                 auto e = *it;
                 to.at_index_nonconst(ind) = e;
             }
         }
+    }
 
+    namespace ts_traits {
         template <class ShapeT1, class E, class IndexerT, bool WInd1, bool WInd2, 
             class CategoryT2, bool RInd1, bool RInd2>
         void assign_impl(ts_writable<ts_category<ShapeT1, sparse_dictionary<E, IndexerT>>, WInd1, WInd2, true> & to,
             const ts_readable<CategoryT2, RInd1, RInd2, true> & from) {
-            _assign_impl(to, from.category(),
+            details::_assign_impl(to, from.category(),
                 index_accessible_from_iterator<typename nonzero_iterator_type<CategoryT2>::type>());
         }
     }
@@ -333,6 +364,7 @@ namespace wheels {
     class ts_category<ShapeT, sparse_dictionary<E, IndexerT>>
         : public ts_category_base<ts_category<ShapeT, sparse_dictionary<E, IndexerT>>> {
         using base_t = ts_category_base<ts_category<ShapeT, sparse_dictionary<E, IndexerT>>>;
+        using key_value_pair_t = typename sparse_dictionary<E, IndexerT>::key_value_pair_type;
     public:
         using shape_type = ShapeT;
         using data_provider_type = sparse_dictionary<E, IndexerT>;
@@ -340,9 +372,10 @@ namespace wheels {
         static constexpr size_t rank = ShapeT::rank;
 
         ts_category() {}
-        template <class ... ElePairTs>
-        explicit ts_category(const ShapeT & shape, ElePairTs && ... ele_pairs)
-            : base_t(shape, sparse_dictionary<E, IndexerT>{{ele_pairs ...}}) {}
+        explicit ts_category(const ShapeT & shape) 
+            : base_t(shape, sparse_dictionary<E, IndexerT>()) {}
+        explicit ts_category(const ShapeT & shape, std::initializer_list<key_value_pair_t> ilist)
+            : base_t(shape, sparse_dictionary<E, IndexerT>(ilist)) {}
 
         WHEELS_TS_CATEGORY_COMMON_DEFINITION
     };
