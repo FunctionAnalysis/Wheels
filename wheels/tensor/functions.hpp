@@ -155,11 +155,16 @@ namespace wheels {
 
     template <class ShapeT, class T>
     struct eye_result_nonzero_iterator 
-        : constant_value_iterator_base<T, eye_result_nonzero_iterator<ShapeT, T>> {
+        : indexed_iterator_base<T, size_t, eye_result_nonzero_iterator<ShapeT, T>> {       
+      
+        constexpr eye_result_nonzero_iterator(size_t ind, const ShapeT & s)
+            : indexed_iterator_base<T, size_t, eye_result_nonzero_iterator>(ind, min_shape_size(s)),
+            val(1), shape(s) {}
+        constexpr const T & operator * () const { return val; }
+        constexpr const T * operator -> () const { return &val; }
+
+        const T & val;
         const ShapeT & shape;
-        constexpr eye_result_nonzero_iterator(size_t ind, const T & val, const ShapeT & s)
-            : constant_value_iterator_base<T, eye_result_nonzero_iterator>(ind, min_shape_size(s), val),
-            shape(s) {}
     };
 
     namespace tensor_traits {
@@ -204,6 +209,7 @@ namespace wheels {
     constexpr auto eye(const SizeTs & ... sizes) {
         return make_tensor(make_shape<ST>(sizes ...), eye_result<T>());
     }
+
 
 
 
@@ -337,142 +343,18 @@ namespace wheels {
         template <class A, class B>
         constexpr auto operator()(A && a, B && b) const {
             return make_tensor(b.shape(), make_tensor_ewise_op_result(
-                OpT()(const_symbol<0>(), forward<A>(a)), forward<B>(b)));
+                OpT()(forward<A>(a), const_symbol<0>()), forward<B>(b)));
         }
     };
 
 
-
-
-
-
-
-    // special shapes
-    // vector shape
-    template <class CategoryT, bool Writable>
-    class vector : public tensor_specific_shape_base<CategoryT> {
-    public:
-        constexpr decltype(auto) x() const { return at_index_const(0); }
-        constexpr decltype(auto) y() const { return at_index_const(1); }
-        constexpr decltype(auto) z() const { return at_index_const(2); }
-        constexpr decltype(auto) w() const { return at_index_const(3); }
-        constexpr decltype(auto) red() const { return at_index_const(0); }
-        constexpr decltype(auto) green() const { return at_index_const(1); }
-        constexpr decltype(auto) blue() const { return at_index_const(2); }
-        constexpr decltype(auto) alpha() const { return at_index_const(3); }
-        constexpr auto normalized() const { return category() / norm(); }
-    };
-    template <class CategoryT>
-    class vector<CategoryT, true> : public tensor_specific_shape_base<CategoryT> {
-    public:
-        constexpr decltype(auto) x() const { return at_index_const(0); }
-        constexpr decltype(auto) y() const { return at_index_const(1); }
-        constexpr decltype(auto) z() const { return at_index_const(2); }
-        constexpr decltype(auto) w() const { return at_index_const(3); }
-        constexpr decltype(auto) red() const { return at_index_const(0); }
-        constexpr decltype(auto) green() const { return at_index_const(1); }
-        constexpr decltype(auto) blue() const { return at_index_const(2); }
-        constexpr decltype(auto) alpha() const { return at_index_const(3); }
-        decltype(auto) x() { return at_index_nonconst(0); }
-        decltype(auto) y() { return at_index_nonconst(1); }
-        decltype(auto) z() { return at_index_nonconst(2); }
-        decltype(auto) w() { return at_index_nonconst(3); }
-        decltype(auto) red() { return at_index_nonconst(0); }
-        decltype(auto) green() { return at_index_nonconst(1); }
-        decltype(auto) blue() { return at_index_nonconst(2); }
-        decltype(auto) alpha() { return at_index_nonconst(3); }
-        constexpr auto normalized() const { return category() / norm(); }
-    };
-    template <class CategoryT, class ST, class SizeT>
-    class tensor_specific_shape<CategoryT, tensor_shape<ST, SizeT>>
-        : public vector<CategoryT, tensor_traits::writable<CategoryT>::value> {};
-
-    // cross
-    template <class CategoryT1, class CategoryT2, bool W1, bool W2>
-    constexpr auto cross(const vector<CategoryT1, W1> & a, const vector<CategoryT2, W2> & b) {
-        using value_t = std::common_type_t<typename CategoryT1::value_type, typename CategoryT2::value_type>
-            assert(a.numel() == 3 && b.numel() == 3);
-        return vec_<value_t, 3>(with_elements,
-            a.y() * b.z() - a.z() * b.y(),
-            a.z() * b.x() - a.x() * b.z(),
-            a.x() * b.y() - a.y() * b.x());
+    // ewise_mul
+    template <class A, class B, class = std::enable_if_t<
+        is_tensor<std::decay_t<A>>::value && is_tensor<std::decay_t<B>>::value>>
+    constexpr auto ewise_mul(A && a, B && b) {
+        assert(a.shape() == b.shape());
+        return make_tensor(a.shape(), make_tensor_ewise_op_result(binary_op_mul(), forward<A>(a), forward<B>(b)));
     }
-
-    // print
-    template <class CategoryT, bool Writable>
-    inline std::ostream & operator << (std::ostream & os, const vector<CategoryT, Writable> & v) {
-        os << "[";
-        for (size_t ind = 0; ind < v.numel() - 1; ind++) {
-            os << v[ind] << ", ";
-        }
-        os << v[index_tags::last] << "]";
-        return os;
-    }
-
-
-
-
-
-
-    // matrix shape
-    template <class CategoryT, bool Writable>
-    class matrix : public tensor_specific_shape_base<CategoryT> {
-    public:
-        constexpr auto rows() const { return size(const_index<0>()); }
-        constexpr auto cols() const { return size(const_index<1>()); }
-    };
-    template <class CategoryT, class ST, class MT, class NT>
-    class tensor_specific_shape<CategoryT, tensor_shape<ST, MT, NT>>
-        : public matrix<CategoryT, tensor_traits::writable<CategoryT>::value> {};
-
-    // matrix mul
-    
-
-    // print
-    template <class CategoryT, bool Writable>
-    inline std::ostream & operator << (std::ostream & os, const matrix<CategoryT, Writable> & m) {
-        for (size_t r = 0; r < m.rows(); r++) {
-            os << "[";
-            for (size_t c = 0; c < m.cols() - 1; c++) {
-                os << m(r, c) << ", ";
-            }
-            os << m(r, index_tags::last) << "]\n";
-        }
-        return os;
-    }
-
-
-
-    // cube shape
-    template <class CategoryT, bool Writable>
-    class cube : public tensor_specific_shape_base<CategoryT> {
-    public:
-        constexpr auto volume() const {
-            return size(const_index<0>()) * size(const_index<1>()) * size(const_index<2>());
-        }
-    };
-    template <class CategoryT, class ST, class N1T, class N2T, class N3T>
-    class tensor_specific_shape<CategoryT, tensor_shape<ST, N1T, N2T, N3T>>
-        : public cube<CategoryT, tensor_traits::writable<CategoryT>::value> {};
-
-
-
-
-
-
-
-    // special value types
-    template <class CategoryT>
-    class boolean_tensor : public tensor_specific_value_type_base<CategoryT> {
-    public:
-        // conversion to bool value
-        constexpr operator bool() const { return all(); }
-    };
-    template <class CategoryT>
-    class tensor_specific_value_type<CategoryT, bool>
-        : public boolean_tensor<CategoryT> {};
-
-
 
 
 
@@ -480,9 +362,8 @@ namespace wheels {
 
     // dot product
     template <class C1, class C2, bool RInd1, bool RSub1, bool RInd2, bool RSub2>
-    constexpr auto dot(const tensor_readable<C1, RInd1, RSub1, true> & a,
-        const tensor_readable<C2, RInd2, RSub2, true> & b) {
-        return (a.category() * b.category()).sum();
+    constexpr auto dot(const tensor_readable<C1, RInd1, RSub1, true> & a, const tensor_readable<C2, RInd2, RSub2, true> & b) {
+        return ewise_mul(a.category(), b.category()).sum();
     }   
 
 

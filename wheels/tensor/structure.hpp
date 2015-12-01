@@ -5,6 +5,7 @@
 #include "../core/types.hpp"
 #include "../core/overloads.hpp"
 #include "../core/parallel.hpp"
+#include "../core/const_expr.hpp"
 
 #include "shape.hpp"
 #include "iterators.hpp"
@@ -13,6 +14,18 @@ namespace wheels {
 
     template <class ShapeT, class DataProviderT> 
     class tensor_category;
+
+
+    namespace tensor_traits {
+        template <class T>
+        struct value_type {
+            using type = void;
+        };
+        template <class ShapeT, class DataProviderT>
+        struct value_type<tensor_category<ShapeT, DataProviderT>> {
+            using type = typename DataProviderT::value_type;
+        };
+    }
 
 
     // base
@@ -277,11 +290,40 @@ namespace wheels {
 
 
 
+
+
+
+
     // const iteratable
     template <class CategoryT> 
     using tensor_const_iteratable_base = tensor_bracketensor_and_parenthese_behavior<CategoryT>;
 
+    template <class CategoryT>
+    struct tensor_const_iterator_naive : indexed_iterator_base<
+        typename CategoryT::value_type, 
+        size_t, 
+        tensor_const_iterator_naive<CategoryT>
+    > {
+        using value_type = typename CategoryT::value_type;
+        using base_t = indexed_iterator_base<value_type, size_t, tensor_const_iterator_naive<CategoryT>>;
+
+        constexpr tensor_const_iterator_naive(const CategoryT & s, size_t i = 0)
+            : base_t(i, s.numel()), self(s) {}
+        constexpr decltype(auto) operator * () const { return self.at_index_const(ind); }
+        constexpr decltype(auto) operator -> () const { return &(self.at_index_const(ind)); }
+
+        const CategoryT & self;
+    };
+
     namespace tensor_traits {
+
+        template <class CategoryT>
+        struct index_accessible_from_iterator<tensor_const_iterator_naive<CategoryT>> : yes {};
+        template <class CategoryT>
+        constexpr size_t iter2ind(const tensor_const_iterator_naive<CategoryT> & iter) {
+            return iter.ind;
+        }
+
         template <class CategoryT>
         struct const_iterator_type {
             using type = std::conditional_t<readable<CategoryT>::value, tensor_const_iterator_naive<CategoryT>, void>;
@@ -300,9 +342,7 @@ namespace wheels {
     class tensor_const_iteratable : public tensor_const_iteratable_base<CategoryT> {
     public:
         constexpr ConstIterT cbegin() const { return tensor_traits::cbegin_impl(category()); }
-        constexpr ConstIterT begin() const { return cbegin(); }
         constexpr ConstIterT cend() const { return tensor_traits::cend_impl(category()); }
-        constexpr ConstIterT end() const { return cend(); }
     };
     template <class CategoryT>
     class tensor_const_iteratable<CategoryT, void> : public tensor_const_iteratable_base<CategoryT> {};
@@ -315,7 +355,32 @@ namespace wheels {
     template <class CategoryT> 
     using tensor_nonconst_iteratable_base = tensor_const_iteratable<CategoryT>;
 
+    template <class CategoryT>
+    struct tensor_nonconst_iterator_naive : indexed_iterator_base<
+        typename CategoryT::value_type, 
+        size_t, 
+        tensor_nonconst_iterator_naive<CategoryT>
+    > {
+        using value_type = typename CategoryT::value_type;
+        using base_t = indexed_iterator_base<value_type, size_t, tensor_nonconst_iterator_naive<CategoryT>>;
+
+        constexpr tensor_nonconst_iterator_naive(CategoryT & s, size_t i = 0)
+            : base_t(i, s.numel()), self(s) {}
+        decltype(auto) operator * () const { return self.at_index_const(ind); }
+        decltype(auto) operator -> () const { return &(self.at_index_const(ind)); }
+
+        CategoryT & self;
+    };
+
     namespace tensor_traits {
+
+        template <class CategoryT>
+        struct index_accessible_from_iterator<tensor_nonconst_iterator_naive<CategoryT>> : yes {};
+        template <class CategoryT>
+        constexpr size_t iter2ind(const tensor_nonconst_iterator_naive<CategoryT> & iter) {
+            return iter.ind;
+        }
+
         template <class CategoryT>
         struct nonconst_iterator_type {
             using type = std::conditional_t<writable<CategoryT>::value, tensor_nonconst_iterator_naive<CategoryT>, void>;
@@ -328,6 +393,7 @@ namespace wheels {
         auto end_impl(const tensor_base<CategoryT> & t) {
             return tensor_nonconst_iterator_naive<CategoryT>(t.category(), t.numel());
         }
+
     }
 
     template <class CategoryT, class NonConstIterT = typename tensor_traits::nonconst_iterator_type<CategoryT>::type>
@@ -335,12 +401,14 @@ namespace wheels {
     public:
         NonConstIterT begin() { return tensor_traits::begin_impl(category()); }
         NonConstIterT end() { return tensor_traits::end_impl(category()); }
+        decltype(auto) begin() const { return cbegin(); }
+        decltype(auto) end() const { return cend(); }
     };
     template <class CategoryT>
     class tensor_nonconst_iteratable<CategoryT, void> : public tensor_nonconst_iteratable_base<CategoryT> {
     public:
-        decltype(auto) begin() { return cbegin(); }
-        decltype(auto) end() { return cend(); }
+        decltype(auto) begin() const { return cbegin(); }
+        decltype(auto) end() const { return cend(); }
     };
 
 
@@ -349,7 +417,7 @@ namespace wheels {
 
     // nonzero iteratable
     template <class CategoryT>
-    using tensor_nonzero_iteratable_base = tensor_const_iteratable<CategoryT>;
+    using tensor_nonzero_iteratable_base = tensor_nonconst_iteratable<CategoryT>;
 
     namespace tensor_traits {
         template <class CategoryT>
@@ -390,17 +458,20 @@ namespace wheels {
     template <class CategoryT,
         class ConstIterT = typename tensor_traits::const_iterator_type<CategoryT>::type>
     class tensor_reducible : public tensor_reducible_base<CategoryT> {
+        using value_t = typename tensor_traits::value_type<CategoryT>::type;
     public:
         decltype(auto) max() const { return *std::max_element(cbegin(), cend()); }
         decltype(auto) min() const { return *std::min_element(cbegin(), cend()); }
         bool all() const {
             for (auto it = cbegin(); it != cend(); ++it) {
-                if (*it == types<typename CategoryT::value_type>::zero()) {
+                if (*it == types<value_t>::zero()) {
                     return false;
                 }
             }
             return true;
         }
+        template <bool IsBool = std::is_same<value_t, bool>::value, wheels_enable_if(IsBool)>
+        constexpr operator bool() const { return all(); }
     };
     template <class CategoryT>
     class tensor_reducible<CategoryT, void> : public tensor_reducible_base<CategoryT> {};
@@ -408,12 +479,13 @@ namespace wheels {
     template <class CategoryT,
         class NonZeroIterT = typename tensor_traits::nonzero_iterator_type<CategoryT>::type>
     class tensor_nonzero_reducible : public tensor_reducible<CategoryT> {
+        using value_t = typename tensor_traits::value_type<CategoryT>::type;
     public:
         bool any() const { return nzbegin() != nzend(); }
         bool none() const { return nzbegin() == nzend(); }
-        auto sum() const { return std::accumulate(nzbegin(), nzend(), types<typename CategoryT::value_type>::zero()); }
+        auto sum() const { return std::accumulate(nzbegin(), nzend(), types<value_t>::zero()); }
         auto norm_squared() const {
-            typename CategoryT::value_type r = types<typename CategoryT::value_type>::zero();
+            typename tensor_traits::value_type<CategoryT>::type r = types<value_t>::zero();
             for (auto it = nzbegin(); it != nzend(); ++it) {
                 auto e = *it;
                 r += e * e;
@@ -521,14 +593,26 @@ namespace wheels {
             using shape_type = void;
             using data_provider_type = void;
             using value_type = void;
+            using const_iterator = void;
         };
         template <class ShapeT, class DataProviderT>
         struct _types_in_tensor_category<tensor_category<ShapeT, DataProviderT>> {
             using shape_type = ShapeT;
             using data_provider_type = DataProviderT;
             using value_type = typename DataProviderT::value_type;
+            using const_iterator = typename tensor_traits::const_iterator_type<tensor_category<ShapeT, DataProviderT>>::type;
         };
     }
+
+    //// special value types
+    //template <class CategoryT>
+    //class boolean_tensor : public tensor_specific_value_type_base<CategoryT> {
+    //public:
+    //    // conversion to bool value
+    //    constexpr operator bool() const { return all(); }
+    //};
+    //template <class CategoryT>
+    //class tensor_specific_value_type<CategoryT, bool> : public boolean_tensor<CategoryT> {};
 
 
     // specific shape
@@ -645,6 +729,7 @@ namespace wheels {
 
     template <class ShapeT, class DPT>
     constexpr tensor_category<ShapeT, std::decay_t<DPT>> make_tensor(const ShapeT & s, DPT && dp) {
+        static_assert(is_tensor_shape<ShapeT>::value, "ShapeT must be a tensor_shape<...>");
         return tensor_category<ShapeT, std::decay_t<DPT>>(s, forward<DPT>(dp));
     }
 

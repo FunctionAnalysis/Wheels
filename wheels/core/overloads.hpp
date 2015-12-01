@@ -39,7 +39,7 @@ namespace wheels {
         constexpr unary_op_##name() {} \
         template <class TT> \
         constexpr decltype(auto) operator()(TT && v) const {\
-            return op forward<TT>(v); \
+            return (op forward<TT>(v)); \
         } \
         template <class Archive> \
         void serialize(Archive &) {} \

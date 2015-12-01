@@ -4,6 +4,7 @@
 
 #include "categories.hpp"
 #include "functions.hpp"
+#include "matrices.hpp"
 
 using namespace wheels;
 using namespace wheels::literals;

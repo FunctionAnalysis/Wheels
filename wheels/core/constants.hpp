@@ -202,6 +202,12 @@ namespace wheels {
             return const_ints<size_t, details::_parse_int<size_t, Cs...>::value>();
         }
 
+        // ""_indexc
+        template <char ... Cs>
+        constexpr auto operator "" _indexc() {
+            return const_ints<size_t, details::_parse_int<size_t, Cs...>::value>();
+        }
+
         constexpr yes true_c;
         constexpr no false_c;
     }

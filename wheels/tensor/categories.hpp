@@ -228,7 +228,7 @@ namespace wheels {
         using value_type = E;
         using key_value_pair_type = std::pair<key_type, value_type>;
         using nonzero_iterator = nonzero_iterator_wrapper<
-            value_iterator_wrapper<typename IndexerT::const_iterator>
+            pair_second_iterator_wrapper<typename IndexerT::const_iterator>
         >;
 
     public:
@@ -259,13 +259,13 @@ namespace wheels {
 
         constexpr nonzero_iterator nzbegin() const {
             return wrap_nonzero_iterator(
-                wrap_value_iterator(_indexer.cbegin()),
-                wrap_value_iterator(_indexer.cend()));
+                wrap_pair_second_iterator(_indexer.cbegin()),
+                wrap_pair_second_iterator(_indexer.cend()));
         }
         constexpr nonzero_iterator nzend() const {
             return wrap_nonzero_iterator(
-                wrap_value_iterator(_indexer.cend()),
-                wrap_value_iterator(_indexer.cend()));
+                wrap_pair_second_iterator(_indexer.cend()),
+                wrap_pair_second_iterator(_indexer.cend()));
         }
 
         void clear_zeros() {

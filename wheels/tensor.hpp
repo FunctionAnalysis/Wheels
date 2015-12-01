@@ -4,3 +4,4 @@
 #include "./tensor/structure.hpp"
 #include "./tensor/categories.hpp"
 #include "./tensor/functions.hpp"
+#include "./tensor/matrices.hpp"
