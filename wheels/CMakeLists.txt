@@ -30,15 +30,27 @@ file (GLOB feature_sources
 	"${CMAKE_CURRENT_SOURCE_DIR}/feature/*.cuh")
 source_group ("feature" FILES ${feature_sources})
 
+file (GLOB 3rd_sources 
+	"${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.cpp" 
+	"${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.hpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.cu" 
+	"${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.cuh")
+source_group ("3rd" FILES ${3rd_sources})
+
+
 
 set (wheels_sources 
     ${core_sources} 
     ${tensor_sources} 
     ${math_sources} 
-    ${feature_sources})
+    ${feature_sources}
+    ${3rd_sources})
 file (GLOB_RECURSE wheels_test_sources "." *.test.cpp *.test.hpp *.test.cu *.test.cuh)
 # remove test sources from the lib sources
 list (REMOVE_ITEM wheels_sources ${wheels_test_sources})
+
+
+include_directories (${DEPENDENCY_INCLUDES})
 
 
 # the lib project
@@ -47,7 +59,7 @@ foreach(i ${wheels_sources})
 	message (STATUS ${i})  
 endforeach()
 wheels_add_library(Wheels ${wheels_sources} ./dummy.cpp)
-
+target_link_libraries (Wheels ${DEPENDENCY_LIBS})
 
 
 
@@ -58,8 +70,10 @@ foreach(i ${wheels_test_sources})
 endforeach()
 find_package(GTest REQUIRED)
 enable_testing ()
+
 include_directories (${GTEST_INCLUDE_DIR})
 wheels_add_executable(WheelsUnitTest ${wheels_test_sources} ./unittest.cpp)
+target_link_libraries (WheelsUnitTest ${DEPENDENCY_LIBS})
 target_link_libraries (WheelsUnitTest Wheels)
 target_link_libraries (WheelsUnitTest optimized ${GTEST_LIBRARY})
 target_link_libraries (WheelsUnitTest optimized ${GTEST_MAIN_LIBRARY})
