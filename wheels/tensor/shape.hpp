@@ -377,7 +377,6 @@ namespace wheels {
 
 
 
-
     // ==
     template <class T, class K>
     constexpr bool operator == (const tensor_shape<T> &, const tensor_shape<K> &) { 

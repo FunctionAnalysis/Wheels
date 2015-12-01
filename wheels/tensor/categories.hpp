@@ -9,7 +9,7 @@
 namespace wheels {
 
     // category definitions
-    // fix sized tensor based on std::array
+    // std::array
     namespace tensor_traits {
 
         // readable
@@ -101,7 +101,7 @@ namespace wheels {
 
 
 
-    // dynamic sized tensor based on std::vector
+    // std::vector
     namespace tensor_traits {
 
         // readable
@@ -322,10 +322,9 @@ namespace wheels {
         // iterate all elements of 'from' 
         // since the 'from' does not have a nonzero iterator or 
         // index is inaccessible from the input nonzero iterator
-        template <class ShapeT1, class E, class IndexerT, bool WInd1, bool WInd2,
-        class CategoryT2, bool RInd1, bool RInd2>
-            void _assign_impl(tensor_writable<tensor_category<ShapeT1, sparse_dictionary<E, IndexerT>>, WInd1, WInd2, true> & to,
-                const tensor_readable<CategoryT2, RInd1, RInd2, true> & from, const no &) {
+        template <class ShapeT1, class E, class IndexerT, bool WInd1, bool WInd2, class CategoryT2, bool RInd1, bool RInd2>
+        void _assign_impl(tensor_writable<tensor_category<ShapeT1, sparse_dictionary<E, IndexerT>>, WInd1, WInd2, true> & to,
+            const tensor_readable<CategoryT2, RInd1, RInd2, true> & from, const no &) {
             to.data_provider().clear();
             for (size_t ind = 0; ind < from.numel(); ind++) {
                 auto e = from.at_index_const(ind);
@@ -335,10 +334,9 @@ namespace wheels {
             }
         }
         // use nonzero iterator of 'from'
-        template <class ShapeT1, class E, class IndexerT, bool WInd1, bool WInd2,
-        class CategoryT2, class NZIterT2>
-            void _assign_impl(tensor_writable<tensor_category<ShapeT1, sparse_dictionary<E, IndexerT>>, WInd1, WInd2, true> & to,
-                const tensor_nonzero_iteratable<CategoryT2, NZIterT2> & from, const yes &) {
+        template <class ShapeT1, class E, class IndexerT, bool WInd1, bool WInd2, class CategoryT2, class NZIterT2>
+        void _assign_impl(tensor_writable<tensor_category<ShapeT1, sparse_dictionary<E, IndexerT>>, WInd1, WInd2, true> & to,
+            const tensor_nonzero_iteratable<CategoryT2, NZIterT2> & from, const yes &) {
             to.data_provider().clear();
             for (auto it = from.nzbegin(); it != from.nzend(); ++it) {
                 size_t ind = tensor_traits::iter2ind(it);
@@ -347,8 +345,7 @@ namespace wheels {
             }
         }
 
-        template <class ShapeT1, class E, class IndexerT, bool WInd1, bool WInd2, 
-            class CategoryT2, bool RInd1, bool RInd2>
+        template <class ShapeT1, class E, class IndexerT, bool WInd1, bool WInd2, class CategoryT2, bool RInd1, bool RInd2>
         void assign_impl(tensor_writable<tensor_category<ShapeT1, sparse_dictionary<E, IndexerT>>, WInd1, WInd2, true> & to,
             const tensor_readable<CategoryT2, RInd1, RInd2, true> & from) {
             _assign_impl(to, from.category(),

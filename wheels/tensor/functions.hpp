@@ -11,15 +11,19 @@ namespace wheels {
 
     // constants
     template <class T>
-    class constant {
-    public:
+    struct constant {
         using value_type = T;
-        T val;
+
         template <class TT>
         constexpr constant(TT && v) : val(forward<TT>(v)) {}
+
         template <class ... ArgTs>
         constexpr const T & operator()(ArgTs && ...) const { return val; }
-        template <class Archive> void serialize(Archive & ar) { ar(val); }
+        
+        template <class Archive> 
+        void serialize(Archive & ar) { ar(val); }
+        
+        T val;
     };
 
     namespace tensor_traits {
@@ -72,7 +76,9 @@ namespace wheels {
     template <class T, size_t Idx>
     struct meshgrid_result {
         using value_type = T;
+
         constexpr meshgrid_result(){}
+
         template <class Archive>
         void serialize(Archive & ar) {}
     };
@@ -148,8 +154,10 @@ namespace wheels {
     template <class T>
     struct eye_result {
         using value_type = T;
+        
         constexpr eye_result() {}
-        template <class Archiver>
+        
+        template <class Archiver> 
         void serialize(Archiver &) {}
     };
 
@@ -220,8 +228,6 @@ namespace wheels {
     struct ewise_op_result {
         using value_type = T;
         using op_type = OpT;
-        OpT op;
-        std::tuple<InputTs ...> inputs;
         
         template <class OpTT, class ... InputTTs>
         constexpr explicit ewise_op_result(OpTT && o, InputTTs && ... ins)
@@ -231,6 +237,9 @@ namespace wheels {
         void serialize(Archive & ar) { 
             ar(op, inputs); 
         }
+
+        OpT op;
+        std::tuple<InputTs ...> inputs;
     };
 
     template <class OpT, class ... InputTs>
