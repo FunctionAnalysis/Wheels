@@ -9,10 +9,6 @@ using namespace wheels;
 using namespace wheels::literals;
 using namespace wheels::index_tags;
 
-template <class CategoryT, bool Writable>
-void foo(const vector<CategoryT, Writable> & v) {
-   
-}
 
 TEST(tensor, fix_sized){
 

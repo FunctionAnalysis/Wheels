@@ -619,7 +619,7 @@ namespace wheels {
     using tensor_category_base = tensor_storage<CategoryT>;
 
 
-#define WHEELS_TS_CATEGORY_COMMON_DEFINITION \
+#define WHEELS_TENSOR_CATEGORY_COMMON_DEFINITION \
     template <class DPT> \
     constexpr tensor_category(const shape_type & s, DPT && dpt) \
         : tensor_category_base<tensor_category>(s, forward<DPT>(dpt)) {} \
@@ -640,7 +640,7 @@ namespace wheels {
         using data_provider_type = DataProviderT;
         using value_type = typename data_provider_type::value_type;
         static constexpr size_t rank = ShapeT::rank;
-        WHEELS_TS_CATEGORY_COMMON_DEFINITION
+        WHEELS_TENSOR_CATEGORY_COMMON_DEFINITION
     };
 
     template <class ShapeT, class DPT>

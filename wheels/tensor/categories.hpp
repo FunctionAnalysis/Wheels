@@ -78,7 +78,7 @@ namespace wheels {
         constexpr explicit tensor_category(EleTs && ... eles)
             : base_t(ShapeT(), std::array<E, N>{{(E)forward<EleTs>(eles) ...}}) {}
 
-        WHEELS_TS_CATEGORY_COMMON_DEFINITION
+        WHEELS_TENSOR_CATEGORY_COMMON_DEFINITION
     };
 
 
@@ -178,7 +178,7 @@ namespace wheels {
             data_provider().resize(numel());
         }
 
-        WHEELS_TS_CATEGORY_COMMON_DEFINITION
+        WHEELS_TENSOR_CATEGORY_COMMON_DEFINITION
     };
 
     template <class ST, class E, class AllocT>
@@ -199,7 +199,7 @@ namespace wheels {
             data_provider().resize(numel());
         }
 
-        WHEELS_TS_CATEGORY_COMMON_DEFINITION
+        WHEELS_TENSOR_CATEGORY_COMMON_DEFINITION
     };
 
 
@@ -373,7 +373,7 @@ namespace wheels {
         explicit tensor_category(const ShapeT & shape, std::initializer_list<key_value_pair_t> ilist)
             : base_t(shape, sparse_dictionary<E, IndexerT>(ilist)) {}
 
-        WHEELS_TS_CATEGORY_COMMON_DEFINITION
+        WHEELS_TENSOR_CATEGORY_COMMON_DEFINITION
     };
 
 

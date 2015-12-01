@@ -297,8 +297,7 @@ namespace wheels {
         template <class A, class B>
         constexpr auto operator()(A && a, B && b) const {
             assert(a.shape() == b.shape());
-            return make_tensor(a.shape(), 
-                make_tensor_ewise_op_result(OpT(), forward<A>(a), forward<B>(b)));
+            return make_tensor(a.shape(), make_tensor_ewise_op_result(OpT(), forward<A>(a), forward<B>(b)));
         }
     };
     // tensor + const_expr -> const_expr
@@ -327,9 +326,8 @@ namespace wheels {
         constexpr overloaded() {}
         template <class A, class B>
         constexpr auto operator()(A && a, B && b) const {
-            return make_tensor(a.shape(),
-                make_tensor_ewise_op_result(OpT()(const_symbol<0>(),
-                    forward<B>(b)), forward<A>(a)));
+            return make_tensor(a.shape(), make_tensor_ewise_op_result(
+                OpT()(const_symbol<0>(), forward<B>(b)), forward<A>(a)));
         }
     };
     // other + tensor -> tensor
@@ -338,9 +336,8 @@ namespace wheels {
         constexpr overloaded() {}
         template <class A, class B>
         constexpr auto operator()(A && a, B && b) const {
-            return make_tensor(b.shape(),
-                make_tensor_ewise_op_result(OpT()(const_symbol<0>(), 
-                    forward<A>(a)), forward<B>(b)));
+            return make_tensor(b.shape(), make_tensor_ewise_op_result(
+                OpT()(const_symbol<0>(), forward<A>(a)), forward<B>(b)));
         }
     };
 
@@ -485,7 +482,7 @@ namespace wheels {
     template <class C1, class C2, bool RInd1, bool RSub1, bool RInd2, bool RSub2>
     constexpr auto dot(const tensor_readable<C1, RInd1, RSub1, true> & a,
         const tensor_readable<C2, RInd2, RSub2, true> & b) {
-        return ewise_mul(a.category(), b.category()).sum();
+        return (a.category() * b.category()).sum();
     }   
 
 

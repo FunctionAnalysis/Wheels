@@ -5,13 +5,10 @@
 using namespace wheels;
 
 template <class T> struct A {};
-template <class T> struct B {};
 
 namespace wheels {
     template <class T>
     struct join_overloading<A<T>> : yes {};
-    template <class T>
-    struct join_overloading<B<T>> : yes {};
 
     template <class T>
     struct overloaded<unary_op_minus, A<T>> {
