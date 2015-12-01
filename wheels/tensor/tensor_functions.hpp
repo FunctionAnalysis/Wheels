@@ -284,7 +284,7 @@ namespace wheels {
     struct overloaded<OpT, tensor_category<ShapeT, DataProviderT>> {
         constexpr overloaded() {}
         template <class A>
-        constexpr auto operator()(A && ta) const {
+        constexpr auto operator()(A && a) const {
             return make_tensor(a.shape(), make_tensor_ewise_op_result(OpT(), forward<A>(a)));
         }
     };

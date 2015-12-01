@@ -157,7 +157,7 @@ namespace wheels {
         template <class TT1, class TT2>
         constexpr decltype(auto) operator()(TT1 && v1, TT2 && v2) const {
             return const_binary_op<Op, const_coeff<std::decay_t<TT1>>, TT2>(Op(),
-                as_const_coeff(forward<TT1>(v2)), forward<TT2>(v1));
+                as_const_coeff(forward<TT1>(v1)), forward<TT2>(v2));
         }
         template <class Archive>
         void serialize(Archive &) {}

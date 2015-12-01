@@ -37,8 +37,8 @@ TEST(tensor, meshgrid) {
 
 
 TEST(tensor, eye) {
-    const auto e = eval<false>(eye(1000, 2000));
-    ASSERT_EQ(e.data_provider().size(), 1000);
+    const auto e = eval<false>(eye(10, 20000));
+    ASSERT_EQ(e.data_provider().size(), 10);
     for (size_t i = 0; i < e.rows(); i++) {
         for (size_t j = 0; j < e.cols(); j++) {
             if (i == j) {
@@ -50,8 +50,17 @@ TEST(tensor, eye) {
     }
 }
 
-
 TEST(tensor, ewise_op_result) {
     auto a = eval<false>(ones(make_shape(5, 5, 5)) - 1);
+    ASSERT_TRUE(a.none());
     ASSERT_TRUE(a.data_provider().size() == 0);
+    auto aa = eval<false>(round(acos(cos(a))));
+    ASSERT_TRUE(aa.none());
+    ASSERT_TRUE(aa.data_provider().size() == 0);
+    
+    // with const_expr
+    auto a_func = (a + 0_symbol) - 2 * (a - 1_symbol);
+    ASSERT_TRUE(a_func(1, 2) == (a + 1) - 2 * (a - 2));
+    ASSERT_TRUE(a_func(1, ones(a.shape())) == (a + 1) - 2 * (a - ones(a.shape())));
+    ASSERT_TRUE(a_func(eye(a.shape()), ones(a.shape())) == (a + eye(a.shape())) - 2 * (a - ones(a.shape())));
 }
