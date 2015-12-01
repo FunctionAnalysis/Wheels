@@ -1,7 +1,8 @@
 #include <numeric>
 #include <algorithm>
 #include <gtest/gtest.h>
-#include "tensor_shape.hpp"
+
+#include "shape.hpp"
 
 using namespace wheels;
 

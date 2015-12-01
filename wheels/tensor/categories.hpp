@@ -4,7 +4,7 @@
 #include <vector>
 #include <map>
 
-#include "tensor_parts.hpp"
+#include "structure.hpp"
 
 namespace wheels {
 

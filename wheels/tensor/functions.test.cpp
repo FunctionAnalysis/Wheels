@@ -2,7 +2,7 @@
 
 #include <complex>
 
-#include "tensor_functions.hpp"
+#include "functions.hpp"
 
 using namespace wheels;
 using namespace wheels::literals;

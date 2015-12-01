@@ -4,7 +4,7 @@
 
 #include "../core/overloads.hpp"
 
-#include "tensor_categories.hpp"
+#include "categories.hpp"
 
 namespace wheels {
 

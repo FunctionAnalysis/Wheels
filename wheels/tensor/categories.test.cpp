@@ -2,8 +2,8 @@
 
 #include <complex>
 
-#include "tensor_categories.hpp"
-#include "tensor_functions.hpp"
+#include "categories.hpp"
+#include "functions.hpp"
 
 using namespace wheels;
 using namespace wheels::literals;

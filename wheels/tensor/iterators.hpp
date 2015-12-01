@@ -5,7 +5,7 @@
 #include "../core/types.hpp"
 #include "../core/const_expr.hpp"
 
-#include "tensor_shape.hpp"
+#include "shape.hpp"
 
 namespace wheels {
 
@@ -232,29 +232,6 @@ namespace wheels {
         }
 
     }
-
-
-
-
-
-    namespace index_tags {
-        constexpr auto first = const_index<0>();
-        constexpr auto length = const_symbol<0>();
-        constexpr auto last = length - const_index<1>();
-    }
-
-    namespace details {
-        template <class E, class SizeT, class = std::enable_if_t<!is_int<E>::value>>
-        constexpr auto _eval_const_expr(const E & e, const SizeT & sz) {
-            return e(sz);
-        }
-        template <class T, class SizeT, class = std::enable_if_t<is_int<T>::value>, class = void>
-        constexpr auto _eval_const_expr(const T & t, const SizeT &) {
-            return t;
-        }
-    }
-
-
 
 
 }
