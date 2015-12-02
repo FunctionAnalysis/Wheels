@@ -65,3 +65,12 @@ TEST(tensor, ewise_op_result) {
     ASSERT_TRUE(a_func(1, ones(a.shape())) == (a + 1) - 2 * (a - ones(a.shape())));
     ASSERT_TRUE(a_func(eye(a.shape()), ones(a.shape())) == (a + eye(a.shape())) - 2 * (a - ones(a.shape())));
 }
+
+TEST(tensor, permute) {
+
+    matx m(make_shape(2, 3), 1, 2, 3, 4, 5, 6);
+    auto pm = permute(m, 1_c, 0_c);
+    print(std::cout, m);
+    print(std::cout, pm);
+
+}

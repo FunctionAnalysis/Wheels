@@ -229,9 +229,9 @@ namespace wheels {
         using value_type = T;
         using op_type = OpT;
         
-        template <class OpTT, class ... InputTTs>
-        constexpr explicit ewise_op_result(OpTT && o, InputTTs && ... ins)
-            : op(forward<OpTT>(o)), inputs(std::forward<InputTTs>(ins) ...) {}
+        template <class OpTT>
+        constexpr explicit ewise_op_result(OpTT && o, InputTs && ... ins)
+            : op(forward<OpTT>(o)), inputs(std::forward<InputTs>(ins) ...) {}
         
         template <class Archive> 
         void serialize(Archive & ar) { 
@@ -379,9 +379,54 @@ namespace wheels {
 
 
     // reshape
+    template <class ShapeT, class DPT, class ToShapeT>
+    constexpr tensor_category<ToShapeT, DPT> reshape(const tensor_category<ShapeT, DPT> & t, const ToShapeT & nshape) {
+        static_assert(is_tensor_shape<ToShapeT>::value, "invalid type");
+        return make_tensor(nshape, t.data_provider());
+    }
+    template <class ShapeT, class DPT, class ToShapeT>
+    constexpr tensor_category<ToShapeT, DPT> reshape(const tensor_category<ShapeT, DPT> && t, const ToShapeT & nshape) {
+        static_assert(is_tensor_shape<ToShapeT>::value, "invalid type");
+        return make_tensor(nshape, std::move(t.data_provider()));
+    }
 
 
 
+    // permute
+    template <class InputT, class ... IndexTs>
+    struct permute_result {
+        using value_type = typename std::decay_t<InputT>::value_type;
+        constexpr permute_result(InputT && in) 
+            : input(forward<InputT>(in)) {}
+
+        InputT input;
+    };
+
+    namespace tensor_traits {
+        template <class ShapeT, class InputT, class ... IndexTs>
+        struct readable_at_subs<tensor_category<ShapeT, permute_result<InputT, IndexTs ...>>> : yes {};
+
+        template <class ShapeT, class InputT, class SubsTupleT, class ... IndexTs, size_t ... Is>
+        constexpr decltype(auto) _at_subs_const_impl_seq (
+            const tensor_category<ShapeT, permute_result<InputT, IndexTs ...>> & a,
+            SubsTupleT && subs, const_ints<size_t, Is...>) {
+            return a.data_provider().input.at_subs_const(std::get<IndexTs::value>(subs) ...);
+        }
+
+        template <class ShapeT, class InputT, class ... IndexTs, class ... SubTs>
+        constexpr decltype(auto) at_subs_const_impl(
+            const tensor_category<ShapeT, permute_result<InputT, IndexTs ...>> & a,
+            const SubTs & ... subs) {
+            return _at_subs_const_impl_seq(a, std::forward_as_tuple(subs ...), 
+                make_const_sequence(const_size<sizeof...(IndexTs)>()));
+        }
+    }
+
+    template <class InputT, class = std::enable_if_t<is_tensor<std::decay_t<InputT>>::value>, class ... IndexTs>
+    constexpr auto permute(InputT && input, const IndexTs & ... indices) {
+        return make_tensor(permute(input.shape(), indices ...), 
+            permute_result<InputT, IndexTs...>(forward<InputT>(input)));
+    }
 
 
     // cat
@@ -389,8 +434,6 @@ namespace wheels {
 
     // repeat
 
-
-    // permute
 
 
     // 

@@ -429,6 +429,12 @@ namespace wheels {
 
 
 
+    // permute
+    template <class T, class ... SizeTs, class ... IndexTs>
+    constexpr auto permute(const tensor_shape<T, SizeTs...> & shape, const IndexTs & ... inds) {
+        return make_shape<T>(shape.at(inds) ...);
+    }
+
 
 
 

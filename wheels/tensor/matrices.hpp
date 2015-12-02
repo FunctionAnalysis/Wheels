@@ -60,6 +60,8 @@ namespace wheels {
     public:
         constexpr auto rows() const { return size(const_index<0>()); }
         constexpr auto cols() const { return size(const_index<1>()); }
+        constexpr auto t() const & { return permute(category(), const_index<1>(), const_index<0>()); }
+        constexpr auto t() const && { return permute(std::move(category()), const_index<1>(), const_index<0>()); }
     };
 
 

@@ -15,6 +15,9 @@ namespace wheels {
     template <class ShapeT, class DataProviderT> 
     class tensor_category;
 
+    template <class T> struct is_tensor : no {};
+    template <class ShapeT, class DataProviderT>
+    struct is_tensor<tensor_category<ShapeT, DataProviderT>> : yes {};
 
     namespace tensor_traits {
         template <class T>
@@ -101,7 +104,7 @@ namespace wheels {
         // read element at subs
         template <class ... SubTs>
         constexpr decltype(auto) at_subs_const(const SubTs & ... subs) const {
-            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
+            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all_v,
                 "at_subs(...) requires all subs should be integral or const_ints");
             return tensor_traits::at_subs_const_impl(category(), subs ...);
         }
@@ -117,7 +120,7 @@ namespace wheels {
         // read element at subs
         template <class ... SubTs>
         constexpr decltype(auto) at_subs_const(const SubTs & ... subs) const {
-            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
+            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all_v,
                 "at_subs(...) requires all subs should be integral or const_ints");
             return tensor_traits::at_index_const_impl(category(), sub2ind(shape(), subs ...));
         }
@@ -135,7 +138,7 @@ namespace wheels {
         // read element at subs
         template <class ... SubTs>
         constexpr decltype(auto) at_subs_const(const SubTs & ... subs) const {
-            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
+            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all_v,
                 "at_subs(...) requires all subs should be integral or const_ints");
             return tensor_traits::at_subs_const_impl(category(), subs ...);
         }
@@ -186,7 +189,7 @@ namespace wheels {
         // write element at subs
         template <class ... SubTs>
         decltype(auto) at_subs_nonconst(const SubTs & ... subs) {
-            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all(),
+            static_assert(const_ints<bool, is_int<SubTs>::value ...>::all_v,
                 "at_subs(...) requires all subs should be integral or const_ints");
             return tensor_traits::at_subs_nonconst_impl(category(), subs ...);
         }

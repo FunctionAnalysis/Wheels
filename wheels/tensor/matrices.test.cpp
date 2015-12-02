@@ -5,6 +5,16 @@
 using namespace wheels;
 using namespace wheels::literals;
 
+TEST(tensor, matrix_transpose) {
+
+    matx x, y;
+    std::tie(x, y) = meshgrid(4, 5);
+    std::cout << x << std::endl;
+    std::cout << x.t() << std::endl;
+    std::cout << y << std::endl;
+    std::cout << y.t() << std::endl;
+}
+
 TEST(tensor, matrix_mul) {
 
     matx a(make_shape(10, 20));

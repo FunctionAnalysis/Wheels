@@ -102,6 +102,12 @@ namespace wheels {
     struct always {
         static constexpr T value = Val;
     };
+    template <class T, size_t ... ArgIs>
+    struct always2 {
+        using type = T;
+    };
+    template <class T, size_t ... ArgIs>
+    using always_t = typename always2<T, ArgIs ...>::type;
 
 
 
