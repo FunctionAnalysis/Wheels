@@ -24,6 +24,9 @@ TEST(core, utility) {
     static_assert(!all_same(1_c, 2, 1_c), "");
     static_assert(all_same(1_c, 1, 1_c, 1, 1, 1_sizec), "");
 
+    static_assert(all_different(1_c, 2_c, 3_c, 4_c, 5_indexc), "");
+    static_assert(!all_different(1_c, 4_c, 3_c, 4_c, 5_indexc), "");
+
     wheels::traverse([](auto v) {std::cout << v << std::endl; }, 1_c, 2_c);
 
 }

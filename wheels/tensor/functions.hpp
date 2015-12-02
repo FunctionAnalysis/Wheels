@@ -55,9 +55,9 @@ namespace wheels {
     constexpr auto zeros(const tensor_shape<ST, SizeTs ...> & shape) {
         return make_tensor(shape, constant<T>(0));
     }
-    template <class T = double, class ST = size_t, class ... SizeTs>
+    template <class T = double, class ... SizeTs>
     constexpr auto zeros(const SizeTs & ... sizes) {
-        return make_tensor(make_shape<ST>(sizes...), constant<T>(types<T>::zero()));
+        return make_tensor(make_shape(sizes...), constant<T>(types<T>::zero()));
     }
 
     // ones
@@ -65,9 +65,9 @@ namespace wheels {
     constexpr auto ones(const tensor_shape<ST, SizeTs ...> & shape) {
         return make_tensor(shape, constant<T>(1));
     }
-    template <class T = double, class ST = size_t, class ... SizeTs>
+    template <class T = double, class ... SizeTs>
     constexpr auto ones(const SizeTs & ... sizes) {
-        return make_tensor(make_shape<ST>(sizes...), constant<T>(1));
+        return make_tensor(make_shape(sizes...), constant<T>(1));
     }
 
 
@@ -106,10 +106,42 @@ namespace wheels {
     constexpr auto meshgrid(const tensor_shape<ST, SizeTs ...> & shape) {
         return details::_meshgrid_seq<T>(shape, make_const_sequence(const_size<sizeof...(SizeTs)>()));
     }
-    template <class T = double, class ST = size_t, class ... SizeTs>
+    template <class T = double, class ... SizeTs>
     constexpr auto meshgrid(const SizeTs & ... sizes) {
         return details::_meshgrid_seq<T>(make_shape(sizes ...), make_const_sequence(const_size<sizeof...(SizeTs)>()));
     }
+
+
+
+
+    // iota
+    template <class T>
+    struct iota_result {
+        using value_type = T;
+        constexpr iota_result(){}
+        template <class Archive>
+        void serialize(Archive & ar) {}
+    };
+
+    namespace tensor_traits {
+        template <class ShapeT, class T>
+        struct readable_at_index<tensor_category<ShapeT, iota_result<T>>> : yes {};
+
+        template <class ShapeT, class T, class IndexT>
+        constexpr T at_index_const_impl(const tensor_category<ShapeT, iota_result<T>> &, const IndexT & index) {
+            return (T)index;
+        }
+    }
+
+    template <class T = double, class ST, class ... SizeTs>
+    constexpr auto iota(const tensor_shape<ST, SizeTs ...> & shape) {
+        return make_tensor(shape, iota_result<T>());
+    }
+    template <class T = double, class ... SizeTs>
+    constexpr auto iota(const SizeTs & ... sizes) {
+        return make_tensor(make_shape(sizes...), iota_result<T>());
+    }
+
 
 
 
@@ -134,17 +166,17 @@ namespace wheels {
     }
 
     // unit_x/y/z
-    template <class T = double, class ST = size_t, class SizeT = const_ints<ST, 3>>
+    template <class T = double, class SizeT = const_ints<size_t, 3>>
     constexpr auto unit_x(const SizeT & s = SizeT()) {
-        return make_tensor(make_shape<ST>(s), unit_axis_result<T, 0>());
+        return make_tensor(make_shape(s), unit_axis_result<T, 0>());
     }
-    template <class T = double, class ST = size_t, class SizeT = const_ints<ST, 3>>
+    template <class T = double, class SizeT = const_ints<size_t, 3>>
     constexpr auto unit_y(const SizeT & s = SizeT()) {
-        return make_tensor(make_shape<ST>(s), unit_axis_result<T, 1>());
+        return make_tensor(make_shape(s), unit_axis_result<T, 1>());
     }
-    template <class T = double, class ST = size_t, class SizeT = const_ints<ST, 3>>
+    template <class T = double, class SizeT = const_ints<size_t, 3>>
     constexpr auto unit_z(const SizeT & s = SizeT()) {
-        return make_tensor(make_shape<ST>(s), unit_axis_result<T, 2>());
+        return make_tensor(make_shape(s), unit_axis_result<T, 2>());
     }
 
 
@@ -213,9 +245,9 @@ namespace wheels {
     constexpr auto eye(const tensor_shape<ST, SizeTs ...> & shape) {
         return make_tensor(shape, eye_result<T>());
     }
-    template <class T = double, class ST = size_t, class ... SizeTs>
+    template <class T = double, class ... SizeTs>
     constexpr auto eye(const SizeTs & ... sizes) {
-        return make_tensor(make_shape<ST>(sizes ...), eye_result<T>());
+        return make_tensor(make_shape(sizes ...), eye_result<T>());
     }
 
 
@@ -398,8 +430,12 @@ namespace wheels {
         using value_type = typename std::decay_t<InputT>::value_type;
         constexpr permute_result(InputT && in) 
             : input(forward<InputT>(in)) {}
-
         InputT input;
+        
+        template <class Archive>
+        void serialize(Archive & ar) {
+            ar(input);
+        }
     };
 
     namespace tensor_traits {
@@ -410,7 +446,8 @@ namespace wheels {
         constexpr decltype(auto) _at_subs_const_impl_seq (
             const tensor_category<ShapeT, permute_result<InputT, IndexTs ...>> & a,
             SubsTupleT && subs, const_ints<size_t, Is...>) {
-            return a.data_provider().input.at_subs_const(std::get<IndexTs::value>(subs) ...);
+            return a.data_provider().input.at_subs_const(
+                std::get<decltype(find_first_of(cat(IndexTs() ...), const_index<Is>()))::value>(subs) ...);
         }
 
         template <class ShapeT, class InputT, class ... IndexTs, class ... SubTs>
@@ -424,9 +461,13 @@ namespace wheels {
 
     template <class InputT, class = std::enable_if_t<is_tensor<std::decay_t<InputT>>::value>, class ... IndexTs>
     constexpr auto permute(InputT && input, const IndexTs & ... indices) {
+        static_assert(sizeof...(IndexTs) == input.rank, "invalid index number");
+        assert(all_different(indices ...) && "duplicated indices not allowed");
         return make_tensor(permute(input.shape(), indices ...), 
             permute_result<InputT, IndexTs...>(forward<InputT>(input)));
     }
+
+
 
 
     // cat

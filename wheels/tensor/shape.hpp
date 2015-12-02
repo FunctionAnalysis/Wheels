@@ -229,7 +229,7 @@ namespace wheels {
     }
     template <class T, class SizeT, class ... SizeTs, class K, class ... Ks>
     constexpr T sub2ind(const tensor_shape<T, SizeT, SizeTs...> & shape, K sub, Ks ... subs) {
-        return sub * shape.rest().magnitude() + sub2ind(shape.rest(), subs...);
+        return (T)(sub * shape.rest().magnitude() + sub2ind(shape.rest(), subs...));
     }
 
 
@@ -383,7 +383,8 @@ namespace wheels {
         return true; 
     }
     template <class T, class SizeT, class ... SizeTs, class K, class ... SizeT2s>
-    constexpr bool operator == (const tensor_shape<T, SizeT, SizeTs...> & shape, const tensor_shape<K, SizeT2s...> & b) {
+    constexpr std::enable_if_t<sizeof...(SizeTs) + 1 == sizeof...(SizeT2s), bool>
+        operator == (const tensor_shape<T, SizeT, SizeTs...> & shape, const tensor_shape<K, SizeT2s...> & b) {
         return shape.value() == b.value() && shape.rest() == b.rest();
     }
 
@@ -405,26 +406,70 @@ namespace wheels {
 
 
     namespace details {
+        template <class T>
+        struct _int_type {
+            static_assert(std::is_integral<T>::value, "invalid type");
+            using type = T;
+        };
+        template <class T, T K>
+        struct _int_type<const_ints<T, K>> {
+            using type = T;
+        };
         template <class T, class K, class = std::enable_if_t<std::is_integral<K>::value>>
-        constexpr T _to_size(const K & s) {
+        constexpr T _to_size_rep(const K & s) {
             return s;
         }
         template <class T, class K, K Val>
-        constexpr auto _to_size(const const_ints<K, Val> &) {
+        constexpr auto _to_size_rep(const const_ints<K, Val> &) {
             return const_ints<T, Val>();
         }
     }
 
     // make_shape
-    template <class T = size_t, class ... SizeTs>
-    constexpr auto make_shape(const SizeTs & ... sizes) {
-        return tensor_shape<T, decltype(details::_to_size<T>(sizes)) ...>(details::_to_size<T>(sizes) ...);
+    template <class T = size_t>
+    constexpr auto make_shape() { return tensor_shape<T>(); }
+    template <class SizeT, class ... SizeTs>
+    constexpr auto make_shape(const SizeT & s, const SizeTs & ... sizes) {
+        using value_t = std::common_type_t<
+            typename details::_int_type<SizeT>::type,
+            typename details::_int_type<SizeTs>::type ...
+        >;
+        return tensor_shape<value_t, 
+            decltype(details::_to_size_rep<value_t>(s)),
+            decltype(details::_to_size_rep<value_t>(sizes)) ...
+        >(details::_to_size_rep<value_t>(s), details::_to_size_rep<value_t>(sizes) ...);
     }
 
-    // make_shape
-    template <class T = size_t, T ... Sizes>
-    constexpr auto make_shape(const const_ints<T, Sizes...> &) {
-        return tensor_shape<T, const_ints<T, Sizes>...>();
+
+    // cat
+    namespace details {
+        template <class ShapeT1, size_t ... I1s, class ShapeT2, size_t ... I2s>
+        constexpr auto _cat_shape_seq(const ShapeT1 & s1, const ShapeT2 & s2,
+            const_ints<size_t, I1s ...>, const_ints<size_t, I2s ...>) {
+            return make_shape(s1.at(const_index<I1s>()) ..., s2.at(const_index<I2s>()) ...);
+        }
+    }
+    template <class T, class K, class ... S1s, class ... S2s>
+    constexpr auto cat(const tensor_shape<T, S1s ...> & t1, const tensor_shape<K, S2s ...> & t2) {
+        return details::_cat_shape_seq(t1, t2,
+            make_const_sequence(const_size_of<S1s...>()), 
+            make_const_sequence(const_size_of<S2s...>()));
+    }
+    template <class T, class ... Ss, class K, K ... Vs>
+    constexpr auto cat(const tensor_shape<T, Ss ...> & a, const const_ints<K, Vs...> & b) {
+        return cat(a, make_shape(const_ints<K, Vs>() ...));
+    }
+    template <class T, class ... Ss, class K, K ... Vs>
+    constexpr auto cat(const const_ints<K, Vs...> & a, const tensor_shape<T, Ss ...> & b) {
+        return cat(make_shape(const_ints<K, Vs>() ...), b);
+    }
+    template <class T, class ... Ss, class IntT, class = std::enable_if_t<std::is_integral<IntT>::value>>
+    constexpr auto cat(const tensor_shape<T, Ss ...> & a, const IntT & b) {
+        return cat(a, make_shape(b));
+    }
+    template <class T, class ... Ss, class IntT, class = std::enable_if_t<std::is_integral<IntT>::value>>
+    constexpr auto cat(const IntT & a, const tensor_shape<T, Ss ...> & b) {
+        return cat(make_shape(a), b);
     }
 
 
@@ -432,7 +477,7 @@ namespace wheels {
     // permute
     template <class T, class ... SizeTs, class ... IndexTs>
     constexpr auto permute(const tensor_shape<T, SizeTs...> & shape, const IndexTs & ... inds) {
-        return make_shape<T>(shape.at(inds) ...);
+        return make_shape(shape.at(inds) ...);
     }
 
 

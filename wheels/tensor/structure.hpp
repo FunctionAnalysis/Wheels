@@ -607,16 +607,6 @@ namespace wheels {
         };
     }
 
-    //// special value types
-    //template <class CategoryT>
-    //class boolean_tensor : public tensor_specific_value_type_base<CategoryT> {
-    //public:
-    //    // conversion to bool value
-    //    constexpr operator bool() const { return all(); }
-    //};
-    //template <class CategoryT>
-    //class tensor_specific_value_type<CategoryT, bool> : public boolean_tensor<CategoryT> {};
-
 
     // specific shape
     template <class CategoryT>

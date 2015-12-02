@@ -12,7 +12,8 @@ TEST(tensor, matrix_transpose) {
     std::cout << x << std::endl;
     std::cout << x.t() << std::endl;
     std::cout << y << std::endl;
-    std::cout << y.t() << std::endl;
+    std::cout << y.t().t().t() << std::endl;
+
 }
 
 TEST(tensor, matrix_mul) {
@@ -34,6 +35,6 @@ TEST(tensor, matrix_vector_mul) {
 
     vecx v(1, 2, 3, 4, 5, 6, 7, 8);
     matx e = - eye(8, 8);
-    ASSERT_TRUE(e * v == -v);
+    ASSERT_TRUE(e * v.normalized() == (-v).normalized());
 
 }

@@ -99,6 +99,9 @@ namespace wheels {
 
         constexpr operator T() const { return value; }
 
+        template <class K, K V, wheels_enable_if(V == Val)>
+        constexpr operator const_ints<K, V>() const { return const_ints<K, V>(); }
+
         template <class Archive> void serialize(Archive &) {}
     };
 
@@ -155,6 +158,7 @@ namespace wheels {
     }
 
 
+
     // stream
     template <class T, T ... Vals>
     inline std::ostream & operator << (std::ostream & os, const const_ints<T, Vals...> &) {
@@ -208,9 +212,19 @@ namespace wheels {
             return const_ints<size_t, details::_parse_int<size_t, Cs...>::value>();
         }
 
+        // ""_int64c
+        template <char ... Cs>
+        constexpr auto operator "" _int64c() {
+            return const_ints<int64_t, details::_parse_int<int64_t, Cs...>::value>();
+        }
+
         constexpr yes true_c;
         constexpr no false_c;
     }
+
+    // const_size_of
+    template <class ... Ts>
+    constexpr auto const_size_of() { return const_size<sizeof...(Ts)>(); }
 
 
 #define WHEELS_CONST_INT_OVERLOAD_UNARY_OP(op) \
@@ -275,15 +289,17 @@ namespace wheels {
         return const_ints<T, Vals ...>();
     }
     namespace details {
-        template <class T, T ... Val1s, T ... Val2s>
-        constexpr auto _cat2(const const_ints<T, Val1s ...> &, const const_ints<T, Val2s ...> &) {
-            return const_ints<T, Val1s ..., Val2s ...>();
+        template <class T, T ... Val1s, class K, K ... Val2s>
+        constexpr auto _cat2_const_ints(const const_ints<T, Val1s ...> &, const const_ints<K, Val2s ...> &) {
+            using result_t = std::common_type_t<T, K>;
+            return const_ints<result_t, (result_t)Val1s ..., (result_t)Val2s ...>();
         }
     }
-    template <class T, class ... Ts>
+    template <class T, class ... Ts, class = std::enable_if_t<
+        const_ints<bool, is_const_ints<T>::value, 
+        is_const_ints<Ts>::value ...>::all_v>>
     constexpr auto cat(const T & first, const Ts & ... rest) {
-        static_assert(is_const_ints<T>::value, "");
-        return details::_cat2(first, cat(rest...));
+        return details::_cat2_const_ints(first, cat(rest...));
     }
 
 
@@ -324,10 +340,65 @@ namespace wheels {
         return typename details::_make_seq<T, Size == 0, Size>::type();
     }
 
+    // make_const_sequence_for
+    template <class ... Ts>
+    constexpr auto make_const_sequence_for() {
+        return make_const_sequence(const_size_of<Ts ...>());
+    }
+
+
     // make_const_range
     template <class T, T From, T To>
     constexpr auto make_const_range(const const_ints<T, From> & from, const const_ints<T, To> & to) {
         return typename details::_make_seq_range<T, From, To>::type();
     }
+
+
+    // count
+    namespace details {
+        template <class T, T S, T ... Ss, T V>
+        constexpr auto _count(const const_ints<T, S, Ss ...> & seq, const const_ints<T, V> & v) {
+            return _count(const_ints<T, Ss ...>(), v);
+        }
+        template <class T, T S, T ... Ss>
+        constexpr auto _count(const const_ints<T, S, Ss ...> & seq, const const_ints<T, S> & v) {
+            return _count(const_ints<T, Ss ...>(), v) + const_size<1>();
+        }
+        template <class T, T V>
+        constexpr auto _count(const const_ints<T> &, const const_ints<T, V> &) {
+            return const_size<0>();
+        }
+    }
+    template <class T, T ... S, class K, K V>
+    constexpr auto count(const const_ints<T, S ...> & seq, const const_ints<K, V> & v) {
+        return details::_count(seq, const_ints<T, (T)V>());
+    }
+
+
+    // find_first_of
+    namespace details {
+        template <class T, T S, T ... Ss, T V, size_t NotFoundV>
+        constexpr auto _find_first_of(const const_ints<T, S, Ss ...> & seq, const const_ints<T, V> & v, 
+            const const_index<NotFoundV> & not_found) {
+            return conditional(_find_first_of(const_ints<T, Ss ...>(), v, not_found) == not_found, 
+                not_found,
+                _find_first_of(const_ints<T, Ss ...>(), v, not_found) + const_index<1>());
+        }
+        template <class T, T S, T ... Ss, size_t NotFoundV>
+        constexpr auto _find_first_of(const const_ints<T, S, Ss ...> & seq, const const_ints<T, S> & v, 
+            const const_index<NotFoundV> &) {
+            return const_index<0>();
+        }
+        template <class T, T V, size_t NotFoundV>
+        constexpr auto _find_first_of(const const_ints<T> & seq, const const_ints<T, V> & v, 
+            const const_index<NotFoundV> & not_found) {
+            return not_found;
+        }
+    }
+    template <class T, T S, T ... Ss, class K, K V>
+    constexpr auto find_first_of(const const_ints<T, S, Ss ...> & seq, const const_ints<K, V> & v) {
+        return details::_find_first_of(seq, const_ints<T, (T)V>(), const_index<1 + sizeof...(Ss)>());
+    }
+
 
 }

@@ -24,6 +24,14 @@ TEST(tensor, constants) {
 }
 
 
+TEST(tensor, iota) {
+    auto t = iota(1, 2, 3_c, 4, 5_c);
+    for (size_t i = 0; i < t.numel(); i++) {
+        ASSERT_EQ(t[i], i);
+    }
+}
+
+
 TEST(tensor, meshgrid) {
     matx x, y;
     std::tie(x, y) = meshgrid(100, 100);
@@ -72,5 +80,13 @@ TEST(tensor, permute) {
     auto pm = permute(m, 1_c, 0_c);
     print(std::cout, m);
     print(std::cout, pm);
+
+    cubex c = iota(2, 3, 4);
+    cubex pc = permute(c, 2_c, 0_c, 1_c);
+
+    ASSERT_TRUE(pc.shape() == make_shape(4, 2, 3));
+    for_each_subscript(c.shape(), [&](size_t i, size_t j, size_t k) {
+        ASSERT_EQ(c(i, j, k), pc(k, i, j));
+    });
 
 }

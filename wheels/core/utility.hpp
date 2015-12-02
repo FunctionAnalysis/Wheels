@@ -85,6 +85,18 @@ namespace wheels {
     constexpr auto all_same(const T1 & a, T2 && b, T2s && ... bs) {
         return a == forward<T2>(b) && all_same(a, forward<T2s>(bs) ...);
     }
+
+
+    // all_different(...)
+    template <class T1, class T2>
+    constexpr auto all_different(const T1 & a, const T2 & b) {
+        return a != b;
+    }
+    template <class T1, class T2, class ... T2s>
+    constexpr auto all_different(const T1 & a, const T2 & b, const T2s & ... bs) {
+        return all(a != b, a != bs ...) && all_different(b, bs ...);
+    }
+
     
 
     // traverse(fun, ...)

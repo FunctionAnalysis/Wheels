@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <gtest/gtest.h>
 
+#include "../core/types.hpp"
 #include "shape.hpp"
 
 using namespace wheels;
@@ -25,8 +26,11 @@ TEST(math, tensor_shape) {
 
     ASSERT_TRUE(s1.magnitude() == 50);
 
-    auto s2 = make_shape(cat(1_c, 2_c, 5_c, 5_c));
+    auto s2 = make_shape(1_c, 2_c, 5_c, 5_c);
     std::cout << s2 << std::endl;
+    auto ns2 = make_shape(8_c);
+
+    std::cout << ns2 << std::endl;
 
     ASSERT_TRUE(s1 == s2);
     ASSERT_TRUE(max_shape_size(s2) == 5);
@@ -40,7 +44,7 @@ TEST(math, tensor_shape) {
 
     ASSERT_TRUE(inds == inds2);
 
-    constexpr auto s3 = make_shape<size_t>(1_sizec, 5_c);
+    constexpr auto s3 = make_shape(1_sizec, 5_c);
     auto m3 = s3.magnitude();
     ASSERT_TRUE(max_shape_size(s3) == 5);
 
@@ -57,5 +61,9 @@ TEST(math, tensor_shape) {
             ASSERT_TRUE(sub2ind(shape, a, b) == i);
         });
     }
+
+    ASSERT_TRUE(cat(make_shape(1, 3, 5_c, 7_sizec), make_shape(9, 11_c)) == make_shape(1, 3, 5, 7, 9, 11));
+    ASSERT_TRUE(cat(cat(1_c, 3_c), make_shape(5, 7, 9_c, 11_c)) == make_shape(1, 3, 5, 7, 9, 11));
+    ASSERT_TRUE(cat(cat(1_c, 3_c, 5_c, 7_sizec), make_shape(9, 11)) == make_shape(1, 3, 5, 7, 9, 11));
 
 }

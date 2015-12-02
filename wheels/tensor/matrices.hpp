@@ -24,7 +24,8 @@ namespace wheels {
         constexpr decltype(auto) green() const { return at_index_const(1); }
         constexpr decltype(auto) blue() const { return at_index_const(2); }
         constexpr decltype(auto) alpha() const { return at_index_const(3); }
-        constexpr auto normalized() const { return category() / norm(); }
+        constexpr auto normalized() const & { return category() / norm(); }
+        constexpr auto normalized() const && { return std::move(category()) / norm(); }
     };
     template <class CategoryT>
     class vector<CategoryT, true> : public tensor_specific_shape_base<CategoryT> {
@@ -45,7 +46,8 @@ namespace wheels {
         decltype(auto) green() { return at_index_nonconst(1); }
         decltype(auto) blue() { return at_index_nonconst(2); }
         decltype(auto) alpha() { return at_index_nonconst(3); }
-        constexpr auto normalized() const { return category() / norm(); }
+        constexpr auto normalized() const & { return category() / norm(); }
+        constexpr auto normalized() const && { return std::move(category()) / norm(); }
     };
 
 
@@ -146,15 +148,11 @@ namespace wheels {
         template <class A, class B>
         constexpr auto operator()(A && a, B && b) const {
             assert(a.size(const_index<1>()) == b.size(const_index<0>()));
-            using shape_v_t = std::common_type_t<
-                typename std::decay_t<A>::shape_type::value_type, 
-                typename std::decay_t<B>::shape_type::value_type
-            >;
             using result_v_t = std::common_type_t<
                 typename std::decay_t<A>::value_type, 
                 typename std::decay_t<B>::value_type
             >;
-            return make_tensor(make_shape<shape_v_t>(a.size(const_index<0>()), b.size(const_index<1>())),
+            return make_tensor(make_shape(a.size(const_index<0>()), b.size(const_index<1>())),
                 matrix_mul_result<result_v_t, A, B, true, true>(forward<A>(a), forward<B>(b)));
         }
     };
@@ -189,15 +187,11 @@ namespace wheels {
         template <class A, class B>
         constexpr auto operator()(A && a, B && b) const {
             assert(a.size(const_index<1>()) == b.size(const_index<0>()));
-            using shape_v_t = std::common_type_t<
-                typename std::decay_t<A>::shape_type::value_type,
-                typename std::decay_t<B>::shape_type::value_type
-            >;
             using result_v_t = std::common_type_t<
                 typename std::decay_t<A>::value_type,
                 typename std::decay_t<B>::value_type
             >;
-            return make_tensor(make_shape<shape_v_t>(a.size(const_index<0>())),
+            return make_tensor(make_shape(a.size(const_index<0>())),
                 matrix_mul_result<result_v_t, A, B, true, false>(forward<A>(a), forward<B>(b)));
         }
     };
@@ -233,15 +227,11 @@ namespace wheels {
         template <class A, class B>
         constexpr auto operator()(A && a, B && b) const {
             assert(a.size(const_index<0>()) == b.size(const_index<0>()));
-            using shape_v_t = std::common_type_t<
-                typename std::decay_t<A>::shape_type::value_type,
-                typename std::decay_t<B>::shape_type::value_type
-            >;
             using result_v_t = std::common_type_t<
                 typename std::decay_t<A>::value_type,
                 typename std::decay_t<B>::value_type
             >;
-            return make_tensor(make_shape<shape_v_t>(b.size(const_index<1>())),
+            return make_tensor(make_shape(b.size(const_index<1>())),
                 matrix_mul_result<result_v_t, A, B, false, true>(forward<A>(a), forward<B>(b)));
         }
     };

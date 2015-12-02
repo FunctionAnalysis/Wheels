@@ -194,7 +194,7 @@ namespace wheels {
         tensor_category() : base_t(tensor_shape<ST, ST>(), std::vector<E, AllocT>()) {}
         template <class EleT, class ... EleTs>
         explicit tensor_category(EleT && e, EleTs && ... eles) 
-            : base_t(make_shape<ST>(1 + sizeof...(eles)), 
+            : base_t(make_shape(1 + sizeof...(eles)), 
             std::vector<E, AllocT>({ (E)forward<EleT>(e), (E)forward<EleTs>(eles) ... })) {
             data_provider().resize(numel());
         }
@@ -211,7 +211,9 @@ namespace wheels {
     using matx_ = tensor_category<tensor_shape<size_t, size_t, size_t>, std::vector<E>>;
     using matx = matx_<double>;
 
-
+    template <class E>
+    using cubex_ = tensor_category<tensor_shape<size_t, size_t, size_t, size_t>, std::vector<E>>;
+    using cubex = cubex_<double>;
 
 
 
