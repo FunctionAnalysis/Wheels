@@ -25,7 +25,7 @@ namespace wheels {
         template <class ... ArgTs>
         void operator()(ArgTs && ...) const {
             static_assert(always<bool, false, ArgTs ...>::value,
-                "error: this overloaded operator is not implemented, "
+                "error: this overloaded operator/function is not implemented, "
                 "instantiate overloaded<...> to fix this.");
         }
         template <class Archive>
@@ -157,7 +157,59 @@ namespace wheels {
     struct object_overloadings : object_overloading<DerivedT, FirstOpT>, 
         object_overloading<DerivedT, RestOpTs> ... {};
 
-#define WHEELS_OVERLOAD_MEMBER_OP(op1, op2, op3, opsymbol, name) \
+#define WHEELS_OVERLOAD_MEMBER_UNARY_OP(op1, op2, op3, opsymbol, name) \
+    struct member_op_##name { \
+        constexpr member_op_##name() {} \
+        template <class CallerT, class ArgT> \
+        constexpr decltype(auto) operator()(CallerT && caller, ArgT && arg) const { \
+            return op1 forward<CallerT>(caller) op2 forward<ArgT>(arg) op3; \
+        } \
+        template <class Archive> \
+        void serialize(Archive &) {} \
+    }; \
+    template <class DerivedT> \
+    struct object_overloading<DerivedT, member_op_##name> { \
+        template <class ArgT> \
+        constexpr decltype(auto) operator opsymbol (ArgT && arg) const & { \
+            return overloaded<member_op_##name, \
+                info_for_overloading_t<std::decay_t<DerivedT>>, \
+                info_for_overloading_t<std::decay_t<ArgT>> \
+            >()(static_cast<const DerivedT &>(*this), forward<ArgT>(arg)); \
+        } \
+        template <class ArgT> \
+        decltype(auto) operator opsymbol (ArgT && arg) & { \
+            return overloaded<member_op_##name, \
+                info_for_overloading_t<std::decay_t<DerivedT>>, \
+                info_for_overloading_t<std::decay_t<ArgT>> \
+            >()(static_cast<DerivedT &>(*this), forward<ArgT>(arg)); \
+        } \
+        template <class ArgT> \
+        decltype(auto) operator opsymbol (ArgT && arg) && { \
+            return overloaded<member_op_##name, \
+                info_for_overloading_t<std::decay_t<DerivedT>>, \
+                info_for_overloading_t<std::decay_t<ArgT>> \
+            >()(static_cast<DerivedT &&>(*this), forward<ArgT>(arg)); \
+        } \
+        template <class ArgT> \
+        decltype(auto) operator opsymbol (ArgT && arg) const && { \
+            return overloaded<member_op_##name, \
+                info_for_overloading_t<std::decay_t<DerivedT>>, \
+                info_for_overloading_t<std::decay_t<ArgT>> \
+            >()(static_cast<const DerivedT &&>(*this), forward<ArgT>(arg)); \
+        } \
+    };
+
+
+    WHEELS_OVERLOAD_MEMBER_UNARY_OP( , [, ], [], bracket)
+    WHEELS_OVERLOAD_MEMBER_UNARY_OP( , +=, , +=, plus_equal)
+    WHEELS_OVERLOAD_MEMBER_UNARY_OP( , -=, , -=, minus_equal)
+    WHEELS_OVERLOAD_MEMBER_UNARY_OP( , *=, , *=, mul_equal)
+    WHEELS_OVERLOAD_MEMBER_UNARY_OP( , /=, , /=, div_equal)
+    WHEELS_OVERLOAD_MEMBER_UNARY_OP( ,  =, ,  =, assign)
+    
+
+
+#define WHEELS_OVERLOAD_MEMBER_VARARG_OP(op1, op2, op3, opsymbol, name) \
     struct member_op_##name { \
         constexpr member_op_##name() {} \
         template <class CallerT, class ... ArgTs> \
@@ -199,14 +251,10 @@ namespace wheels {
         } \
     };
 
-    WHEELS_OVERLOAD_MEMBER_OP( , [, ], [], bracket)
+
 #define WHEELS_SYMBOL_LEFT_PAREN (
 #define WHEELS_SYMBOL_RIGHT_PAREN )
-    WHEELS_OVERLOAD_MEMBER_OP( , WHEELS_SYMBOL_LEFT_PAREN, WHEELS_SYMBOL_RIGHT_PAREN, (), paren)
-    WHEELS_OVERLOAD_MEMBER_OP( , +=, , +=, plus_equal)
-    WHEELS_OVERLOAD_MEMBER_OP( , -=, , -=, minus_equal)
-    WHEELS_OVERLOAD_MEMBER_OP( , *=, , *=, mul_equal)
-    WHEELS_OVERLOAD_MEMBER_OP( , /=, , /=, div_equal)
-    WHEELS_OVERLOAD_MEMBER_OP( ,  =, ,  =, assign)
-    
+    WHEELS_OVERLOAD_MEMBER_VARARG_OP( , WHEELS_SYMBOL_LEFT_PAREN, WHEELS_SYMBOL_RIGHT_PAREN, (), paren)
+
+
 }
