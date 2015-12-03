@@ -134,6 +134,20 @@ namespace wheels {
     template <class T>
     struct is_int : const_bool<(std::is_integral<T>::value || is_const_int<T>::value)> {};
 
+    // int_traits
+    template <class T, bool IsNativeInt = std::is_integral<T>::value>
+    struct int_traits {};
+    template <class T>
+    struct int_traits<T, true> {
+        using type = T;
+        static constexpr bool is_const_int = false;
+    };
+    template <class T, T ... Val>
+    struct int_traits<const_ints<T, Val ...>, false> {
+        using type = T;
+        static constexpr bool is_const_int = true;
+    };
+
 
 
     // conversion with std::integer_sequence

@@ -153,9 +153,8 @@ namespace wheels {
     // overload member functions
     template <class DerivedT, class OpT>
     struct object_overloading {};
-    template <class DerivedT, class FirstOpT, class ... RestOpTs>
-    struct object_overloadings : object_overloading<DerivedT, FirstOpT>, 
-        object_overloading<DerivedT, RestOpTs> ... {};
+    template <class DerivedT, class ... OpTs>
+    struct object_overloadings : object_overloading<DerivedT, OpTs> ... {};
 
 #define WHEELS_OVERLOAD_MEMBER_UNARY_OP(op1, op2, op3, opsymbol, name) \
     struct member_op_##name { \

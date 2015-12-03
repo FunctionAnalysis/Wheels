@@ -93,9 +93,9 @@ namespace wheels {
             return T(forward<ArgTs>(args) ...);
         }
 
-        type_info info() const { return typeid(T); }
-        const char * name() const { return typeid(T).name(); }
-        const char * raw_name() const { return typeid(T).raw_name(); }
+        static type_info info() { return typeid(T); }
+        static const char * name() { return typeid(T).name(); }
+        static const char * raw_name() { return typeid(T).raw_name(); }
 
         template <class Archive> void serialize(Archive &) {}
     };
@@ -108,10 +108,12 @@ namespace wheels {
     #define type_t(t) decltype(t)::type
 
 
-    template <class T>
-    struct is_wheel : no {};
     template <class ... Ts>
-    struct is_wheel<types<Ts ...>> : yes {};
+    inline std::ostream & operator << (std::ostream & os, const types<Ts ...> &) {
+        os << "{";
+        print(",", os, types<Ts>::name() ...);
+        return os << "}";
+    }
 
 
     // == 

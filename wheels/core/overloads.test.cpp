@@ -1,8 +1,10 @@
 #include <gtest/gtest.h>
 
+#include "types.hpp"
 #include "overloads.hpp"
 
 using namespace wheels;
+using namespace wheels::literals;
 
 template <class T> struct A {};
 
@@ -72,34 +74,24 @@ namespace wheels {
             return "B<T>[int]";
         }
     };
-    template <class T>
-    struct overloaded<member_op_paren, B<T>, int> {
-        template <class TT, class II>
-        constexpr const char * operator()(TT &&, II &&) const {
-            return "B<T>(int)";
+    template <class T, class ... ArgTs>
+    struct overloaded<member_op_paren, B<T>, ArgTs ...> {
+        template <class TT, class ... ArgTTs>
+        std::string operator()(TT &&, ArgTTs && ...) const {
+            std::stringstream ss;
+            ss << "operator()(";
+            print(ss, types<TT &&, ArgTTs && ...>());
+            ss << ")";
+            return ss.str();
         }
     };
-    //template <class T>
-    //struct overloaded<member_op_increment, B<T>> {
-    //    template <class TT>
-    //    const char * operator()(TT &&) const {
-    //        return "++ B<T>";
-    //    }
-    //};
-    //template <class T>
-    //struct overloaded<member_op_increment, B<T>, int> {
-    //    template <class TT>
-    //    const char * operator()(TT &&, int) const {
-    //        return "B<T> ++";
-    //    }
-    //};
 }
 
 TEST(core, member_overloads) {
     B<int> bb;
     std::cout << bb[1] << std::endl;
-    std::cout << bb(1) << std::endl;
-    std::cout << B<int>()(1) << std::endl;
+    std::cout << bb(1, 2) << std::endl;
+    std::cout << B<int>()(1, 2_c) << std::endl;
     
     std::is_standard_layout<B<int>>::value;
 
