@@ -408,6 +408,13 @@ namespace wheels {
     }   
 
 
+    // normalize
+    template <class A, class = std::enable_if_t<is_tensor<std::decay_t<A>>::value>>
+    constexpr auto normalize(A && a) {
+        return forward<A>(a) / a.norm();
+    }
+
+
 
 
     // reshape

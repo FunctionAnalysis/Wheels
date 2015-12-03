@@ -56,5 +56,55 @@ TEST(core, overloads) {
     std::cout << a + 1 << std::endl;
     std::cout << 1 + 1 << std::endl;
     std::cout << 1 + a << std::endl;
+}
 
+
+template <class T> 
+struct B : wheels::object_overloadings<B<T>, 
+    wheels::member_op_bracket,
+    wheels::member_op_paren> {};
+
+namespace wheels {
+    template <class T>
+    struct overloaded<member_op_bracket, B<T>, int> {
+        template <class TT, class II>
+        constexpr const char * operator()(TT &&, II &&) const {
+            return "B<T>[int]";
+        }
+    };
+    template <class T>
+    struct overloaded<member_op_paren, B<T>, int> {
+        template <class TT, class II>
+        constexpr const char * operator()(TT &&, II &&) const {
+            return "B<T>(int)";
+        }
+    };
+    //template <class T>
+    //struct overloaded<member_op_increment, B<T>> {
+    //    template <class TT>
+    //    const char * operator()(TT &&) const {
+    //        return "++ B<T>";
+    //    }
+    //};
+    //template <class T>
+    //struct overloaded<member_op_increment, B<T>, int> {
+    //    template <class TT>
+    //    const char * operator()(TT &&, int) const {
+    //        return "B<T> ++";
+    //    }
+    //};
+}
+
+TEST(core, member_overloads) {
+    B<int> bb;
+    std::cout << bb[1] << std::endl;
+    std::cout << bb(1) << std::endl;
+    std::cout << B<int>()(1) << std::endl;
+    
+    std::is_standard_layout<B<int>>::value;
+
+    auto c = bb[1];
+
+    int i = 1;
+    
 }
