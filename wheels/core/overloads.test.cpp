@@ -80,7 +80,7 @@ namespace wheels {
         std::string operator()(TT &&, ArgTTs && ...) const {
             std::stringstream ss;
             ss << "operator()(";
-            print(ss, types<TT &&, ArgTTs && ...>());
+            print_to(ss, types<TT &&, ArgTTs && ...>());
             ss << ")";
             return ss.str();
         }
@@ -91,7 +91,7 @@ TEST(core, member_overloads) {
     B<int> bb;
     std::cout << bb[1] << std::endl;
     std::cout << bb(1, 2) << std::endl;
-    std::cout << B<int>()(1, 2_c) << std::endl;
+    std::cout << B<int>().operator()(1, 2_c) << std::endl;
     
     std::is_standard_layout<B<int>>::value;
 

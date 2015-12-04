@@ -30,7 +30,7 @@ namespace wheels {
 
     template <class RepT, class PeriodT>
     std::ostream & operator << (std::ostream & os, const std::chrono::duration<RepT, PeriodT> & d) {
-        return print(os, d.count(), " ", details::_period_str(PeriodT()));
+        return print_to(os, d.count(), " ", details::_period_str(PeriodT()));
     }
 
 }

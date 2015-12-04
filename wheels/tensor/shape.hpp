@@ -478,7 +478,7 @@ namespace wheels {
     namespace details {
         template <class ShapeT, size_t ... Is>
         inline std::ostream & _stream_seq(std::ostream & os, const ShapeT & shape, std::index_sequence<Is...>) {
-            return print(" ", os << "[", shape.at(const_index<Is>()) ...) << "]";
+            return print_sep_to(os << "[", " ", shape.at(const_index<Is>()) ...) << "]";
         }
     }
     template <class T, class ... SizeTs>

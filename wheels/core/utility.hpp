@@ -108,6 +108,29 @@ namespace wheels {
     }
 
 
+    // make_ordered_pair
+    template <class T1, class T2>
+    constexpr decltype(auto) make_ordered_pair(T1 && a, T2 && b) {
+        return conditional(a < b,
+            std::make_pair(a, b),
+            std::make_pair(b, a));
+    }
+
+
+    // bounded [lb, ub]
+    template <class T, class LowBT, class UpBT>
+    constexpr decltype(auto) bounded(T && v, LowBT && lb, UpBT && ub) {
+        return conditional(v < lb, lb, conditional(v < ub, v, ub));
+    }
+
+    // is_between [lb, ub)
+    template <class T, class LowBT, class UpBT>
+    constexpr decltype(auto) is_between(T && v, LowBT && lb, UpBT && ub) {
+        return !(v < lb) && v < ub;
+    }
+
+
+
 
     // always
     template <class T, T Val, class ... ArgTs> 
@@ -124,31 +147,45 @@ namespace wheels {
 
 
 
-    // print
-    inline std::ostream & print(std::ostream & os) { return os; }
+    // print_to
+    inline std::ostream & print_to(std::ostream & os) { return os; }
     template <class T, class ... Ts>
-    inline std::ostream & print(std::ostream & os, const T & arg, const Ts & ... args) {
+    inline std::ostream & print_to(std::ostream & os, const T & arg, const Ts & ... args) {
         os << arg;
-        return print(os, args ...);
+        return print_to(os, args ...);
     }
+    // print_sep_to
     template <class SepT>
-    inline std::ostream & print(SepT && sep, std::ostream & os) { return os; }
+    inline std::ostream & print_sep_to(std::ostream & os, SepT && sep) { return os; }
     template <class SepT, class T>
-    inline std::ostream & print(SepT && sep, std::ostream & os, const T & arg) { return os << arg; }
+    inline std::ostream & print_sep_to(std::ostream & os, SepT && sep, const T & arg) { return os << arg; }
     template <class SepT, class T, class ... Ts>
-    inline std::ostream & print(SepT && sep, std::ostream & os, const T & arg, const Ts & ... args) { 
+    inline std::ostream & print_sep_to(std::ostream & os, SepT && sep, const T & arg, const Ts & ... args) {
         os << arg << sep;
-        return print(sep, os, args ...);
+        return print_sep_to(os, sep, args ...);
     }
 
+
+
+    // print
+    template <class ... Ts>
+    inline std::ostream & print(const Ts & ... args) {
+        return print_to(std::cout, args ...);
+    }
+    // print_sep
+    template <class SepT, class ... Ts>
+    inline std::ostream & print_sep(SepT && sep, const Ts & ... args) {
+        return print_sep_to(std::cout, sep, args ...);
+    }
     // println
     template <class ... Ts>
-    inline std::ostream & println(std::ostream & os, const Ts & ... args) {
-        return print(os, args...) << std::endl;
+    inline std::ostream & println(const Ts & ... args) {
+        return print(args...) << std::endl;
     }
+    // print_sep
     template <class SepT, class ... Ts>
-    inline std::ostream & println(SepT && sep, std::ostream & os, const Ts & ... args) {
-        return print(forward<SepT>(sep), os, args...) << std::endl;
+    inline std::ostream & println_sep(SepT && sep, const Ts & ... args) {
+        return print_sep_to(std::cout, sep, args ...) << std::endl;
     }
    
 

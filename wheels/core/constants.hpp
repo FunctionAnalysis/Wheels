@@ -176,7 +176,7 @@ namespace wheels {
     // stream
     template <class T, T ... Vals>
     inline std::ostream & operator << (std::ostream & os, const const_ints<T, Vals...> &) {
-        return print(" ", os, Vals ...);
+        return print_sep_to(os, " ", Vals ...);
     }
 
 

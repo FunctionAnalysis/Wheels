@@ -111,7 +111,7 @@ namespace wheels {
     template <class ... Ts>
     inline std::ostream & operator << (std::ostream & os, const types<Ts ...> &) {
         os << "{";
-        print(",", os, types<Ts>::name() ...);
+        print_sep_to(os, ",", types<Ts>::name() ...);
         return os << "}";
     }
 
