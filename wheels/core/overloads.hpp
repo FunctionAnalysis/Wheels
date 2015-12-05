@@ -150,7 +150,7 @@ namespace wheels {
 
     
 
-    // overload member functions
+    // object_overloading
     template <class DerivedT, class OpT>
     struct object_overloading {};
     template <class DerivedT, class ... OpTs>
