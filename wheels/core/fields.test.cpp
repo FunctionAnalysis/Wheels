@@ -1,5 +1,4 @@
 #include <gtest/gtest.h>
-
 #include "fields.hpp"
 
 struct A {
@@ -47,51 +46,49 @@ TEST(core, ref_behavior) {
 
 using namespace wheels;
 
-//template <class T1, class T2>
-//struct B {
-//    template <class U, class V>
-//    auto fields(U &&, V && v) {
-//        return v(v1, v2);
-//    }
-//    T1 v1;
-//    T2 v2;
-//};
+template <class T1, class T2>
+struct B : comparable<B<T1, T2>> {
+    B(const T1 & a, const T2 & b) : v1(a), v2(b) {}
+    template <class U, class V>
+    auto fields(U &&, V && v) & {
+        return v(v1, v2);
+    }
+    template <class U, class V>
+    auto fields(U &&, V && v) const & {
+        return v(v1, v2);
+    }
+    template <class U, class V>
+    auto fields(U &&, V && v) && {
+        return v(std::move(v1), std::move(v2));
+    }
+    T1 v1;
+    T2 v2;
+};
 
-//namespace wheels {
-//    template <class T1, class T2, class U, class V>
-//    auto fields(B<T1, T2> & b, U &&, V && v) {
-//        return v(b.v1, b.v2);
-//    }
-//}
+TEST(core, fields_type_traits) {
 
-TEST(core, simple_visit) {
+    static_assert(join_overloading<char, func_fields>::value, "");
 
-    has_global_func_fields<char, int, field_visitor<pack_as_tuple, visit_to_tuplize>>::value;
-    info_for_overloading<char, func_fields>::type;
-    join_overloading<std::decay_t<char>, func_fields>::value;
+    static_assert(has_global_func_fields<char, visit_to_tuplize, field_visitor<pack_as_tuple, visit_to_tuplize>>::value, "");
+    static_assert(has_global_func_fields<unsigned char, visit_to_tuplize, field_visitor<pack_as_tuple, visit_to_tuplize>>::value, "");
 
-    auto visitor = make_field_visitor(pack_as_tuple(), visit_to_tuplize());
-    auto aaa = visitor.visit('1');
+    static_assert(!has_global_func_fields<B<int, long>, visit_to_tuplize, field_visitor<pack_as_tuple, visit_to_tuplize>>::value, "");
+    static_assert(has_member_func_fields<B<int, long>, visit_to_tuplize, field_visitor<pack_as_tuple, visit_to_tuplize>>::value, "");
 
-    //has_member_func_fields<B<int, char>, visit_to_tuplize, field_visitor<pack_as_tuple, visit_to_tuplize>>::value;
-    
+}
 
-    //B<long, short> b;
-    //b.v1 = 1;
-    //b.v2 = '1';
-    std::array<double, 4> a = { 1, 2, 3, 4 };
-    auto bbb = visitor.visit(a);
-    //auto t = ;
-    auto i = tuplize(std::make_pair(1, 2));
-    std::cout << std::endl;
+TEST(core, fields) {
+    auto bt = tuplize(B<char, int>('1', 1));
+    static_assert(type_of(bt).decay() == types<std::tuple<char, int>>(), "");    
+    ASSERT_TRUE(bt == std::make_tuple('1', 1));
 
-    static_assert(std::make_tuple(1, 2.0) == std::make_tuple(true, 2.0f), "");
+    B<int, long long> b2(2, 2ll);
+    auto bt2 = tuplize(b2);
+    static_assert(type_of(bt2).decay() == types<std::tuple<int &, long long &>>(), "");
+    ASSERT_TRUE(bt2 == std::make_tuple(2, 2ll));
+    ASSERT_TRUE((B<char, int>('2' - '0', 2) == b2));
 
-    join_overloading<std::tuple<int, bool>, func_fields>::value;
-
-    //auto bt = tuplize(b);
-    //auto bt2 = b.tuplize();
-
-    //std::vector<B<int, char>> bs(10, b);
-
+    bt2 = std::make_tuple(3, 3);
+    ASSERT_EQ(b2.v1, 3);
+    ASSERT_EQ(b2.v2, 3);
 }

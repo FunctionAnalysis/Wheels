@@ -124,7 +124,7 @@ namespace wheels {
 
     template <class ... T1s, class ... T2s, class = std::enable_if_t<sizeof...(T1s) == sizeof...(T2s)>>
     constexpr auto operator == (const types<T1s ...> &, const types<T2s ...> &) {
-        return const_ints<bool, std::is_same<T1s, T2s>::value ...>()::all();
+        return const_ints<bool, std::is_same<T1s, T2s>::value ...>::all();
     }
 
     template <class ... T1s, class ... T2s>

@@ -30,25 +30,12 @@ namespace wheels {
     }
 
 
-    // scalars
-    //template <class T>
-    //struct scalar_proxy {
-    //    template <class TT>
-    //    constexpr scalar_proxy(TT && c) : content(forward<TT>(c)) {}
-    //    T content;
-    //};
-    //template <class T> struct is_scalar_proxy : no {};
-    //template <class T> struct is_scalar_proxy<scalar_proxy<T>> : yes {};
-    //template <class T>
-    //constexpr auto as_scalar(T && c) {
-    //    return scalar_proxy<T>(forward<T>(c));
-    //}
-
+    // scalars (as default)
     template <class U, class V>
     struct overloaded<func_fields, info_scalar, U, V> {
         template <class TT, class UU, class VV>
         constexpr decltype(auto) operator()(TT && t, UU &&, VV && visitor) const {
-            return static_cast<TT&&>(t);//visitor(as_scalar(forward<TT>(t))); 
+            return static_cast<TT &&>(t);
         }
     };
     template <> struct info_for_overloading<bool, func_fields> { using type = info_scalar; };
@@ -174,9 +161,6 @@ namespace wheels {
             !has_member_func_fields<T, UsageT, this_t>::value &&
             !has_global_func_fields<T, UsageT, this_t>::value >>
         constexpr T && visit(T && v) const {
-            //static_assert(//is_scalar_proxy<std::decay_t<T>>::value || 
-            //    is_container_proxy<std::decay_t<T>>::value,
-            //    "no fields implementation is found");
             return static_cast<T&&>(v);
         }
 
@@ -204,26 +188,19 @@ namespace wheels {
         template <class T>
         struct _each {
             template <class ArgT>
-            static decltype(auto) process(ArgT && arg) {
+            static constexpr decltype(auto) process(ArgT && arg) {
                 return static_cast<ArgT &&>(arg);
-            }
-        };
-        template <class ... Ts>
-        struct _each<std::tuple<Ts ...>> {
-            template <class ArgT>
-            static decltype(auto) process(ArgT && arg) {
-                return forward<ArgT>(arg);
             }
         };
         template <class T>
         struct _each<container_proxy<T>> {
             template <class ArgT>
-            static auto process(ArgT && arg) {
+            static constexpr auto process(ArgT && arg) {
 
             }
         };
         template <class ... ArgTs>
-        static decltype(auto) _pack(ArgTs && ... args) {
+        static constexpr decltype(auto) _pack(ArgTs && ... args) {
             return std::tuple<ArgTs ...>(forward<ArgTs>(args) ...);
         }
         template <class ... ArgTs>
@@ -237,17 +214,77 @@ namespace wheels {
         auto visitor = make_field_visitor(pack_as_tuple(), visit_to_tuplize());
         return visitor.visit(forward<T>(data));
     }
-    //template <class T>
-    //struct tuplizable {
-    //    decltype(auto) tuplize() const & {
-    //        auto visitor = make_field_visitor(pack_as_tuple(), visit_to_tuplize());
-    //        return visitor.visit(static_cast<const T &>(*this));
-    //    }
-    //    decltype(auto) tuplize() & {
-    //        auto visitor = make_field_visitor(pack_as_tuple(), visit_to_tuplize());
-    //        return visitor.visit(static_cast<T &>(*this));
-    //    }
-    //};
+
+
+    // comparable
+    template <class T>
+    struct comparable {
+        constexpr decltype(auto) as_tuple() const & {
+            static_assert(has_member_func_fields<T, visit_to_tuplize,
+                field_visitor<pack_as_tuple, visit_to_tuplize >> ::value ||
+                has_global_func_fields<T, visit_to_tuplize,
+                field_visitor<pack_as_tuple, visit_to_tuplize >> ::value,
+                "definition of fields(...) is required");
+            using result_t = decltype(tuplize(static_cast<const T &>(*this)));
+            static_assert(!std::is_same<T, result_t>::value, "tuplization failed");
+            return tuplize(static_cast<const T &>(*this));
+        }
+        decltype(auto) as_tuple() & {
+            static_assert(has_member_func_fields<T, visit_to_tuplize,
+                field_visitor<pack_as_tuple, visit_to_tuplize >> ::value ||
+                has_global_func_fields<T, visit_to_tuplize,
+                field_visitor<pack_as_tuple, visit_to_tuplize >> ::value,
+                "definition of fields(...) is required");
+            using result_t = decltype(tuplize(static_cast<T &>(*this)));
+            static_assert(!std::is_same<T, result_t>::value, "tuplization failed");
+            return tuplize(static_cast<T &>(*this));
+        }
+        constexpr decltype(auto) as_tuple() const && {
+            static_assert(has_member_func_fields<T, visit_to_tuplize,
+                field_visitor<pack_as_tuple, visit_to_tuplize >> ::value ||
+                has_global_func_fields<T, visit_to_tuplize,
+                field_visitor<pack_as_tuple, visit_to_tuplize >> ::value,
+                "definition of fields(...) is required");
+            using result_t = decltype(tuplize(static_cast<const T &&>(*this)));
+            static_assert(!std::is_same<T, result_t>::value, "tuplization failed");
+            return tuplize(static_cast<const T &&>(*this));
+        }
+        decltype(auto) as_tuple() && {
+            static_assert(has_member_func_fields<T, visit_to_tuplize,
+                field_visitor<pack_as_tuple, visit_to_tuplize >> ::value ||
+                has_global_func_fields<T, visit_to_tuplize,
+                field_visitor<pack_as_tuple, visit_to_tuplize >> ::value,
+                "definition of fields(...) is required");
+            using result_t = decltype(tuplize(static_cast<T &&>(*this)));
+            static_assert(!std::is_same<T, result_t>::value, "tuplization failed");
+            return tuplize(static_cast<T &&>(*this));
+        }
+    };
+
+    template <class A, class B>
+    constexpr bool operator == (const comparable<A> & a, const comparable<B> & b) {
+        return a.as_tuple() == b.as_tuple();
+    }
+    template <class A, class B>
+    constexpr bool operator != (const comparable<A> & a, const comparable<B> & b) {
+        return a.as_tuple() != b.as_tuple();
+    }
+    template <class A, class B>
+    constexpr bool operator < (const comparable<A> & a, const comparable<B> & b) {
+        return a.as_tuple() < b.as_tuple();
+    }
+    template <class A, class B>
+    constexpr bool operator <= (const comparable<A> & a, const comparable<B> & b) {
+        return a.as_tuple() <= b.as_tuple();
+    }
+    template <class A, class B>
+    constexpr bool operator > (const comparable<A> & a, const comparable<B> & b) {
+        return a.as_tuple() > b.as_tuple();
+    }
+    template <class A, class B>
+    constexpr bool operator >= (const comparable<A> & a, const comparable<B> & b) {
+        return a.as_tuple() >= b.as_tuple();
+    }
 
 
 
@@ -274,41 +311,5 @@ namespace wheels {
                 "implement fields(...) or serialize(...) to fix this");
         }
     };
-
-    // comparable
-    template <class T>
-    struct comparable {
-
-    };
-
-
-    //// object_comparable
-    //template <class T>
-    //struct object_comparable : object_traversing_fields<T> {};
-
-    //template <class A, class B>
-    //constexpr bool operator == (const object_comparable<A> & a, const object_comparable<B> & b) {
-    //    return a.as_tuple() == b.as_tuple();
-    //}
-    //template <class A, class B>
-    //constexpr bool operator != (const object_comparable<A> & a, const object_comparable<B> & b) {
-    //    return a.as_tuple() != b.as_tuple();
-    //}
-    //template <class A, class B>
-    //constexpr bool operator < (const object_comparable<A> & a, const object_comparable<B> & b) {
-    //    return a.as_tuple() < b.as_tuple();
-    //}
-    //template <class A, class B>
-    //constexpr bool operator <= (const object_comparable<A> & a, const object_comparable<B> & b) {
-    //    return a.as_tuple() <= b.as_tuple();
-    //}
-    //template <class A, class B>
-    //constexpr bool operator > (const object_comparable<A> & a, const object_comparable<B> & b) {
-    //    return a.as_tuple() > b.as_tuple();
-    //}
-    //template <class A, class B>
-    //constexpr bool operator >= (const object_comparable<A> & a, const object_comparable<B> & b) {
-    //    return a.as_tuple() >= b.as_tuple();
-    //}
 
 }
