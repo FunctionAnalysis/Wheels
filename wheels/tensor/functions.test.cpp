@@ -78,8 +78,8 @@ TEST(tensor, permute) {
 
     matx m(make_shape(2, 3), 1, 2, 3, 4, 5, 6);
     auto pm = permute(m, 1_c, 0_c);
-    print(std::cout, m);
-    print(std::cout, pm);
+    print(m);
+    print(pm);
 
     cubex c = iota(2, 3, 4);
     cubex pc = permute(c, 2_c, 0_c, 1_c);

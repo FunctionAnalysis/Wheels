@@ -406,15 +406,6 @@ namespace wheels {
 
 
     namespace details {
-        template <class T>
-        struct _int_type {
-            static_assert(std::is_integral<T>::value, "invalid type");
-            using type = T;
-        };
-        template <class T, T K>
-        struct _int_type<const_ints<T, K>> {
-            using type = T;
-        };
         template <class T, class K, class = std::enable_if_t<std::is_integral<K>::value>>
         constexpr T _to_size_rep(const K & s) {
             return s;
@@ -431,8 +422,8 @@ namespace wheels {
     template <class SizeT, class ... SizeTs>
     constexpr auto make_shape(const SizeT & s, const SizeTs & ... sizes) {
         using value_t = std::common_type_t<
-            typename details::_int_type<SizeT>::type,
-            typename details::_int_type<SizeTs>::type ...
+            typename int_traits<SizeT>::type,
+            typename int_traits<SizeTs>::type ...
         >;
         return tensor_shape<value_t, 
             decltype(details::_to_size_rep<value_t>(s)),
@@ -487,7 +478,7 @@ namespace wheels {
     namespace details {
         template <class ShapeT, size_t ... Is>
         inline std::ostream & _stream_seq(std::ostream & os, const ShapeT & shape, std::index_sequence<Is...>) {
-            return print(" ", os << "[", shape.at(const_index<Is>()) ...) << "]";
+            return print_sep_to(os << "[", " ", shape.at(const_index<Is>()) ...) << "]";
         }
     }
     template <class T, class ... SizeTs>

@@ -322,8 +322,10 @@ namespace wheels {
 
 
     // overloads operators concerning tensor_category
-    template <class ShapeT, class DataProviderT>
-    struct join_overloading<tensor_category<ShapeT, DataProviderT>> : yes {};
+    template <class ShapeT, class DataProviderT, class OtherOpT>
+    struct info_for_overloading<tensor_category<ShapeT, DataProviderT>, OtherOpT> {
+        using type = tensor_category<ShapeT, DataProviderT>;
+    };
 
     // unary
     // tensor -> tensor
@@ -406,6 +408,13 @@ namespace wheels {
     constexpr auto dot(const tensor_readable<C1, RInd1, RSub1, true> & a, const tensor_readable<C2, RInd2, RSub2, true> & b) {
         return ewise_mul(a.category(), b.category()).sum();
     }   
+
+
+    // normalize
+    template <class A, class = std::enable_if_t<is_tensor<std::decay_t<A>>::value>>
+    constexpr auto normalize(A && a) {
+        return forward<A>(a) / a.norm();
+    }
 
 
 

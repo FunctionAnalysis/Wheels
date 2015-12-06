@@ -52,15 +52,15 @@ namespace wheels {
         static constexpr auto to_array() { return std::array<T, length>{ Vals ... }; }
         static constexpr auto to_tuple() { return std::make_tuple(Vals...); }
         
-        static constexpr auto sum() { return const_ints<T, details::_reduction<T, Vals...>::sum>(); }
-        static constexpr auto prod() { return const_ints<T, details::_reduction<T, Vals...>::prod>(); }
-        static constexpr auto all() { return const_ints<bool, details::_reduction<T, Vals...>::all>(); }
-        static constexpr auto any() { return const_ints<bool, details::_reduction<T, Vals...>::any>(); }
-
         static constexpr T sum_v = details::_reduction<T, Vals...>::sum;
         static constexpr T prod_v = details::_reduction<T, Vals...>::prod;
         static constexpr bool all_v = details::_reduction<T, Vals...>::all;
         static constexpr bool any_v = details::_reduction<T, Vals...>::any;
+
+        static constexpr auto sum() { return const_ints<T, sum_v>(); }
+        static constexpr auto prod() { return const_ints<T, prod_v>(); }
+        static constexpr auto all() { return const_ints<bool, all_v>(); }
+        static constexpr auto any() { return const_ints<bool, any_v>(); }
 
         template <class K, K Idx>
         constexpr auto operator[](const const_ints<K, Idx> &) const {
@@ -82,17 +82,17 @@ namespace wheels {
         constexpr const_ints() {}
         
         static constexpr auto to_array() { return std::array<T, length>{ Val }; }
-        static constexpr auto to_tuple() { return std::make_tuple(Val); }
-        
-        static constexpr auto sum() { return const_ints<T, Val>(); }
-        static constexpr auto prod() { return const_ints<T, Val>(); }
-        static constexpr auto all() { return const_ints<bool, (bool)Val>(); }
-        static constexpr auto any() { return const_ints<bool, (bool)Val>(); }
+        static constexpr auto to_tuple() { return std::make_tuple(Val); }        
 
         static constexpr T sum_v = Val;
         static constexpr T prod_v = Val;
         static constexpr bool all_v = (bool)Val;
         static constexpr bool any_v = (bool)Val;
+
+        static constexpr auto sum() { return const_ints<T, sum_v>(); }
+        static constexpr auto prod() { return const_ints<T, prod_v>(); }
+        static constexpr auto all() { return const_ints<bool, all_v>(); }
+        static constexpr auto any() { return const_ints<bool, any_v>(); }
 
         template <class K>
         constexpr auto operator[](const const_ints<K, 0> &) const { return const_ints<T, Val>(); }
@@ -134,6 +134,20 @@ namespace wheels {
     template <class T>
     struct is_int : const_bool<(std::is_integral<T>::value || is_const_int<T>::value)> {};
 
+    // int_traits
+    template <class T, bool IsNativeInt = std::is_integral<T>::value>
+    struct int_traits {};
+    template <class T>
+    struct int_traits<T, true> {
+        using type = T;
+        static constexpr bool is_const_int = false;
+    };
+    template <class T, T ... Val>
+    struct int_traits<const_ints<T, Val ...>, false> {
+        using type = T;
+        static constexpr bool is_const_int = true;
+    };
+
 
 
     // conversion with std::integer_sequence
@@ -162,7 +176,7 @@ namespace wheels {
     // stream
     template <class T, T ... Vals>
     inline std::ostream & operator << (std::ostream & os, const const_ints<T, Vals...> &) {
-        return print(" ", os, Vals ...);
+        return print_sep_to(os, " ", Vals ...);
     }
 
 
