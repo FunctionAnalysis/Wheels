@@ -48,34 +48,24 @@ using namespace wheels;
 
 template <class T1, class T2>
 struct B : comparable<B<T1, T2>> {
+    B() : v1(), v2() {}
     B(const T1 & a, const T2 & b) : v1(a), v2(b) {}
-    template <class U, class V>
-    auto fields(U &&, V && v) & {
+    template <class V>
+    auto fields(V && v) & {
         return v(v1, v2);
     }
-    template <class U, class V>
-    auto fields(U &&, V && v) const & {
+    template <class V>
+    auto fields(V && v) const & {
         return v(v1, v2);
     }
-    template <class U, class V>
-    auto fields(U &&, V && v) && {
+    template <class V>
+    auto fields(V && v) && {
         return v(std::move(v1), std::move(v2));
     }
     T1 v1;
     T2 v2;
 };
 
-TEST(core, fields_type_traits) {
-
-    static_assert(join_overloading<char, func_fields>::value, "");
-
-    static_assert(has_global_func_fields<char, visit_to_tuplize, field_visitor<pack_as_tuple, visit_to_tuplize>>::value, "");
-    static_assert(has_global_func_fields<unsigned char, visit_to_tuplize, field_visitor<pack_as_tuple, visit_to_tuplize>>::value, "");
-
-    static_assert(!has_global_func_fields<B<int, long>, visit_to_tuplize, field_visitor<pack_as_tuple, visit_to_tuplize>>::value, "");
-    static_assert(has_member_func_fields<B<int, long>, visit_to_tuplize, field_visitor<pack_as_tuple, visit_to_tuplize>>::value, "");
-
-}
 
 TEST(core, fields) {
     auto bt = tuplize(B<char, int>('1', 1));
@@ -91,4 +81,71 @@ TEST(core, fields) {
     bt2 = std::make_tuple(3, 3);
     ASSERT_EQ(b2.v1, 3);
     ASSERT_EQ(b2.v2, 3);
+}
+
+struct C {
+    B<char, int> b1;
+    B<int, char> b2;
+};
+
+namespace wheels {
+    template <class V>
+    auto fields(const C & c, V && visitor) {
+        return visitor(c.b1, c.b2);
+    }
+    template <class V>
+    auto fields(C & c, V && visitor) {
+        return visitor(c.b1, c.b2);
+    }
+}
+
+TEST(core, fields2) {
+    C c = { {'1', 1}, {1, '1'} };
+    auto ct = tuplize(c);
+    static_assert(type_of(ct).decay() == types<std::tuple<std::tuple<char &, int &>, std::tuple<int &, char &>>>(), "");
+    B<int, int> b1 = { 0, 0 };
+    B<int, int> b2 = { 0, 0 };
+    std::forward_as_tuple(b1.as_tuple(), b2.as_tuple()) = tuplize(c);
+    ASSERT_EQ(b1.v1, '1');
+    ASSERT_EQ(b1.v2, 1);
+    ASSERT_EQ(b2.v1, 1);
+    ASSERT_EQ(b2.v2, '1');
+
+    ASSERT_TRUE(b1 != b2);
+}
+
+struct D {
+    std::vector<C> cs;
+    B<int, long> b;
+    template <class V>
+    auto fields(V && v) & {
+        return v(cs, b);
+    }
+    template <class V>
+    auto fields(V && v) const & {
+        return v(cs, b);
+    }
+};
+
+TEST(core, fields3) {
+    D d = { {
+        {{'1', 1}, {1, '1'}}, 
+        {{'2', 2}, {2, '2'}}, 
+        {{'3', 3}, {3, '3'}}
+        }, {10, 10} };
+    auto dt = tuplize(d);
+    std::vector<D> ds = { d, d };
+    auto dts = tuplize(ds);
+    decltype(auto) dt1 = dts[0];
+    C c = { { '4', 4 }, { 4, '4' } };
+    std::get<0>(dt1)[0] = tuplize(c);
+
+    ASSERT_EQ(ds[0].cs[0].b1.v1, '4');
+
+    std::list<D> ds2 = { ds.front(), d };
+    ASSERT_TRUE(tuplize(ds) == tuplize(ds2));
+    ASSERT_TRUE(tuplize(ds) >= tuplize(ds2));
+    ASSERT_TRUE(tuplize(ds) <= tuplize(ds2));
+    ASSERT_FALSE(tuplize(ds) > tuplize(ds2));
+    ASSERT_FALSE(tuplize(ds) < tuplize(ds2));
 }
