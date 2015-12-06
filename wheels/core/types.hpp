@@ -100,6 +100,47 @@ namespace wheels {
         template <class Archive> void serialize(Archive &) {}
     };
 
+    // void
+    template <>
+    struct types<void> {
+        using type = void;
+        static constexpr size_t length = 1;
+
+        constexpr types() {}
+
+        template <class K>
+        constexpr auto operator[](const const_ints<K, 0> &) const {
+            return types<T>();
+        }
+
+        template <class K>
+        static constexpr auto is() {
+            return const_bool<std::is_same<void, K>::value>();
+        }
+        static constexpr auto is_class() {
+            return const_bool<std::is_class<void>::value>();
+        }
+        static constexpr auto is_empty() {
+            return const_bool<std::is_empty<void>::value>();
+        }
+        static constexpr auto is_default_constructible() {
+            return const_bool<std::is_default_constructible<void>::value>();
+        }
+
+        static constexpr auto decay() { return types<void>(); }
+
+        template <class ... ArgTs>
+        static constexpr auto construct(ArgTs && ... args) {
+            return T(forward<ArgTs>(args) ...);
+        }
+
+        const char * name() const { return typeid(void).name(); }
+        const char * raw_name() const { return typeid(void).raw_name(); }
+
+        template <class Archive> void serialize(Archive &) {}
+    };
+
+
     template <class ... Ts>
     constexpr auto type_of(Ts && ... t) {
         return types<Ts && ...>();
@@ -122,7 +163,7 @@ namespace wheels {
 
     template <class ... T1s, class ... T2s, class = std::enable_if_t<sizeof...(T1s) == sizeof...(T2s)>>
     constexpr auto operator == (const types<T1s ...> &, const types<T2s ...> &) {
-        return const_bool<std::is_same<T1s, T2s>::value ...>().all();
+        return const_ints<bool, all(std::is_same<T1s, T2s>::value ...)>();
     }
 
     template <class ... T1s, class ... T2s>
