@@ -9,8 +9,10 @@ using namespace wheels::literals;
 template <class T> struct A {};
 
 namespace wheels {
-    template <class T>
-    struct join_overloading<A<T>> : yes {};
+    template <class T, class OpT>
+    struct info_for_overloading<A<T>, OpT> {
+        using type = A<T>;
+    };
 
     template <class T>
     struct overloaded<unary_op_minus, A<T>> {
@@ -31,14 +33,14 @@ namespace wheels {
     };
 
     template <class T>
-    struct overloaded<binary_op_plus, A<T>, int> {
+    struct overloaded<binary_op_plus, A<T>, void> {
         template <class TT, class II>
         const char * operator()(TT &&, II &&) const {
             return "A<T> + int";
         }
     };
     template <class T>
-    struct overloaded<binary_op_plus, int, A<T>> {
+    struct overloaded<binary_op_plus, void, A<T>> {
         template <class TT, class II>
         const char * operator()(TT &&, II &&) const {
             return "int + A<T>";
@@ -55,6 +57,7 @@ TEST(core, overloads) {
     int ia = 0;
     auto nia = -ia;
 
+    join_overloading<A<int>, binary_op_plus>::value;
     std::cout << a + 1 << std::endl;
     std::cout << 1 + 1 << std::endl;
     std::cout << 1 + a << std::endl;
@@ -68,7 +71,7 @@ struct B : wheels::object_overloadings<B<T>,
 
 namespace wheels {
     template <class T>
-    struct overloaded<member_op_bracket, B<T>, int> {
+    struct overloaded<member_op_bracket, B<T>, void> {
         template <class TT, class II>
         constexpr const char * operator()(TT &&, II &&) const {
             return "B<T>[int]";

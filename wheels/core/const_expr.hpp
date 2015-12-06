@@ -18,10 +18,8 @@ namespace wheels {
         void serialize(Archive &) {}
     };
 
-    template <size_t Idx>
-    struct join_overloading<const_symbol<Idx>> : yes {};
-    template <size_t Idx>
-    struct info_for_overloading<const_symbol<Idx>> {
+    template <size_t Idx, class OpT>
+    struct info_for_overloading<const_symbol<Idx>, OpT> {
         using type = info_const_expr;
     };
 
@@ -50,10 +48,8 @@ namespace wheels {
         }
     };
 
-    template <class T>
-    struct join_overloading<const_coeff<T>> : yes {};
-    template <class T>
-    struct info_for_overloading<const_coeff<T>> {
+    template <class T, class Op>
+    struct info_for_overloading<const_coeff<T>, Op> {
         using type = info_const_expr;
     };
 
@@ -81,10 +77,8 @@ namespace wheels {
         }
     };
 
-    template <class Op, class E>
-    struct join_overloading<const_unary_op<Op, E>> : yes {};
-    template <class Op, class E>
-    struct info_for_overloading<const_unary_op<Op, E>> {
+    template <class Op, class E, class OtherOp>
+    struct info_for_overloading<const_unary_op<Op, E>, OtherOp> {
         using type = info_const_expr;
     };
   
@@ -108,10 +102,8 @@ namespace wheels {
         }
     };
 
-    template <class Op, class E1, class E2>
-    struct join_overloading<const_binary_op<Op, E1, E2>> : yes {};
-    template <class Op, class E1, class E2>
-    struct info_for_overloading<const_binary_op<Op, E1, E2>> {
+    template <class Op, class E1, class E2, class OtherOp>
+    struct info_for_overloading<const_binary_op<Op, E1, E2>, OtherOp> {
         using type = info_const_expr;
     };
 

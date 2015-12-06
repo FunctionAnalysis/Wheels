@@ -1,24 +1,113 @@
 #pragma once
 
 #include <tuple>
+#include <vector>
+#include <list>
+#include <deque>
+#include <array>
+#include <utility>
 
 #include "constants.hpp"
 #include "types.hpp"
+#include "overloads.hpp"
 
 namespace wheels {
 
+    // fields
+    struct func_fields {};
 
-    // fields for fundamental types and containers
+    struct info_scalar {};
+    struct info_container {};
+    struct info_tuple_like {};
+
     template <class T, class U, class V, class = std::enable_if_t<
-        std::is_fundamental<std::decay_t<T>>::value>>
-    constexpr T && fields(T && t, U &&, V &&) {
-        return static_cast<T&&>(t);
+        join_overloading<std::decay_t<T>, func_fields>::value>>
+    constexpr decltype(auto) fields(T && t, U && usage, V && visitor) {
+        return overloaded<func_fields, 
+            info_for_overloading_t<std::decay_t<T>, func_fields>, 
+            std::decay_t<U>, std::decay_t<V>
+        >()(forward<T>(t), forward<U>(usage), forward<V>(visitor));
     }
 
-    template <class T, class AllocT, class U, class V>
-    auto fields(std::vector<T, AllocT> & t, U && usage, V && visitor) {
-        // todo           
+
+    // scalars
+    //template <class T>
+    //struct scalar_proxy {
+    //    template <class TT>
+    //    constexpr scalar_proxy(TT && c) : content(forward<TT>(c)) {}
+    //    T content;
+    //};
+    //template <class T> struct is_scalar_proxy : no {};
+    //template <class T> struct is_scalar_proxy<scalar_proxy<T>> : yes {};
+    //template <class T>
+    //constexpr auto as_scalar(T && c) {
+    //    return scalar_proxy<T>(forward<T>(c));
+    //}
+
+    template <class U, class V>
+    struct overloaded<func_fields, info_scalar, U, V> {
+        template <class TT, class UU, class VV>
+        constexpr decltype(auto) operator()(TT && t, UU &&, VV && visitor) const {
+            return static_cast<TT&&>(t);//visitor(as_scalar(forward<TT>(t))); 
+        }
+    };
+    template <> struct info_for_overloading<bool, func_fields> { using type = info_scalar; };
+    template <> struct info_for_overloading<char, func_fields> { using type = info_scalar; };
+    template <> struct info_for_overloading<uint8_t, func_fields> { using type = info_scalar; };
+    template <> struct info_for_overloading<uint16_t, func_fields> { using type = info_scalar; };
+    template <> struct info_for_overloading<uint32_t, func_fields> { using type = info_scalar; };
+    template <> struct info_for_overloading<uint64_t, func_fields> { using type = info_scalar; };
+    template <> struct info_for_overloading<int8_t, func_fields> { using type = info_scalar; };
+    template <> struct info_for_overloading<int16_t, func_fields> { using type = info_scalar; };
+    template <> struct info_for_overloading<int32_t, func_fields> { using type = info_scalar; };
+    template <> struct info_for_overloading<int64_t, func_fields> { using type = info_scalar; };
+
+
+    // containers
+    template <class ContT>
+    struct container_proxy {
+        template <class C>
+        constexpr container_proxy(C && c) : cont(forward<C>(c)) {}
+        ContT content;
+    };
+    template <class T> struct is_container_proxy : no {};
+    template <class T> struct is_container_proxy<container_proxy<T>> : yes {};
+    template <class ContT>
+    constexpr auto as_container(ContT && c) {
+        return container_proxy<ContT>(forward<ContT>(c));
     }
+    
+    template <class U, class V>
+    struct overloaded<func_fields, info_container, U, V> {
+        template <class TT, class UU, class VV>
+        constexpr decltype(auto) operator()(TT && t, UU &&, VV &&) const {
+            return as_container(forward<TT>(t));
+        }
+    };
+    template <class T, class AllocT> struct info_for_overloading<std::vector<T, AllocT>, func_fields> { using type = info_container; };
+    template <class T, class AllocT> struct info_for_overloading<std::list<T, AllocT>, func_fields> { using type = info_container; };
+    template <class T, class AllocT> struct info_for_overloading<std::deque<T, AllocT>, func_fields> { using type = info_container; };
+
+
+    // tuple like types
+    namespace details {
+        template <class TupleT, class V, size_t ... Is>
+        auto _fields_of_tuple_seq(TupleT && t, V && visitor, const const_ints<size_t, Is...> &) {
+            return forward<V>(visitor)(std::get<Is>(forward<TupleT>(t)) ...);
+        }
+    }
+    template <class U, class V>
+    struct overloaded<func_fields, info_tuple_like, U, V> {
+        template <class TT, class UU, class VV>
+        constexpr decltype(auto) operator()(TT && t, UU &&, VV && visitor) const {
+            return details::_fields_of_tuple_seq(forward<TT>(t), forward<VV>(visitor),
+                make_const_sequence(const_size<std::tuple_size<std::decay_t<TT>>::value>()));
+        }
+    };
+    template <class T1, class T2> struct info_for_overloading<std::pair<T1, T2>, func_fields> { using type = info_tuple_like; };
+    template <class T, size_t N> struct info_for_overloading<std::array<T, N>, func_fields> { using type = info_tuple_like; };
+    template <class ... Ts> struct info_for_overloading<std::tuple<Ts ...>, func_fields> { using type = info_tuple_like; };
+
 
 
 
@@ -29,7 +118,7 @@ namespace wheels {
         struct _has_member_func_fields {
             template <class TT, class UU, class VV>
             static auto test(int) -> decltype(
-                std::declval<TT &>().fields(std::declval<UU>(), std::declval<VV>()),
+                std::declval<TT>().fields(std::declval<UU>(), std::declval<VV>()),
                 yes()) {
                 return yes();
             }
@@ -47,7 +136,7 @@ namespace wheels {
         struct _has_global_func_fields {
             template <class TT, class UU, class VV>
             static auto test(int) -> decltype(
-                ::wheels::fields(std::declval<TT &>(), std::declval<UU>(), std::declval<VV>()),
+                ::wheels::fields(std::declval<TT>(), std::declval<UU>(), std::declval<VV>()),
                 yes()) {
                 return yes();
             }
@@ -60,6 +149,7 @@ namespace wheels {
     struct has_global_func_fields : const_bool<details::_has_global_func_fields<T, UsageT, VisitorT>::value> {};
 
 
+
     // field_visitor
     template <class PackT, class UsageT>
     class field_visitor {
@@ -68,29 +158,32 @@ namespace wheels {
         template <class PP, class UU>
         field_visitor(PP && p, UU && u) : _pack(forward<PP>(p)), _usage(forward<UU>(u)) {}
 
-        // pack all members
-        template <class ... Ts>
-        decltype(auto) operator()(Ts && ... vs) {
-            return _pack(visit(forward<Ts>(vs))...);
-        }
-
         // visit single member
         template <class T, class = std::enable_if_t<
-            has_member_func_fields<T, UsageT, this_t>::value>>
+            has_member_func_fields<T, UsageT, this_t>::value >>
         decltype(auto) visit(T && v) {
             return forward<T>(v).fields(_usage, *this);
         }
         template <class T, class = void, class = std::enable_if_t<
             !has_member_func_fields<T, UsageT, this_t>::value &&
-            has_global_func_fields<T, UsageT, this_t>::value>>
+            has_global_func_fields<T, UsageT, this_t>::value >>
         decltype(auto) visit(T && v) {
             return ::wheels::fields(forward<T>(v), _usage, *this);
         }
         template <class T, class = void, class = void, class = std::enable_if_t<
             !has_member_func_fields<T, UsageT, this_t>::value &&
             !has_global_func_fields<T, UsageT, this_t>::value >>
-        decltype(auto) visit(T && v) {
-            static_assert(always<bool, false, T>::value, "no fields implementation is found");
+        constexpr T && visit(T && v) const {
+            //static_assert(//is_scalar_proxy<std::decay_t<T>>::value || 
+            //    is_container_proxy<std::decay_t<T>>::value,
+            //    "no fields implementation is found");
+            return static_cast<T&&>(v);
+        }
+
+        // pack all members
+        template <class ... Ts>
+        decltype(auto) operator()(Ts && ... vs) {
+            return _pack(visit(forward<Ts>(vs))...);
         }
 
     private:
@@ -108,17 +201,53 @@ namespace wheels {
 
     // tuplize
     struct pack_as_tuple {
+        template <class T>
+        struct _each {
+            template <class ArgT>
+            static decltype(auto) process(ArgT && arg) {
+                return static_cast<ArgT &&>(arg);
+            }
+        };
+        template <class ... Ts>
+        struct _each<std::tuple<Ts ...>> {
+            template <class ArgT>
+            static decltype(auto) process(ArgT && arg) {
+                return forward<ArgT>(arg);
+            }
+        };
+        template <class T>
+        struct _each<container_proxy<T>> {
+            template <class ArgT>
+            static auto process(ArgT && arg) {
+
+            }
+        };
         template <class ... ArgTs>
-        constexpr std::tuple<ArgTs ...> operator()(ArgTs && ... args) const {
+        static decltype(auto) _pack(ArgTs && ... args) {
             return std::tuple<ArgTs ...>(forward<ArgTs>(args) ...);
+        }
+        template <class ... ArgTs>
+        constexpr decltype(auto) operator()(ArgTs && ... args) const {
+            return _pack(_each<std::decay_t<ArgTs>>::process(forward<ArgTs>(args)) ...);
         }
     };
     struct visit_to_tuplize {};
     template <class T>
-    decltype(auto) tuplize(T && data) {
+    auto tuplize(T && data) {
         auto visitor = make_field_visitor(pack_as_tuple(), visit_to_tuplize());
         return visitor.visit(forward<T>(data));
     }
+    //template <class T>
+    //struct tuplizable {
+    //    decltype(auto) tuplize() const & {
+    //        auto visitor = make_field_visitor(pack_as_tuple(), visit_to_tuplize());
+    //        return visitor.visit(static_cast<const T &>(*this));
+    //    }
+    //    decltype(auto) tuplize() & {
+    //        auto visitor = make_field_visitor(pack_as_tuple(), visit_to_tuplize());
+    //        return visitor.visit(static_cast<T &>(*this));
+    //    }
+    //};
 
 
 

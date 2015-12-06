@@ -47,15 +47,15 @@ TEST(core, ref_behavior) {
 
 using namespace wheels;
 
-template <class T1, class T2>
-struct B {
-    template <class U, class V>
-    auto fields(U &&, V && v) {
-        return v(v1, v2);
-    }
-    T1 v1;
-    T2 v2;
-};
+//template <class T1, class T2>
+//struct B {
+//    template <class U, class V>
+//    auto fields(U &&, V && v) {
+//        return v(v1, v2);
+//    }
+//    T1 v1;
+//    T2 v2;
+//};
 
 //namespace wheels {
 //    template <class T1, class T2, class U, class V>
@@ -66,13 +66,31 @@ struct B {
 
 TEST(core, simple_visit) {
 
-    has_member_func_fields<B<int, char>, visit_to_tuplize, field_visitor<pack_as_tuple, visit_to_tuplize>>::value;
+    has_global_func_fields<char, int, field_visitor<pack_as_tuple, visit_to_tuplize>>::value;
+    info_for_overloading<char, func_fields>::type;
+    join_overloading<std::decay_t<char>, func_fields>::value;
 
-    B<long, short> b;
-    b.v1 = 1;
-    b.v2 = '1';
+    auto visitor = make_field_visitor(pack_as_tuple(), visit_to_tuplize());
+    auto aaa = visitor.visit('1');
 
-    auto bt = tuplize(b);
+    //has_member_func_fields<B<int, char>, visit_to_tuplize, field_visitor<pack_as_tuple, visit_to_tuplize>>::value;
+    
+
+    //B<long, short> b;
+    //b.v1 = 1;
+    //b.v2 = '1';
+    std::array<double, 4> a = { 1, 2, 3, 4 };
+    auto bbb = visitor.visit(a);
+    //auto t = ;
+    auto i = tuplize(std::make_pair(1, 2));
+    std::cout << std::endl;
+
+    static_assert(std::make_tuple(1, 2.0) == std::make_tuple(true, 2.0f), "");
+
+    join_overloading<std::tuple<int, bool>, func_fields>::value;
+
+    //auto bt = tuplize(b);
+    //auto bt2 = b.tuplize();
 
     //std::vector<B<int, char>> bs(10, b);
 
