@@ -1,4 +1,13 @@
 #include <gtest/gtest.h>
+
+#include <cereal/cereal.hpp>
+#include <cereal/types/array.hpp>
+#include <cereal/types/vector.hpp>
+#include <cereal/types/list.hpp>
+#include <cereal/types/deque.hpp>
+#include <cereal/archives/binary.hpp>
+#include <cereal/archives/portable_binary.hpp>
+
 #include "fields.hpp"
 
 struct A {
@@ -148,4 +157,19 @@ TEST(core, fields3) {
     ASSERT_TRUE(tuplize(ds) <= tuplize(ds2));
     ASSERT_FALSE(tuplize(ds) > tuplize(ds2));
     ASSERT_FALSE(tuplize(ds) < tuplize(ds2));
+}
+
+struct E : serializable<E> {
+    std::vector<D> ds;
+    template <class V>
+    auto fields(V && v) {
+        return v(ds);
+    }
+};
+
+
+TEST(core, serialize) {
+
+    //cereal::PortableBinaryOutputArchive arc()
+
 }

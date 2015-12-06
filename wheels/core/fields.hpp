@@ -370,15 +370,32 @@ namespace wheels {
         void serialize(ArcT & arc) {
             static_cast<T &>(*this).fields(visit_to_serialize(), arc);
         }
-        template <class ArcT, class = void, class = std::enable_if_t<
+        template <class ArcT, wheels_distinguish_1, class = std::enable_if_t<
             !has_member_func_fields<T &, visit_to_serialize, ArcT>::value &&
+            has_member_func_fields_simple<T &, ArcT>::value >>
+        void serialize(ArcT & arc) {
+            static_cast<T &>(*this).fields(arc);
+        }
+        template <class ArcT, wheels_distinguish_2, class = std::enable_if_t<
+            !has_member_func_fields<T &, visit_to_serialize, ArcT>::value &&
+            !has_member_func_fields_simple<T &, ArcT>::value &&
             has_global_func_fields<T &, visit_to_serialize, ArcT>::value>>
         void serialize(ArcT & arc) {
             ::wheels::fields(static_cast<T &>(*this), visit_to_serialize(), arc);
         }
-        template <class ArcT, class = void, class = void, class = std::enable_if_t<
+        template <class ArcT, wheels_distinguish_4, class = std::enable_if_t<
             !has_member_func_fields<T &, visit_to_serialize, ArcT>::value &&
-            !has_global_func_fields<T &, visit_to_serialize, ArcT>::value >>
+            !has_member_func_fields_simple<T &, ArcT>::value &&
+            !has_global_func_fields<T &, visit_to_serialize, ArcT>::value &&
+            has_global_func_fields_simple<T &, ArcT>::value>>
+        void serialize(ArcT & arc) {
+            ::wheels::fields(static_cast<T &>(*this), arc);           
+        }
+        template <class ArcT, wheels_distinguish_5, class = std::enable_if_t<
+            !has_member_func_fields<T &, visit_to_serialize, ArcT>::value &&
+            !has_member_func_fields_simple<T &, ArcT>::value &&
+            !has_global_func_fields<T &, visit_to_serialize, ArcT>::value &&
+            !has_global_func_fields_simple<T &, ArcT>::value>>
         void serialize(ArcT & arc) {
             static_assert(always<bool, false, T>::value, "no fields implementation is found, "
                 "implement fields(...) or serialize(...) to fix this");

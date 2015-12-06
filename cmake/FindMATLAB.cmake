@@ -64,7 +64,7 @@ IF(WIN32)
     ENDIF((NOT DEFINED MATLAB_ROOT) 
       OR ("${MATLAB_ROOT}" STREQUAL "")
       OR ("${MATLAB_ROOT}" STREQUAL "/registry"))
-  ENDFOREACH(MATVER)
+  ENDFOREACH(MATSERVERVER)
   
   # Directory name depending on whether the Windows architecture is 32
   # bit or 64 bit
