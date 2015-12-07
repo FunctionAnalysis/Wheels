@@ -119,3 +119,14 @@ TEST(core, fields3) {
     ASSERT_FALSE(tuplize(ds) > tuplize(ds2));
     ASSERT_FALSE(tuplize(ds) < tuplize(ds2));
 }
+
+struct E {};
+
+TEST(core, fields4) {
+
+    auto et = tuplize(E());
+    auto ets = tuplize(std::make_tuple(E(), 1, std::vector<E>(10)));
+    ASSERT_TRUE(ets == ets);
+    ASSERT_TRUE(ets <= ets);
+
+}

@@ -6,8 +6,6 @@ namespace wheels {
 
     // overload operators without losing any type information
 
-
-
     template <class T, class OpT>
     struct category_for_overloading {
         using type = void;

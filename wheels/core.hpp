@@ -3,6 +3,8 @@
 #include "./core/constants.hpp"
 #include "./core/types.hpp"
 #include "./core/overloads.hpp"
+#include "./core/fields.hpp"
+#include "./core/serialization.hpp"
 #include "./core/const_expr.hpp"
 #include "./core/time.hpp"
 #include "./core/parallel.hpp"

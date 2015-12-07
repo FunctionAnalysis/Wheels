@@ -26,7 +26,8 @@ namespace wheels {
     }
     
 
-    // empty types
+    
+    // empty types -> nullptr_t
     struct fields_category_empty {};
     template <class T, class U, class V, class = void, class = std::enable_if_t<
         !join_overloading<std::decay_t<T>, func_fields>::value &&
@@ -36,7 +37,8 @@ namespace wheels {
     }
 
 
-    // tuple like types
+
+    // tuple like types -> tuple
     struct fields_category_tuple_like {};
     namespace details {
         template <class TupleT, class V, size_t ... Is>
@@ -58,7 +60,7 @@ namespace wheels {
 
 
 
-    // container types
+    // container types -> container_proxy
     struct fields_category_container {};
     template <class ContT, class VisitorT>
     class container_proxy {
