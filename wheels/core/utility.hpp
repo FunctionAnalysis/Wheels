@@ -77,6 +77,8 @@ namespace wheels {
 
 
     // all_same(...)
+    template <class T>
+    constexpr auto all_same(const T & a) { return yes(); }
     template <class T1, class T2>
     constexpr auto all_same(const T1 & a, T2 && b) {
         return a == forward<T2>(b);
@@ -88,6 +90,8 @@ namespace wheels {
 
 
     // all_different(...)
+    template <class T>
+    constexpr auto all_different(const T & a) { return yes(); }
     template <class T1, class T2>
     constexpr auto all_different(const T1 & a, const T2 & b) {
         return a != b;

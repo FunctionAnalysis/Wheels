@@ -1,19 +1,45 @@
 #pragma once
 
+#include "types.hpp"
 #include "constants.hpp"
 
 namespace wheels {
 
-    // overload operators without losing any type information
+    // overload operators without losing any type information  
 
+    // join_overloading
+    namespace details {
+        template <class T, class OpT>
+        struct _join_overloading {
+            template <class TT, class OpTT>
+            static constexpr auto test(int) -> decltype(
+                category_for_overloading(std::declval<TT>(), std::declval<OpTT>()), yes()) {
+                return yes();
+            }
+            template <class, class>
+            static constexpr no test(...) { return no(); }
+            static constexpr bool value = std::is_same<decltype(test<T, OpT>(1)), yes>::value;
+        };
+    }
     template <class T, class OpT>
-    struct category_for_overloading {
-        using type = void;
-    };
+    struct join_overloading : const_bool<details::_join_overloading<T, OpT>::value> {};
+
+    // category_for_overloading_t
+    namespace details {
+        template <class T, class OpT, 
+            bool JoinOverloading = _join_overloading<T, OpT>::value>
+        struct _category_for_overloading_helper {
+            using type = void;
+        };
+        template <class T, class OpT>
+        struct _category_for_overloading_helper<T, OpT, true> {
+            using _t = decltype(category_for_overloading(std::declval<T>(), std::declval<OpT>()));
+            using type = typename _t::type;
+        };
+    }
     template <class T, class OpT>
-    using category_for_overloading_t = typename category_for_overloading<T, OpT>::type;
-    template <class T, class OpT>
-    struct join_overloading : const_bool<!std::is_void<category_for_overloading_t<T, OpT>>::value> {};
+    using category_for_overloading_t = typename details::_category_for_overloading_helper<T, OpT>::type;
+
 
 
     // the overloaded<...> functor is called 
@@ -89,6 +115,45 @@ namespace wheels {
 
 
 
+#define WHEELS_OVERLOAD_UNARY_FUNC(name) \
+    struct func_##name { \
+        constexpr func_##name() {} \
+        template <class ArgT> \
+        constexpr decltype(auto) operator()(ArgT && v) const {\
+            using std::name;\
+            return name(forward<ArgT>(v)); \
+        } \
+    }; \
+    template <class T, \
+        class = std::enable_if_t<join_overloading<std::decay_t<T>, func_##name>::value>, \
+        class = void> \
+    constexpr decltype(auto) name(T && f) { \
+        return overloaded<func_##name, \
+            category_for_overloading_t<std::decay_t<T>, func_##name> \
+        >()(forward<T>(f)); \
+    }
+
+#define WHEELS_OVERLOAD_BINARY_FUNC(name) \
+    struct func_##name { \
+        constexpr func_##name() {} \
+        template <class ArgT1, class ArgT2> \
+        constexpr decltype(auto) operator()(ArgT1 && v1, ArgT2 && v2) const {\
+            using std::name;\
+            return name(forward<ArgT1>(v1), forward<ArgT2>(v2)); \
+        } \
+    }; \
+    template <class T1, class T2, \
+        class = std::enable_if_t<any( \
+            join_overloading<std::decay_t<T1>, func_##name>::value, \
+            join_overloading<std::decay_t<T2>, func_##name>::value)>, \
+        class = void> \
+    constexpr decltype(auto) name(T1 && t1, T2 && t2) { \
+        return overloaded<func_##name, \
+            category_for_overloading_t<std::decay_t<T1>, func_##name>, \
+            category_for_overloading_t<std::decay_t<T2>, func_##name>\
+        >()(forward<T1>(t1), forward<T2>(t2)); \
+    }
+
 #define WHEELS_OVERLOAD_FUNC(name) \
     struct func_##name { \
         constexpr func_##name() {} \
@@ -110,32 +175,33 @@ namespace wheels {
         >()(forward<FirstT>(f), forward<RestTs>(rests) ...); \
     }
 
-    WHEELS_OVERLOAD_FUNC(sin)
-    WHEELS_OVERLOAD_FUNC(sinh)
-    WHEELS_OVERLOAD_FUNC(asin)
-    WHEELS_OVERLOAD_FUNC(asinh)
-    WHEELS_OVERLOAD_FUNC(cos)
-    WHEELS_OVERLOAD_FUNC(cosh)
-    WHEELS_OVERLOAD_FUNC(acos)
-    WHEELS_OVERLOAD_FUNC(acosh)
-    WHEELS_OVERLOAD_FUNC(tan)
-    WHEELS_OVERLOAD_FUNC(tanh)
-    WHEELS_OVERLOAD_FUNC(atan)
-    WHEELS_OVERLOAD_FUNC(atanh)
-    WHEELS_OVERLOAD_FUNC(log)
-    WHEELS_OVERLOAD_FUNC(log2)
-    WHEELS_OVERLOAD_FUNC(log10)
-    WHEELS_OVERLOAD_FUNC(exp)
-    WHEELS_OVERLOAD_FUNC(exp2)
-    WHEELS_OVERLOAD_FUNC(ceil)
-    WHEELS_OVERLOAD_FUNC(floor)
-    WHEELS_OVERLOAD_FUNC(round)
-    WHEELS_OVERLOAD_FUNC(isinf)
-    WHEELS_OVERLOAD_FUNC(isfinite)
-    WHEELS_OVERLOAD_FUNC(isnan)
+
+    WHEELS_OVERLOAD_UNARY_FUNC(sin)
+    WHEELS_OVERLOAD_UNARY_FUNC(sinh)
+    WHEELS_OVERLOAD_UNARY_FUNC(asin)
+    WHEELS_OVERLOAD_UNARY_FUNC(asinh)
+    WHEELS_OVERLOAD_UNARY_FUNC(cos)
+    WHEELS_OVERLOAD_UNARY_FUNC(cosh)
+    WHEELS_OVERLOAD_UNARY_FUNC(acos)
+    WHEELS_OVERLOAD_UNARY_FUNC(acosh)
+    WHEELS_OVERLOAD_UNARY_FUNC(tan)
+    WHEELS_OVERLOAD_UNARY_FUNC(tanh)
+    WHEELS_OVERLOAD_UNARY_FUNC(atan)
+    WHEELS_OVERLOAD_UNARY_FUNC(atanh)
+    WHEELS_OVERLOAD_UNARY_FUNC(log)
+    WHEELS_OVERLOAD_UNARY_FUNC(log2)
+    WHEELS_OVERLOAD_UNARY_FUNC(log10)
+    WHEELS_OVERLOAD_UNARY_FUNC(exp)
+    WHEELS_OVERLOAD_UNARY_FUNC(exp2)
+    WHEELS_OVERLOAD_UNARY_FUNC(ceil)
+    WHEELS_OVERLOAD_UNARY_FUNC(floor)
+    WHEELS_OVERLOAD_UNARY_FUNC(round)
+    WHEELS_OVERLOAD_UNARY_FUNC(isinf)
+    WHEELS_OVERLOAD_UNARY_FUNC(isfinite)
+    WHEELS_OVERLOAD_UNARY_FUNC(isnan)
     
-    WHEELS_OVERLOAD_FUNC(atan2)
-    WHEELS_OVERLOAD_FUNC(pow)
+    WHEELS_OVERLOAD_BINARY_FUNC(atan2)
+    WHEELS_OVERLOAD_BINARY_FUNC(pow)
 
 
 

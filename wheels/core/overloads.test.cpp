@@ -10,8 +10,8 @@ template <class T> struct A {};
 
 namespace wheels {
     template <class T, class OpT>
-    struct category_for_overloading<A<T>, OpT> {
-        using type = A<T>;
+    constexpr auto category_for_overloading(const A<T> &, const OpT &) {
+        return types<A<T>>();
     };
 
     template <class T>

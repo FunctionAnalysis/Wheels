@@ -17,8 +17,8 @@ namespace wheels {
     };
 
     template <size_t Idx, class OpT>
-    struct category_for_overloading<const_symbol<Idx>, OpT> {
-        using type = category_const_expr;
+    constexpr auto category_for_overloading(const const_symbol<Idx> &, const OpT &) {
+        return types<category_const_expr>();
     };
 
     namespace literals {
@@ -51,8 +51,8 @@ namespace wheels {
     };
 
     template <class T, class Op>
-    struct category_for_overloading<const_coeff<T>, Op> {
-        using type = category_const_expr;
+    constexpr auto category_for_overloading(const const_coeff<T> &, const Op &) {
+        return types<category_const_expr>();
     };
 
     template <class T>
@@ -84,8 +84,8 @@ namespace wheels {
     };
 
     template <class Op, class E, class OtherOp>
-    struct category_for_overloading<const_unary_op<Op, E>, OtherOp> {
-        using type = category_const_expr;
+    constexpr auto category_for_overloading(const const_unary_op<Op, E> &, const OtherOp &) {
+        return types<category_const_expr>();
     };
   
 
@@ -113,8 +113,8 @@ namespace wheels {
     };
 
     template <class Op, class E1, class E2, class OtherOp>
-    struct category_for_overloading<const_binary_op<Op, E1, E2>, OtherOp> {
-        using type = category_const_expr;
+    constexpr auto category_for_overloading(const const_binary_op<Op, E1, E2> &, const OtherOp &) {
+        return types<category_const_expr>();
     };
 
 

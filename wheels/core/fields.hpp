@@ -54,9 +54,18 @@ namespace wheels {
                 make_const_sequence(const_size<std::tuple_size<std::decay_t<TT>>::value>()));
         }
     };
-    template <class T1, class T2> struct category_for_overloading<std::pair<T1, T2>, func_fields> { using type = fields_category_tuple_like; };
-    template <class T, size_t N> struct category_for_overloading<std::array<T, N>, func_fields> { using type = fields_category_tuple_like; };
-    template <class ... Ts> struct category_for_overloading<std::tuple<Ts ...>, func_fields> { using type = fields_category_tuple_like; };
+    template <class T1, class T2> 
+    constexpr auto category_for_overloading(const std::pair<T1, T2> &, const func_fields &) {
+        return types<fields_category_tuple_like>(); 
+    };
+    template <class T, size_t N> 
+    constexpr auto category_for_overloading(const std::array<T, N> &, const func_fields &) {
+        return types<fields_category_tuple_like>();
+    };
+    template <class ... Ts> 
+    constexpr auto category_for_overloading(const std::tuple<Ts ...> &, const func_fields &) {
+        return types<fields_category_tuple_like>();
+    };
 
 
 
@@ -140,9 +149,18 @@ namespace wheels {
             return as_container(forward<TT>(t), forward<VV>(v));
         }
     };
-    template <class T, class AllocT> struct category_for_overloading<std::vector<T, AllocT>, func_fields> { using type = fields_category_container; };
-    template <class T, class AllocT> struct category_for_overloading<std::list<T, AllocT>, func_fields> { using type = fields_category_container; };
-    template <class T, class AllocT> struct category_for_overloading<std::deque<T, AllocT>, func_fields> { using type = fields_category_container; };
+    template <class T, class AllocT> 
+    constexpr auto category_for_overloading(const std::vector<T, AllocT> &, const func_fields &) {
+        return types<fields_category_container>(); 
+    };
+    template <class T, class AllocT>
+    constexpr auto category_for_overloading(const std::list<T, AllocT> &, const func_fields &) {
+        return types<fields_category_container>();
+    };
+    template <class T, class AllocT>
+    constexpr auto category_for_overloading(const std::deque<T, AllocT> &, const func_fields &) {
+        return types<fields_category_container>();
+    };
 
 
 
@@ -368,11 +386,10 @@ namespace wheels {
         };
     }
     template <class T, class Kind = void>
-    class convertible {
-    public:
+    struct convertible {
         template <class K>
         T & operator = (const convertible<K, Kind> & c) {
-            if (this != &c) {
+            if (this != reinterpret_cast<const convertible<T, Kind> *>(&c)) {
                 tuplize(static_cast<T &>(*this)) = tuplize(static_cast<const K &>(c));
             }
             return static_cast<T &>(*this);

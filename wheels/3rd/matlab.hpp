@@ -6,6 +6,9 @@
 #include <mex.h>
 #include <mat.h>
 
+#include "../core/constants.hpp"
+#include "../core/const_expr.hpp"
+
 namespace wheels {
 
     namespace details {
@@ -49,7 +52,7 @@ namespace wheels {
             using type = T;
         };
 
-        template <class ShapeT, class DPT, size_t ... Is>
+   /*     template <class ShapeT, class DPT, size_t ... Is>
         mxArray * _make_mx_array_seq(const category_tensor<ShapeT, DPT> & ts, const no & cplx, 
             const const_ints<size_t, Is...> &) {
             using value_t = typename DPT::value_type;
@@ -93,16 +96,16 @@ namespace wheels {
                 imag_data[offset] = e.imag();
             });
             return mx;
-        }
+        }*/
 
     }
 
 
-    template <class ShapeT, class DPT>
+  /*  template <class ShapeT, class DPT>
     inline mxArray * make_mx_array(const category_tensor<ShapeT, DPT> & ts) {
         return details::_make_mx_array_seq(ts, details::is_complex<typename DPT::value_type>(), 
             make_rank_sequence(ts.shape()));
-    }
+    }*/
 
 
 
@@ -117,9 +120,9 @@ namespace wheels {
         matlab_mxarray & operator = (const matlab_mxarray & mx);
         matlab_mxarray & operator = (matlab_mxarray && mx);
 
-        template <class ShapeT, class DPT>
+      /*  template <class ShapeT, class DPT>
         matlab_mxarray(const category_tensor<ShapeT, DPT> & ts, bool dos = false) 
-            : _m(make_mx_array(ts)), _destroy_when_out_of_scope(dos) {}
+            : _m(make_mx_array(ts)), _destroy_when_out_of_scope(dos) {}*/
 
     public:
         mxArray * mxa() const;
