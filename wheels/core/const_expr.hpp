@@ -4,7 +4,7 @@
 
 namespace wheels {
 
-    struct info_const_expr {};
+    struct category_const_expr {};
 
     // const_symbol
     template <size_t Idx>
@@ -18,7 +18,7 @@ namespace wheels {
 
     template <size_t Idx, class OpT>
     struct category_for_overloading<const_symbol<Idx>, OpT> {
-        using type = info_const_expr;
+        using type = category_const_expr;
     };
 
     namespace literals {
@@ -40,15 +40,19 @@ namespace wheels {
         constexpr T operator()(ArgTs && ...) const {
             return val;
         }
-        template <class Archive> 
-        void serialize(Archive & ar) { 
-            ar(val);
+        template <class V> 
+        decltype(auto) fields(V && visitor) { 
+            return visitor(val);
+        }
+        template <class V>
+        decltype(auto) fields(V && visitor) const {
+            return visitor(val);
         }
     };
 
     template <class T, class Op>
     struct category_for_overloading<const_coeff<T>, Op> {
-        using type = info_const_expr;
+        using type = category_const_expr;
     };
 
     template <class T>
@@ -69,15 +73,19 @@ namespace wheels {
         constexpr auto operator()(ArgTs && ... args) const {
             return op(e(forward<ArgTs>(args)...));
         }
-        template <class Archive> 
-        void serialize(Archive & ar) { 
-            ar(op, e); 
+        template <class V>
+        decltype(auto) fields(V && visitor) {
+            return visitor(op, e); 
+        }
+        template <class V>
+        decltype(auto) fields(V && visitor) const {
+            return visitor(op, e);
         }
     };
 
     template <class Op, class E, class OtherOp>
     struct category_for_overloading<const_unary_op<Op, E>, OtherOp> {
-        using type = info_const_expr;
+        using type = category_const_expr;
     };
   
 
@@ -94,21 +102,25 @@ namespace wheels {
         constexpr auto operator()(ArgTs && ... args) const {
             return op(e1(forward<ArgTs>(args)...), e2(forward<ArgTs>(args)...));
         }
-        template <class Archive> 
-        void serialize(Archive & ar) { 
-            ar(op, e1, e2); 
+        template <class V>
+        decltype(auto) fields(V && visitor) {
+            return visitor(op, e1, e2);
+        }
+        template <class V>
+        decltype(auto) fields(V && visitor) const {
+            return visitor(op, e1, e2);
         }
     };
 
     template <class Op, class E1, class E2, class OtherOp>
     struct category_for_overloading<const_binary_op<Op, E1, E2>, OtherOp> {
-        using type = info_const_expr;
+        using type = category_const_expr;
     };
 
 
     // overload operators
     template <class Op>
-    struct overloaded<Op, info_const_expr> {
+    struct overloaded<Op, category_const_expr> {
         constexpr overloaded() {}
         template <class TT>
         constexpr decltype(auto) operator()(TT && v) const {
@@ -117,7 +129,7 @@ namespace wheels {
     };
 
     template <class Op>
-    struct overloaded<Op, info_const_expr, info_const_expr> {
+    struct overloaded<Op, category_const_expr, category_const_expr> {
         constexpr overloaded() {}
         template <class TT1, class TT2>
         constexpr decltype(auto) operator()(TT1 && v1, TT2 && v2) const {
@@ -126,7 +138,7 @@ namespace wheels {
     };
 
     template <class Op, class NotConstExprT>
-    struct overloaded<Op, info_const_expr, NotConstExprT> {
+    struct overloaded<Op, category_const_expr, NotConstExprT> {
         constexpr overloaded() {}
         template <class TT1, class TT2>
         constexpr decltype(auto) operator()(TT1 && v1, TT2 && v2) const {
@@ -136,7 +148,7 @@ namespace wheels {
     };
 
     template <class Op, class NotConstExprT>
-    struct overloaded<Op, NotConstExprT, info_const_expr> {
+    struct overloaded<Op, NotConstExprT, category_const_expr> {
         constexpr overloaded() {}
         template <class TT1, class TT2>
         constexpr decltype(auto) operator()(TT1 && v1, TT2 && v2) const {

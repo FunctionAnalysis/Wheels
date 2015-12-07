@@ -1,7 +1,2 @@
 #include "./tensor/shape.hpp"
-#include "./tensor/shape.hpp"
-#include "./tensor/iterators.hpp"
-#include "./tensor/structure.hpp"
-#include "./tensor/categories.hpp"
-#include "./tensor/functions.hpp"
-#include "./tensor/matrices.hpp"
+#include "./tensor/tensor.hpp"

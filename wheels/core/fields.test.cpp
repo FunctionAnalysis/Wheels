@@ -75,7 +75,7 @@ TEST(core, fields2) {
     static_assert(type_of(ct).decay() == types<std::tuple<std::tuple<char &, int &>, std::tuple<int &, char &>>>(), "");
     B<int, int> b1 = { 0, 0 };
     B<int, int> b2 = { 0, 0 };
-    std::forward_as_tuple(b1.as_tuple(), b2.as_tuple()) = tuplize(c);
+    std::forward_as_tuple(tuplize(b1), tuplize(b2)) = tuplize(c);
     ASSERT_EQ(b1.v1, '1');
     ASSERT_EQ(b1.v2, 1);
     ASSERT_EQ(b2.v1, 1);
@@ -128,5 +128,37 @@ TEST(core, fields4) {
     auto ets = tuplize(std::make_tuple(E(), 1, std::vector<E>(10)));
     ASSERT_TRUE(ets == ets);
     ASSERT_TRUE(ets <= ets);
+
+}
+
+struct F_tag {};
+
+template <class T>
+class F : public convertible<F<T>, F_tag>{
+public:
+    constexpr F() : val() {}
+    constexpr F(T v) : val(v) {}
+    T val;
+   
+    using convertible<F<T>, F_tag>::operator =;
+    
+    template <class V>
+    auto fields(V && v) & {
+        return v(val);
+    }
+    template <class V>
+    auto fields(V && v) const & {
+        return v(val);
+    }
+};
+
+
+TEST(core, fields5) {
+
+    F<float> f1 = 1;
+    F<double> f2 = 2;
+    ASSERT_TRUE(tuplize(f1) != tuplize(f2));
+    f2 = f1;
+    ASSERT_TRUE(tuplize(f1) == tuplize(f2));
 
 }

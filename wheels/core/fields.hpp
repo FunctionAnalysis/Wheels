@@ -27,7 +27,7 @@ namespace wheels {
     
 
     
-    // empty types -> nullptr_t
+    // empty classes -> nullptr_t
     struct fields_category_empty {};
     template <class T, class U, class V, class = void, class = std::enable_if_t<
         !join_overloading<std::decay_t<T>, func_fields>::value &&
@@ -143,6 +143,9 @@ namespace wheels {
     template <class T, class AllocT> struct category_for_overloading<std::vector<T, AllocT>, func_fields> { using type = fields_category_container; };
     template <class T, class AllocT> struct category_for_overloading<std::list<T, AllocT>, func_fields> { using type = fields_category_container; };
     template <class T, class AllocT> struct category_for_overloading<std::deque<T, AllocT>, func_fields> { using type = fields_category_container; };
+
+
+
 
 
 
@@ -283,6 +286,9 @@ namespace wheels {
 
 
 
+
+
+
     // tuplize
     struct pack_as_tuple {
         template <class ... ArgTs>
@@ -321,13 +327,6 @@ namespace wheels {
             static_assert(!std::is_same<T, result_t>::value, "tuplization failed");
             return tuplize(static_cast<const T &>(*this));
         }
-        decltype(auto) as_tuple() {
-            static_assert(details::_has_func_fields_to_tuplize<T &>::value,
-                "definition of fields(...) for T & is required");
-            using result_t = decltype(tuplize(static_cast<T &>(*this)));
-            static_assert(!std::is_same<T, result_t>::value, "tuplization failed");
-            return tuplize(static_cast<T &>(*this));
-        }
     };
 
     template <class A, class B>
@@ -354,6 +353,38 @@ namespace wheels {
     constexpr bool operator >= (const comparable<A> & a, const comparable<B> & b) {
         return a.as_tuple() >= b.as_tuple();
     }
+
+
+
+
+
+
+    // convertible
+    template <class T, class Kind> struct convertible;
+    namespace details {
+        template <class T, class Tag>
+        struct _is_convertible {
+            static constexpr bool value = std::is_base_of<convertible<T, Tag>, T>::value;
+        };
+    }
+    template <class T, class Kind = void>
+    class convertible {
+    public:
+        template <class K>
+        T & operator = (const convertible<K, Kind> & c) {
+            if (this != &c) {
+                tuplize(static_cast<T &>(*this)) = tuplize(static_cast<const K &>(c));
+            }
+            return static_cast<T &>(*this);
+        }
+    };
+
+
+
+
+
+    // randomizable
+
 
 
 }
