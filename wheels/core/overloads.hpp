@@ -9,13 +9,13 @@ namespace wheels {
 
 
     template <class T, class OpT>
-    struct info_for_overloading {
+    struct category_for_overloading {
         using type = void;
     };
     template <class T, class OpT>
-    using info_for_overloading_t = typename info_for_overloading<T, OpT>::type;
+    using category_for_overloading_t = typename category_for_overloading<T, OpT>::type;
     template <class T, class OpT>
-    struct join_overloading : const_bool<!std::is_void<info_for_overloading_t<T, OpT>>::value> {};
+    struct join_overloading : const_bool<!std::is_void<category_for_overloading_t<T, OpT>>::value> {};
 
 
     // the overloaded<...> functor is called 
@@ -29,8 +29,6 @@ namespace wheels {
                 "error: this overloaded operator/function is not implemented, "
                 "instantiate overloaded<...> to fix this.");
         }
-        template <class Archive>
-        void serialize(Archive &) {}
     };
 
 
@@ -42,13 +40,11 @@ namespace wheels {
         constexpr decltype(auto) operator()(TT && v) const {\
             return (op forward<TT>(v)); \
         } \
-        template <class Archive> \
-        void serialize(Archive &) {} \
     }; \
     template <class T, \
         class = std::enable_if_t<join_overloading<std::decay_t<T>, unary_op_##name>::value>> \
     constexpr decltype(auto) operator op (T && v) { \
-        return overloaded<unary_op_##name, info_for_overloading_t<std::decay_t<T>, unary_op_##name>>()(forward<T>(v)); \
+        return overloaded<unary_op_##name, category_for_overloading_t<std::decay_t<T>, unary_op_##name>>()(forward<T>(v)); \
     }
 
     WHEELS_OVERLOAD_UNARY_OP(-, minus)
@@ -63,16 +59,14 @@ namespace wheels {
         constexpr decltype(auto) operator()(TT1 && v1, TT2 && v2) const {\
             return (forward<TT1>(v1) op forward<TT2>(v2)); \
         } \
-        template <class Archive> \
-        void serialize(Archive &) {} \
     }; \
     template <class T1, class T2, class = std::enable_if_t< \
         join_overloading<std::decay_t<T1>, binary_op_##name>::value || \
         join_overloading<std::decay_t<T2>, binary_op_##name>::value>> \
     constexpr decltype(auto) operator op (T1 && v1, T2 && v2) { \
         return overloaded<binary_op_##name, \
-            info_for_overloading_t<std::decay_t<T1>, binary_op_##name>, \
-            info_for_overloading_t<std::decay_t<T2>, binary_op_##name> \
+            category_for_overloading_t<std::decay_t<T1>, binary_op_##name>, \
+            category_for_overloading_t<std::decay_t<T2>, binary_op_##name> \
         >()(forward<T1>(v1), forward<T2>(v2)); \
     }
 
@@ -105,8 +99,6 @@ namespace wheels {
             using std::name;\
             return name(forward<ArgTs>(vs) ...); \
         } \
-        template <class Archive> \
-        void serialize(Archive &) {} \
     }; \
     template <class FirstT, class ... RestTs, \
         class = std::enable_if_t<any( \
@@ -115,8 +107,8 @@ namespace wheels {
         class = void> \
     constexpr decltype(auto) name(FirstT && f, RestTs && ... rests) { \
         return overloaded<func_##name, \
-            info_for_overloading_t<std::decay_t<FirstT>, func_##name>, \
-            info_for_overloading_t<std::decay_t<RestTs>, func_##name> ...\
+            category_for_overloading_t<std::decay_t<FirstT>, func_##name>, \
+            category_for_overloading_t<std::decay_t<RestTs>, func_##name> ...\
         >()(forward<FirstT>(f), forward<RestTs>(rests) ...); \
     }
 
@@ -164,8 +156,6 @@ namespace wheels {
         constexpr decltype(auto) operator()(CallerT && caller, ArgT && arg) const { \
             return op1 forward<CallerT>(caller) op2 forward<ArgT>(arg) op3; \
         } \
-        template <class Archive> \
-        void serialize(Archive &) {} \
     }; \
     template <class DerivedT> \
     struct object_overloading<DerivedT, member_op_##name> { \
@@ -173,28 +163,28 @@ namespace wheels {
         constexpr decltype(auto) operator opsymbol (ArgT && arg) const & { \
             return overloaded<member_op_##name, \
                 DerivedT, \
-                info_for_overloading_t<std::decay_t<ArgT>, member_op_##name> \
+                category_for_overloading_t<std::decay_t<ArgT>, member_op_##name> \
             >()(static_cast<const DerivedT &>(*this), forward<ArgT>(arg)); \
         } \
         template <class ArgT> \
         decltype(auto) operator opsymbol (ArgT && arg) & { \
             return overloaded<member_op_##name, \
                 DerivedT, \
-                info_for_overloading_t<std::decay_t<ArgT>, member_op_##name> \
+                category_for_overloading_t<std::decay_t<ArgT>, member_op_##name> \
             >()(static_cast<DerivedT &>(*this), forward<ArgT>(arg)); \
         } \
         template <class ArgT> \
         decltype(auto) operator opsymbol (ArgT && arg) && { \
             return overloaded<member_op_##name, \
                 DerivedT, \
-                info_for_overloading_t<std::decay_t<ArgT>, member_op_##name> \
+                category_for_overloading_t<std::decay_t<ArgT>, member_op_##name> \
             >()(static_cast<DerivedT &&>(*this), forward<ArgT>(arg)); \
         } \
         template <class ArgT> \
         decltype(auto) operator opsymbol (ArgT && arg) const && { \
             return overloaded<member_op_##name, \
                 DerivedT, \
-                info_for_overloading_t<std::decay_t<ArgT>, member_op_##name> \
+                category_for_overloading_t<std::decay_t<ArgT>, member_op_##name> \
             >()(static_cast<const DerivedT &&>(*this), forward<ArgT>(arg)); \
         } \
     };
@@ -216,8 +206,6 @@ namespace wheels {
         constexpr decltype(auto) operator()(CallerT && caller, ArgTs && ... args) const { \
             return op1 forward<CallerT>(caller) op2 forward<ArgTs>(args) ... op3; \
         } \
-        template <class Archive> \
-        void serialize(Archive &) {} \
     }; \
     template <class DerivedT> \
     struct object_overloading<DerivedT, member_op_##name> { \
@@ -225,28 +213,28 @@ namespace wheels {
         constexpr decltype(auto) operator opsymbol (ArgTs && ... args) const & { \
             return overloaded<member_op_##name, \
                 DerivedT, \
-                info_for_overloading_t<std::decay_t<ArgTs>, member_op_##name> ... \
+                category_for_overloading_t<std::decay_t<ArgTs>, member_op_##name> ... \
             >()(static_cast<const DerivedT &>(*this), forward<ArgTs>(args) ...); \
         } \
         template <class ... ArgTs> \
         decltype(auto) operator opsymbol (ArgTs && ... args) & { \
             return overloaded<member_op_##name, \
                 DerivedT, \
-                info_for_overloading_t<std::decay_t<ArgTs>, member_op_##name> ... \
+                category_for_overloading_t<std::decay_t<ArgTs>, member_op_##name> ... \
             >()(static_cast<DerivedT &>(*this), forward<ArgTs>(args) ...); \
         } \
         template <class ... ArgTs> \
         decltype(auto) operator opsymbol (ArgTs && ... args) && { \
             return overloaded<member_op_##name, \
                 DerivedT, \
-                info_for_overloading_t<std::decay_t<ArgTs>, member_op_##name> ... \
+                category_for_overloading_t<std::decay_t<ArgTs>, member_op_##name> ... \
             >()(static_cast<DerivedT &&>(*this), forward<ArgTs>(args) ...); \
         } \
         template <class ... ArgTs> \
         decltype(auto) operator opsymbol (ArgTs && ... args) const && { \
             return overloaded<member_op_##name, \
                 DerivedT, \
-                info_for_overloading_t<std::decay_t<ArgTs>, member_op_##name> ... \
+                category_for_overloading_t<std::decay_t<ArgTs>, member_op_##name> ... \
             >()(static_cast<const DerivedT &&>(*this), forward<ArgTs>(args) ...); \
         } \
     };

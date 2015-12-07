@@ -52,8 +52,6 @@ namespace wheels {
         }
 
         static constexpr auto decay() { return types<std::decay_t<Ts> ...>(); }
-
-        template <class Archive> void serialize(Archive &) {}
     };
 
     // single type
@@ -96,8 +94,6 @@ namespace wheels {
         static type_info info() { return typeid(T); }
         static const char * name() { return typeid(T).name(); }
         static const char * raw_name() { return typeid(T).raw_name(); }
-
-        template <class Archive> void serialize(Archive &) {}
     };
 
     // void
@@ -136,8 +132,6 @@ namespace wheels {
 
         const char * name() const { return typeid(void).name(); }
         const char * raw_name() const { return typeid(void).raw_name(); }
-
-        template <class Archive> void serialize(Archive &) {}
     };
 
 

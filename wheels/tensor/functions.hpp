@@ -323,7 +323,7 @@ namespace wheels {
 
     // overloads operators concerning tensor_category
     template <class ShapeT, class DataProviderT, class OtherOpT>
-    struct info_for_overloading<tensor_category<ShapeT, DataProviderT>, OtherOpT> {
+    struct category_for_overloading<tensor_category<ShapeT, DataProviderT>, OtherOpT> {
         using type = tensor_category<ShapeT, DataProviderT>;
     };
 

@@ -1,3 +1,6 @@
+#include <filesystem>
+#include <fstream>
+
 #include <gtest/gtest.h>
 
 #include <cereal/cereal.hpp>
@@ -9,48 +12,6 @@
 #include <cereal/archives/portable_binary.hpp>
 
 #include "fields.hpp"
-
-struct A {
-    int a, b;
-    auto tuple() {
-        return std::forward_as_tuple(a, b);
-    }
-};
-
-bool operator == (const A & a1, const A & a2) {
-    return a1.a == a2.a && a1.b == a2.b;
-}
-
-TEST(core, ref_behavior) {
-
-    std::vector<A> as(100), bs(100);
-    for (int i = 0; i < as.size(); i++) {
-        as[i].a = i;
-        as[i].b = -i;
-        bs[i].a = -i;
-        bs[i].b = i;
-    }
-
-    std::vector<std::tuple<int &, int &>> ats;
-    for (int i = 0; i < as.size(); i++) {
-        ats.push_back(as[i].tuple());
-    }
-
-    std::vector<std::tuple<int &, int &>> bts;
-    for (int i = 0; i < bs.size(); i++) {
-        bts.push_back(bs[i].tuple());
-    }   
-
-    ASSERT_FALSE(ats == bts);
-    ASSERT_FALSE(as == bs);
-
-    bts = ats;
-    
-    ASSERT_TRUE(ats == bts);
-    ASSERT_TRUE(as == bs);
-
-}
-
 
 
 using namespace wheels;
@@ -157,19 +118,4 @@ TEST(core, fields3) {
     ASSERT_TRUE(tuplize(ds) <= tuplize(ds2));
     ASSERT_FALSE(tuplize(ds) > tuplize(ds2));
     ASSERT_FALSE(tuplize(ds) < tuplize(ds2));
-}
-
-struct E : serializable<E> {
-    std::vector<D> ds;
-    template <class V>
-    auto fields(V && v) {
-        return v(ds);
-    }
-};
-
-
-TEST(core, serialize) {
-
-    //cereal::PortableBinaryOutputArchive arc()
-
 }

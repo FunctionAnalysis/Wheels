@@ -66,8 +66,6 @@ namespace wheels {
         constexpr auto operator[](const const_ints<K, Idx> &) const {
             return const_ints<T, details::_element<Idx, T, Vals ...>::value>();
         }
-
-        template <class Archive> void serialize(Archive &) {}
     };
 
 
@@ -101,8 +99,6 @@ namespace wheels {
 
         template <class K, K V, wheels_enable_if(V == Val)>
         constexpr operator const_ints<K, V>() const { return const_ints<K, V>(); }
-
-        template <class Archive> void serialize(Archive &) {}
     };
 
 

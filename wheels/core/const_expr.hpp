@@ -14,12 +14,10 @@ namespace wheels {
         constexpr auto operator()(ArgTs && ... args) const {
             return std::get<Idx>(std::forward_as_tuple(forward<ArgTs>(args)...));
         }
-        template <class Archive> 
-        void serialize(Archive &) {}
     };
 
     template <size_t Idx, class OpT>
-    struct info_for_overloading<const_symbol<Idx>, OpT> {
+    struct category_for_overloading<const_symbol<Idx>, OpT> {
         using type = info_const_expr;
     };
 
@@ -49,7 +47,7 @@ namespace wheels {
     };
 
     template <class T, class Op>
-    struct info_for_overloading<const_coeff<T>, Op> {
+    struct category_for_overloading<const_coeff<T>, Op> {
         using type = info_const_expr;
     };
 
@@ -78,7 +76,7 @@ namespace wheels {
     };
 
     template <class Op, class E, class OtherOp>
-    struct info_for_overloading<const_unary_op<Op, E>, OtherOp> {
+    struct category_for_overloading<const_unary_op<Op, E>, OtherOp> {
         using type = info_const_expr;
     };
   
@@ -103,7 +101,7 @@ namespace wheels {
     };
 
     template <class Op, class E1, class E2, class OtherOp>
-    struct info_for_overloading<const_binary_op<Op, E1, E2>, OtherOp> {
+    struct category_for_overloading<const_binary_op<Op, E1, E2>, OtherOp> {
         using type = info_const_expr;
     };
 
@@ -116,8 +114,6 @@ namespace wheels {
         constexpr decltype(auto) operator()(TT && v) const {
             return const_unary_op<Op, TT>(Op(), forward<TT>(v));
         }
-        template <class Archive>
-        void serialize(Archive &) {}
     };
 
     template <class Op>
@@ -127,8 +123,6 @@ namespace wheels {
         constexpr decltype(auto) operator()(TT1 && v1, TT2 && v2) const {
             return const_binary_op<Op, TT1, TT2>(Op(), forward<TT1>(v1), forward<TT2>(v2));
         }
-        template <class Archive>
-        void serialize(Archive &) {}
     };
 
     template <class Op, class NotConstExprT>
@@ -139,8 +133,6 @@ namespace wheels {
             return const_binary_op<Op, TT1, const_coeff<std::decay_t<TT2>>>(Op(), 
                 forward<TT1>(v1), as_const_coeff(forward<TT2>(v2)));
         }
-        template <class Archive>
-        void serialize(Archive &) {}
     };
 
     template <class Op, class NotConstExprT>
@@ -151,8 +143,6 @@ namespace wheels {
             return const_binary_op<Op, const_coeff<std::decay_t<TT1>>, TT2>(Op(),
                 as_const_coeff(forward<TT1>(v1)), forward<TT2>(v2));
         }
-        template <class Archive>
-        void serialize(Archive &) {}
     };
 
 

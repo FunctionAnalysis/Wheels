@@ -10,7 +10,7 @@ template <class T> struct A {};
 
 namespace wheels {
     template <class T, class OpT>
-    struct info_for_overloading<A<T>, OpT> {
+    struct category_for_overloading<A<T>, OpT> {
         using type = A<T>;
     };
 

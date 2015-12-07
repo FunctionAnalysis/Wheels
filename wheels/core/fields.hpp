@@ -20,15 +20,24 @@ namespace wheels {
         join_overloading<std::decay_t<T>, func_fields>::value>>
     constexpr decltype(auto) fields(T && t, U && usage, V && visitor) {
         return overloaded<func_fields, 
-            info_for_overloading_t<std::decay_t<T>, func_fields>, 
+            category_for_overloading_t<std::decay_t<T>, func_fields>, 
             std::decay_t<U>, std::decay_t<V>
         >()(forward<T>(t), forward<U>(usage), forward<V>(visitor));
     }
+    
 
+    // empty types
+    struct fields_category_empty {};
+    template <class T, class U, class V, class = void, class = std::enable_if_t<
+        !join_overloading<std::decay_t<T>, func_fields>::value &&
+        std::is_empty<std::decay_t<T>>::value >>
+    constexpr decltype(auto) fields(T &&, U &&, V &&) {
+        return nullptr;
+    }
 
 
     // tuple like types
-    struct info_tuple_like {};
+    struct fields_category_tuple_like {};
     namespace details {
         template <class TupleT, class V, size_t ... Is>
         auto _fields_of_tuple_seq(TupleT && t, V && visitor, const const_ints<size_t, Is...> &) {
@@ -36,21 +45,21 @@ namespace wheels {
         }
     }
     template <class U, class V>
-    struct overloaded<func_fields, info_tuple_like, U, V> {
+    struct overloaded<func_fields, fields_category_tuple_like, U, V> {
         template <class TT, class UU, class VV>
         constexpr decltype(auto) operator()(TT && t, UU &&, VV && visitor) const {
             return details::_fields_of_tuple_seq(forward<TT>(t), forward<VV>(visitor),
                 make_const_sequence(const_size<std::tuple_size<std::decay_t<TT>>::value>()));
         }
     };
-    template <class T1, class T2> struct info_for_overloading<std::pair<T1, T2>, func_fields> { using type = info_tuple_like; };
-    template <class T, size_t N> struct info_for_overloading<std::array<T, N>, func_fields> { using type = info_tuple_like; };
-    template <class ... Ts> struct info_for_overloading<std::tuple<Ts ...>, func_fields> { using type = info_tuple_like; };
+    template <class T1, class T2> struct category_for_overloading<std::pair<T1, T2>, func_fields> { using type = fields_category_tuple_like; };
+    template <class T, size_t N> struct category_for_overloading<std::array<T, N>, func_fields> { using type = fields_category_tuple_like; };
+    template <class ... Ts> struct category_for_overloading<std::tuple<Ts ...>, func_fields> { using type = fields_category_tuple_like; };
 
 
 
     // container types
-    struct info_container {};
+    struct fields_category_container {};
     template <class ContT, class VisitorT>
     class container_proxy {
     public:
@@ -123,15 +132,15 @@ namespace wheels {
     }
 
     template <class U, class V>
-    struct overloaded<func_fields, info_container, U, V> {
+    struct overloaded<func_fields, fields_category_container, U, V> {
         template <class TT, class UU, class VV>
         constexpr decltype(auto) operator()(TT && t, UU &&, VV && v) const {
             return as_container(forward<TT>(t), forward<VV>(v));
         }
     };
-    template <class T, class AllocT> struct info_for_overloading<std::vector<T, AllocT>, func_fields> { using type = info_container; };
-    template <class T, class AllocT> struct info_for_overloading<std::list<T, AllocT>, func_fields> { using type = info_container; };
-    template <class T, class AllocT> struct info_for_overloading<std::deque<T, AllocT>, func_fields> { using type = info_container; };
+    template <class T, class AllocT> struct category_for_overloading<std::vector<T, AllocT>, func_fields> { using type = fields_category_container; };
+    template <class T, class AllocT> struct category_for_overloading<std::list<T, AllocT>, func_fields> { using type = fields_category_container; };
+    template <class T, class AllocT> struct category_for_overloading<std::deque<T, AllocT>, func_fields> { using type = fields_category_container; };
 
 
 
@@ -273,7 +282,6 @@ namespace wheels {
 
 
     // tuplize
-
     struct pack_as_tuple {
         template <class ... ArgTs>
         constexpr decltype(auto) operator()(ArgTs && ... args) const {
@@ -304,33 +312,19 @@ namespace wheels {
     // comparable
     template <class T>
     struct comparable {
-        constexpr decltype(auto) as_tuple() const & {
+        constexpr decltype(auto) as_tuple() const {
             static_assert(details::_has_func_fields_to_tuplize<const T &>::value,
                 "definition of fields(...) for const T & is required");
             using result_t = decltype(tuplize(static_cast<const T &>(*this)));
             static_assert(!std::is_same<T, result_t>::value, "tuplization failed");
             return tuplize(static_cast<const T &>(*this));
         }
-        decltype(auto) as_tuple() & {
+        decltype(auto) as_tuple() {
             static_assert(details::_has_func_fields_to_tuplize<T &>::value,
                 "definition of fields(...) for T & is required");
             using result_t = decltype(tuplize(static_cast<T &>(*this)));
             static_assert(!std::is_same<T, result_t>::value, "tuplization failed");
             return tuplize(static_cast<T &>(*this));
-        }
-        constexpr decltype(auto) as_tuple() const && {
-            static_assert(details::_has_func_fields_to_tuplize<const T &&>::value,
-                "definition of fields(...) for const T && is required");
-            using result_t = decltype(tuplize(static_cast<const T &&>(*this)));
-            static_assert(!std::is_same<T, result_t>::value, "tuplization failed");
-            return tuplize(static_cast<const T &&>(*this));
-        }
-        decltype(auto) as_tuple() && {
-            static_assert(details::_has_func_fields_to_tuplize<T &&>::value,
-                "definition of fields(...) for T && is required");
-            using result_t = decltype(tuplize(static_cast<T &&>(*this)));
-            static_assert(!std::is_same<T, result_t>::value, "tuplization failed");
-            return tuplize(static_cast<T &&>(*this));
         }
     };
 
@@ -359,47 +353,5 @@ namespace wheels {
         return a.as_tuple() >= b.as_tuple();
     }
 
-
-
-    // serializable
-    struct visit_to_serialize {};
-    template <class T>
-    struct serializable {
-        template <class ArcT, class = std::enable_if_t<
-            has_member_func_fields<T &, visit_to_serialize, ArcT>::value>>
-        void serialize(ArcT & arc) {
-            static_cast<T &>(*this).fields(visit_to_serialize(), arc);
-        }
-        template <class ArcT, wheels_distinguish_1, class = std::enable_if_t<
-            !has_member_func_fields<T &, visit_to_serialize, ArcT>::value &&
-            has_member_func_fields_simple<T &, ArcT>::value >>
-        void serialize(ArcT & arc) {
-            static_cast<T &>(*this).fields(arc);
-        }
-        template <class ArcT, wheels_distinguish_2, class = std::enable_if_t<
-            !has_member_func_fields<T &, visit_to_serialize, ArcT>::value &&
-            !has_member_func_fields_simple<T &, ArcT>::value &&
-            has_global_func_fields<T &, visit_to_serialize, ArcT>::value>>
-        void serialize(ArcT & arc) {
-            ::wheels::fields(static_cast<T &>(*this), visit_to_serialize(), arc);
-        }
-        template <class ArcT, wheels_distinguish_4, class = std::enable_if_t<
-            !has_member_func_fields<T &, visit_to_serialize, ArcT>::value &&
-            !has_member_func_fields_simple<T &, ArcT>::value &&
-            !has_global_func_fields<T &, visit_to_serialize, ArcT>::value &&
-            has_global_func_fields_simple<T &, ArcT>::value>>
-        void serialize(ArcT & arc) {
-            ::wheels::fields(static_cast<T &>(*this), arc);           
-        }
-        template <class ArcT, wheels_distinguish_5, class = std::enable_if_t<
-            !has_member_func_fields<T &, visit_to_serialize, ArcT>::value &&
-            !has_member_func_fields_simple<T &, ArcT>::value &&
-            !has_global_func_fields<T &, visit_to_serialize, ArcT>::value &&
-            !has_global_func_fields_simple<T &, ArcT>::value>>
-        void serialize(ArcT & arc) {
-            static_assert(always<bool, false, T>::value, "no fields implementation is found, "
-                "implement fields(...) or serialize(...) to fix this");
-        }
-    };
 
 }
