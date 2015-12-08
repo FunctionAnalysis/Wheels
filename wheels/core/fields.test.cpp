@@ -1,5 +1,6 @@
 #include <filesystem>
 #include <fstream>
+#include <forward_list>
 
 #include <gtest/gtest.h>
 
@@ -160,5 +161,75 @@ TEST(core, fields5) {
     ASSERT_TRUE(tuplize(f1) != tuplize(f2));
     f2 = f1;
     ASSERT_TRUE(tuplize(f1) == tuplize(f2));
+}
+
+template <class T>
+struct dummy {};
+
+struct X {
+    bool a, b, c;
+    int d;
+    X() : a(true), b(true), c(false), d(100) {}
+    template <class V>
+    auto fields(V && v) & {
+        return v(a, b, c, d);
+    }
+    template <class V>
+    auto fields(V && v) const & {
+        return v(a, b, c, d);
+    }
+};
+
+struct Y {
+    std::pair<X, char> d;
+    Y() : d(X(), 'H') {}
+    template <class V>
+    auto fields(V && v) & {
+        return v(d);
+    }
+    template <class V>
+    auto fields(V && v) const & {
+        return v(d);
+    }
+};
+
+struct Z {
+    std::vector<Y> ys;
+    X x;
+    Z() : ys(3) {}
+    template <class V>
+    auto fields(V && v) & {
+        return v(ys, x);
+    }
+    template <class V>
+    auto fields(V && v) const & {
+        return v(ys, x);
+    }
+};
+
+struct KK {
+    auto const_call() const { return yes(); }
+    auto const_call() { return no(); }
+};
+
+struct PP {
+    KK & kk;
+    auto call() const { return kk.const_call(); }
+};
+
+
+TEST(core, fields6) {
+
+    std::vector<Z> zs(2);
+    traverse_elements(zs, [](auto & e) {
+        e = 0;
+    });    
+    ASSERT_TRUE(!any_elements(zs, [](auto && e) {return e != 0; }));
+    ASSERT_TRUE(all_elements(zs, [](auto && e) {return e == 0; }));
+    traverse_elements(zs, [](auto & e) {
+        e = 1;
+    });
+    ASSERT_TRUE(!any_elements(zs, [](auto && e) {return e != 1; }));
+    ASSERT_TRUE(all_elements(zs, [](auto && e) {return e == 1; }));
 
 }

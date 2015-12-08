@@ -10,6 +10,7 @@
 #include "constants.hpp"
 #include "types.hpp"
 #include "overloads.hpp"
+#include "iterators.hpp"
 
 namespace wheels {
 
@@ -92,14 +93,19 @@ namespace wheels {
         const VisitorT & visitor() const { return _visitor; }
         VisitorT & visitor() { return _visitor; }
 
-        decltype(auto) begin() const { return std::begin(_content); }
-        decltype(auto) end() const { return std::end(_content); }
-        decltype(auto) begin() { return std::begin(_content); }
-        decltype(auto) end() { return std::end(_content); }
+        decltype(auto) begin() const { return make_transform_iterator(std::begin(_content), _visit_functor()); }
+        decltype(auto) end() const { return make_transform_iterator(std::end(_content), _visit_functor()); }
+        decltype(auto) begin() { return make_transform_iterator(std::begin(_content), _visit_functor()); }
+        decltype(auto) end() { return  make_transform_iterator(std::end(_content), _visit_functor()); }
 
         auto size() const { return _content.size(); }
         decltype(auto) operator[](size_t i) const & { return _visitor.visit(_content[i]); }
         decltype(auto) operator[](size_t i) & { return _visitor.visit(_content[i]); }
+
+    private:
+        auto _visit_functor() const {
+            return [this](auto && e) {return _visitor.visit(e); };
+        }
     private:
         ContT _content;
         VisitorT _visitor;
@@ -107,9 +113,7 @@ namespace wheels {
 
     template <class ContT1, class ContT2, class V>
     bool operator == (const container_proxy<ContT1, V> & c1, const container_proxy<ContT2, V> & c2) {
-        return std::equal(c1.begin(), c1.end(), c2.begin(), c2.end(), [&c1, &c2](auto && e1, auto && e2) {
-            return c1.visitor().visit(e1) == c2.visitor().visit(e2);
-        });
+        return std::equal(c1.begin(), c1.end(), c2.begin(), c2.end());
     }
     template <class ContT1, class ContT2, class V>
     constexpr bool operator != (const container_proxy<ContT1, V> & c1, const container_proxy<ContT2, V> & c2) {
@@ -117,9 +121,7 @@ namespace wheels {
     }
     template <class ContT1, class ContT2, class V>
     bool operator < (const container_proxy<ContT1, V> & c1, const container_proxy<ContT2, V> & c2) {
-        return std::lexicographical_compare(c1.begin(), c1.end(), c2.begin(), c2.end(), [&c1, &c2](auto && e1, auto && e2) {
-            return c1.visitor().visit(e1) < c2.visitor().visit(e2);
-        });
+        return std::lexicographical_compare(c1.begin(), c1.end(), c2.begin(), c2.end());
     }
     template <class ContT1, class ContT2, class V>
     bool operator > (const container_proxy<ContT1, V> & c1, const container_proxy<ContT2, V> & c2) {
@@ -146,7 +148,7 @@ namespace wheels {
     struct overloaded<func_fields, fields_category_container, U, V> {
         template <class TT, class UU, class VV>
         constexpr decltype(auto) operator()(TT && t, UU &&, VV && v) const {
-            return as_container(forward<TT>(t), forward<VV>(v));
+            return v(as_container(forward<TT>(t), forward<VV>(v)));
         }
     };
     template <class T, class AllocT> 
@@ -242,30 +244,31 @@ namespace wheels {
 
 
     // field_visitor
-    template <class PackT, class UsageT>
+    template <class PackT, class ProcessT, class UsageT>
     class field_visitor {
-        using this_t = field_visitor<PackT, UsageT>;
+        using this_t = field_visitor<PackT, ProcessT, UsageT>;
     public:
-        template <class PP, class UU>
-        field_visitor(PP && p, UU && u) : _pack(forward<PP>(p)), _usage(forward<UU>(u)) {}
+        template <class PP, class RR, class UU>
+        constexpr field_visitor(PP && p, RR && r, UU && u) 
+            : _pack(forward<PP>(p)), _process(forward<RR>(r)), _usage(forward<UU>(u)) {}
 
         // visit single member
         template <class T, class = std::enable_if_t<
             has_member_func_fields<T, UsageT, this_t>::value >>
-        decltype(auto) visit(T && v) const {
+        constexpr decltype(auto) visit(T && v) const {
             return forward<T>(v).fields(_usage, *this);
         }
         template <class T, wheels_distinguish_1, class = std::enable_if_t<
             !has_member_func_fields<T, UsageT, this_t>::value &&
             has_member_func_fields_simple<T, this_t>::value>>
-        decltype(auto) visit(T && v) const {
+        constexpr decltype(auto) visit(T && v) const {
             return forward<T>(v).fields(*this);
         }
         template <class T, wheels_distinguish_2, class = std::enable_if_t<
             !has_member_func_fields<T, UsageT, this_t>::value &&
             !has_member_func_fields_simple<T, this_t>::value &&
             has_global_func_fields<T, UsageT, this_t>::value >>
-        decltype(auto) visit(T && v) const {
+        constexpr decltype(auto) visit(T && v) const {
             return ::wheels::fields(forward<T>(v), _usage, *this);
         }
         template <class T, wheels_distinguish_3, class = std::enable_if_t<
@@ -273,7 +276,7 @@ namespace wheels {
             !has_member_func_fields_simple<T, this_t>::value &&
             !has_global_func_fields<T, UsageT, this_t>::value &&
             has_global_func_fields_simple<T, this_t>::value >>
-        decltype(auto) visit(T && v) const {
+        constexpr decltype(auto) visit(T && v) const {
             return ::wheels::fields(forward<T>(v), *this);
         }
         template <class T, wheels_distinguish_4, class = std::enable_if_t<
@@ -281,25 +284,27 @@ namespace wheels {
             !has_member_func_fields_simple<T, this_t>::value &&
             !has_global_func_fields<T, UsageT, this_t>::value &&
             !has_global_func_fields_simple<T, this_t>::value >>
-        constexpr decltype(auto) visit(T && v) const {
-            return static_cast<T &&>(v);
+        decltype(auto) visit(T && v) const {
+            return _process(forward<T>(v));
         }
 
         // pack all members
         template <class ... Ts>
-        decltype(auto) operator()(Ts && ... vs) const {
+        constexpr decltype(auto) operator()(Ts && ... vs) const {
             return _pack(visit(forward<Ts>(vs))...);
         }
 
     private:
         PackT _pack;
+        ProcessT _process;
         UsageT _usage;
     };
     
     // make_field_visitor
-    template <class PP, class UU>
-    constexpr auto make_field_visitor(PP && pack, UU && usage) {
-        return field_visitor<std::decay_t<PP>, std::decay_t<UU>>(forward<PP>(pack), forward<UU>(usage));
+    template <class PP, class RR, class UU>
+    constexpr auto make_field_visitor(PP && pack, RR && proc, UU && usage) {
+        return field_visitor<std::decay_t<PP>, std::decay_t<RR>, std::decay_t<UU>>(
+            forward<PP>(pack), forward<RR>(proc), forward<UU>(usage));
     }
 
 
@@ -309,18 +314,140 @@ namespace wheels {
 
     // tuplize
     struct pack_as_tuple {
+        template <class ContT, class VisitorT>
+        constexpr auto operator()(container_proxy<ContT, VisitorT> && c) const {
+            return std::move(c);
+        }
         template <class ... ArgTs>
         constexpr decltype(auto) operator()(ArgTs && ... args) const {
             return std::tuple<ArgTs ...>(forward<ArgTs>(args) ...);
         }
     };
+    struct process_direct_pass {
+        template <class ArgT>
+        constexpr ArgT && operator()(ArgT && arg) const {
+            return static_cast<ArgT&&>(arg);
+        }
+    };
     struct visit_to_tuplize {};
     template <class T>
-    auto tuplize(T && data) {
-        auto visitor = make_field_visitor(pack_as_tuple(), visit_to_tuplize());
-        return visitor.visit(forward<T>(data));
+    constexpr auto tuplize(T && data) {
+        return make_field_visitor(pack_as_tuple(), process_direct_pass(), visit_to_tuplize())
+            .visit(forward<T>(data));
     }
-    using tuplizer = field_visitor<pack_as_tuple, visit_to_tuplize>;
+    using tuplizer = field_visitor<pack_as_tuple, process_direct_pass, visit_to_tuplize>;
+
+
+
+    // traverse_elements
+    struct visit_to_traverse {};
+    struct pack_nothing {
+        template <class ... ArgTs>
+        constexpr auto operator()(ArgTs && ... args) const {
+            return nullptr;
+        }
+    };
+    template <class FunT>
+    struct process_by_traverse /*: object_overloading<process_by_traverse<FunT>, member_op_paren>*/ {
+        constexpr process_by_traverse(FunT f) : fun(f) {}
+        template <class ContT, class VisitorT>
+        auto operator()(const container_proxy<ContT, VisitorT> & c) const {
+            for (auto it = c.begin(); it != c.end(); ++it) { *it; }
+            return nullptr;
+        }
+        template <class ContT, class VisitorT>
+        auto operator()(container_proxy<ContT, VisitorT> & c) const {
+            for (auto it = c.begin(); it != c.end(); ++it) { *it; }
+            return nullptr;
+        }
+        template <class ContT, class VisitorT>
+        auto operator()(container_proxy<ContT, VisitorT> && c) const {
+            for (auto it = c.begin(); it != c.end(); ++it) { *it; }
+            return nullptr;
+        }
+        template <class ArgT>
+        auto operator()(ArgT && arg) const {
+            fun(forward<ArgT>(arg));
+            return nullptr;
+        }
+        FunT fun;
+    };
+    /*template <class FunT, class T>
+    struct overloaded<member_op_paren, process_by_traverse<FunT>, T> {
+        template <class ProcessorT, class TT>
+        auto operator()(ProcessorT && pp, TT && tt) const {
+            pp.fun(forward<TT>(tt));
+            return nullptr;
+        }
+    };
+    template <class FunT, class ContT, class VisitorT>
+    struct overloaded<member_op_paren, process_by_traverse<FunT>, container_proxy<ContT, VisitorT>> {
+        template <class ProcessorT, class TT>
+        auto operator()(ProcessorT &&, TT && c) const {
+            for (auto it = c.begin(); it != c.end(); ++it) { *it; }
+            return nullptr;
+        }
+    };*/
+
+    template <class T, class FunT>
+    constexpr void traverse_elements(T && data, FunT fun) {
+        make_field_visitor(pack_nothing(), process_by_traverse<FunT>(fun), visit_to_traverse())
+            .visit(forward<T>(data));
+    }
+
+
+
+
+    // any_elements
+    struct pack_by_any {
+        template <class ... ArgTs>
+        constexpr bool operator()(ArgTs && ... args) const {
+            return any(forward<ArgTs>(args) ...);
+        }
+    };
+    template <class CheckFunT>
+    struct process_by_any {
+        template <class ContT, class VisitorT>
+        constexpr bool operator()(const container_proxy<ContT, VisitorT> & c) const {
+            return std::any_of(c.begin(), c.end(), [](auto && e) {return e; });
+        }
+        template <class ArgT>
+        constexpr bool operator()(const ArgT & arg) const {
+            return checker(arg);
+        }
+        CheckFunT checker;
+    };
+    template <class T, class CheckFunT>
+    constexpr bool any_elements(T && data, CheckFunT checker) {
+        return make_field_visitor(pack_by_any(), process_by_any<CheckFunT>{checker}, visit_to_traverse())
+            .visit(forward<T>(data));
+    }
+    // all_elements
+    struct pack_by_all {
+        template <class ... ArgTs>
+        constexpr decltype(auto) operator()(ArgTs && ... args) const {
+            return all(forward<ArgTs>(args) ...);
+        }
+    };
+    template <class CheckFunT>
+    struct process_by_all {
+        template <class ContT, class VisitorT>
+        constexpr bool operator()(const container_proxy<ContT, VisitorT> & c) const {
+            return std::all_of(c.begin(), c.end(), [](auto && e) {return e; });
+        }
+        template <class ArgT>
+        constexpr bool operator()(const ArgT & arg) const {
+            return checker(arg);
+        }
+        CheckFunT checker;
+    };
+    template <class T, class CheckFunT>
+    constexpr bool all_elements(T && data, CheckFunT checker) {
+        return make_field_visitor(pack_by_all(), process_by_all<CheckFunT>{checker}, visit_to_traverse())
+            .visit(forward<T>(data));
+    }
+
+
 
 
 
@@ -378,13 +505,6 @@ namespace wheels {
 
 
     // convertible
-    template <class T, class Kind> struct convertible;
-    namespace details {
-        template <class T, class Tag>
-        struct _is_convertible {
-            static constexpr bool value = std::is_base_of<convertible<T, Tag>, T>::value;
-        };
-    }
     template <class T, class Kind = void>
     struct convertible {
         template <class K>
