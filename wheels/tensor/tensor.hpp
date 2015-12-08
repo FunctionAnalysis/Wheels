@@ -731,14 +731,14 @@ namespace wheels {
 
 
     // auto cross(ts1, ts2);
-    /*template <class A, class B>
-    constexpr auto cross(const A & a, const B & b) {
-    using result_t = std::common_type_t<details::_element_t<A>, details::_element_t<B>>;
-    return vec_<value_t, 3>(with_elements,
-    a.y() * b.z() - a.z() * b.y(),
-    a.z() * b.x() - a.x() * b.z(),
-    a.x() * b.y() - a.y() * b.x());
-    }*/
+    template <class A, class B>
+    constexpr auto cross(const tensor_base<A> & a, const tensor_base<B> & b) {
+        using result_t = std::common_type_t<details::_element_t<A>, details::_element_t<B>>;
+        return vec_<result_t, 3>(with_elements,
+            a.y() * b.z() - a.z() * b.y(),
+            a.z() * b.x() - a.x() * b.z(),
+            a.x() * b.y() - a.y() * b.x());
+    }
 
 
 
