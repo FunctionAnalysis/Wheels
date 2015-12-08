@@ -18,14 +18,14 @@ namespace wheels {
         static constexpr bool is_static = true;
         static constexpr T static_magnitude = 1;
         static constexpr size_t static_size_num = 0;
+        static constexpr size_t dynamic_size_num = 0;
+        static constexpr ptrdiff_t last_dynamic_dim = -1;
 
         constexpr const_ints<T, 1> magnitude() const { return const_ints<T, 1>(); }
 
         constexpr tensor_shape() {}
         template <class K> 
         constexpr tensor_shape(const tensor_shape<K> &) {}
-
-        template <class Archive> void serialize(Archive & ar) {}
     };
 
 
@@ -42,6 +42,9 @@ namespace wheels {
         static constexpr T static_value = S;
         static constexpr T static_magnitude = S * rest_tensor_shape_t::static_magnitude;
         static constexpr size_t static_size_num = rest_tensor_shape_t::static_size_num + 1;
+        static constexpr size_t dynamic_size_num = rest_tensor_shape_t::dynamic_size_num;
+        static constexpr ptrdiff_t last_dynamic_dim = 
+            rest_tensor_shape_t::last_dynamic_dim == -1 ? -1 : (rest_tensor_shape_t::last_dynamic_dim + 1);
 
         const rest_tensor_shape_t & rest() const { return (const rest_tensor_shape_t &)(*this); }
         rest_tensor_shape_t & rest() { return (rest_tensor_shape_t &)(*this); }
@@ -119,8 +122,9 @@ namespace wheels {
             resize(const_index<Idx>(), ns);
         }
 
-        
         template <class Archive> void serialize(Archive & ar) { ar(rest()); }
+        template <class V> decltype(auto) fields(V && v) { return v(rest()); }
+        template <class V> constexpr decltype(auto) fields(V && v) const { return v(rest()); }
     };
 
 
@@ -134,9 +138,11 @@ namespace wheels {
         using value_type = T;
         static constexpr size_t rank = sizeof...(SizeTs)+1;
         static constexpr bool is_static = false;
-        static constexpr T static_value = 0;
-        static constexpr T static_magnitude = 0;
+        static constexpr T static_value = 1;
+        static constexpr T static_magnitude = rest_tensor_shape_t::static_magnitude;
         static constexpr size_t static_size_num = rest_tensor_shape_t::static_size_num;
+        static constexpr size_t dynamic_size_num = rest_tensor_shape_t::dynamic_size_num + 1;
+        static constexpr ptrdiff_t last_dynamic_dim = 0;
 
         constexpr const rest_tensor_shape_t & rest() const { return (const rest_tensor_shape_t &)(*this); }
         rest_tensor_shape_t & rest() { return (rest_tensor_shape_t &)(*this); }
@@ -207,6 +213,8 @@ namespace wheels {
         }
 
         template <class Archive> void serialize(Archive & ar) { ar(_val, _mag);  ar(rest()); }
+        template <class V> decltype(auto) fields(V && v) { return v(_val, _mag, rest()); }
+        template <class V> constexpr decltype(auto) fields(V && v) const { return v(_val, _mag, rest()); }
 
     private:
         T _val;
@@ -486,5 +494,17 @@ namespace wheels {
         return details::_stream_seq(os, shape, std::make_index_sequence<sizeof...(SizeTs)>());
     }   
 
+
+}
+
+
+
+namespace std {
+
+    // std::get
+    template <size_t Idx, class T, class ... SizeTs>
+    constexpr decltype(auto) get(const wheels::tensor_shape<T, SizeTs...> & shape) {
+        return shape.at(wheels::const_index<Idx>());
+    }
 
 }

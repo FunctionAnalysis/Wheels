@@ -19,6 +19,37 @@ namespace wheels {
     struct tensor_base {
         constexpr const T & derived() const { return static_cast<const T &>(*this); }
         T & derived() { return static_cast<T &>(*this); }
+
+        constexpr auto shape() const { return shape_of(derived()); }
+        constexpr auto rank() const { return rank_of(derived()); }
+        template <class K, K Idx>
+        constexpr auto size(const const_ints<K, Idx> & i) const { return size_at(derived(), i); }
+        constexpr auto norm_squared() const { return wheels::norm_squared(derived()); }
+        constexpr auto norm() const { return wheels::norm(derived()); }
+
+        template <class ... SubTs>
+        constexpr decltype(auto) operator()(const SubTs & ... subs) const { 
+            return element_at(derived(), subs ...); 
+        }
+        template <class IndexT>
+        constexpr decltype(auto) operator[](const IndexT & ind) const { 
+            return element_at_index(derived(), ind); 
+        }
+        template <class ... SubTs>
+        decltype(auto) operator()(const SubTs & ... subs) {
+            return element_at(derived(), subs ...);
+        }
+        template <class IndexT>
+        decltype(auto) operator[](const IndexT & ind) {
+            return element_at_index(derived(), ind);
+        }
+
+        template <class = void>
+        constexpr auto t() const & { return transpose(derived()); }
+        template <class = void>
+        auto t() & { return transpose(derived()); }
+        template <class = void>
+        auto t() && { return transpose(std::move(derived())); }
     };
 
     namespace details {
@@ -84,7 +115,7 @@ namespace wheels {
     // Scalar element_at_index(ts, index);
     template <class T, class IndexT>
     constexpr decltype(auto) element_at_index(const tensor_base<T> & t, const IndexT & ind) {
-        return invoke_with_subs(shape_of(t),
+        return invoke_with_subs(shape_of(t.derived()), ind,
             [&t](auto && ... subs) {return element_at(t.derived(), subs ...); });
     }
 
@@ -110,6 +141,16 @@ namespace wheels {
         });
     }
 
+    // void for_each_element_util(ts, functor);
+    template <class FunT, class T, class ... Ts>
+    bool for_each_element_if(FunT && fun, T && t, Ts && ... ts) {
+        assert(all_same(shape_of(t), shape_of(ts) ...));
+        for_each_subscript_if(shape_of(t), [&](auto && ... subs) {
+            return fun(element_at(t, subs ...), element_at(ts, subs ...) ...);
+        });
+    }
+
+
     // void assign_elements(to, from);
     template <class To, class From>
     void assign_elements(To & to, const From & from) {
@@ -134,7 +175,7 @@ namespace wheels {
     template <class T1, class T2>
     decltype(auto) dot_product(const tensor_base<T1> & t1, const tensor_base<T2> & t2) {
         using result_t = std::common_type_t<details::_element_t<T1>, details::_element_t<T2>>;
-        assert(shape_of(t1) == shape_of(t2));
+        assert(shape_of(t1.derived()) == shape_of(t2.derived()));
         result_t result = 0.0;
         for_each_element([&result](auto && e1, auto && e2) {result += e1 * e2; }, 
             t1.derived(), t2.derived());
@@ -154,7 +195,7 @@ namespace wheels {
     // Scalar norm(ts)
     template <class T>
     constexpr details::_element_t<T> norm(const tensor_base<T> & t) {
-        return sqrt(norm_squared(t));
+        return sqrt(norm_squared(t.derived()));
     }
 
 
@@ -409,38 +450,172 @@ namespace wheels {
 
 
     // transpose
-
-
-
-
-    // auto cross(ts1, ts2);
-    /*template <class A, class B>
-    constexpr auto cross(const A & a, const B & b) {
-        using result_t = std::common_type_t<details::_element_t<A>, details::_element_t<B>>;
-        return vec_<value_t, 3>(with_elements,
-            a.y() * b.z() - a.z() * b.y(),
-            a.z() * b.x() - a.x() * b.z(),
-            a.x() * b.y() - a.y() * b.x());
-    }*/
-
-
-
-
-
-    struct _with_elements {} with_elements;
-    template <class T, size_t ... Ss>
-    class tensor : public tensor_base<tensor<T, Ss...>>,
-        public serializable<tensor<T, Ss ...>> {
-
+    template <class T>
+    class matrix_transpose : public tensor_base<matrix_transpose<T>> {
     public:
-        using value_type = T;
-        using shape_type = tensor_shape<size_t, const_size<Ss>...>;
+        using value_type = details::_element_t<T>;
+        constexpr explicit matrix_transpose(T && in) : _input(forward<T>(in)) {}
+        constexpr auto shape() const {
+            return make_shape(size_at(_input, const_index<1>()), size_at(_input, const_index<0>()));
+        }
+        using shape_type = decltype(make_shape(size_at(std::declval<T>(), const_index<1>()), size_at(std::declval<T>(), const_index<0>())));
+        template <class SubT1, class SubT2>
+        constexpr decltype(auto) at_subs(const SubT1 & s1, const SubT2 & s2) const {
+            return element_at(_input, s2, s1);
+        }
+    private:
+        T _input;
+    };
+
+    // shape_of
+    template <class T>
+    constexpr auto shape_of(const matrix_transpose<T> & m) {
+        return m.shape();
+    }
+    // element_at
+    template <class T, class SubT1, class SubT2>
+    constexpr decltype(auto) element_at(const matrix_transpose<T> & m, const SubT1 & s1, const SubT2 & s2) {
+        return m.at_subs(s1, s2);
+    }
+
+    template <class T>
+    constexpr auto transpose(T && t) {
+        static_assert(details::_shape_t<T>::rank == 2, "a matrix with rank 2 is required in transpose");
+        return matrix_transpose<T>(forward<T>(t));
+    }
+
+
+
+
+    // tensor_standard_base
+    constexpr struct _with_elements {} with_elements;
+    constexpr struct _with_iterators {} with_iterators;
+
+    template <class ShapeT, class ET, class T, bool StaticShape> class tensor_standard_base;
+    template <class ShapeT, class ET, class T>
+    class tensor_standard_base<ShapeT, ET, T, true> : public tensor_base<T> {
+    public:
+        using shape_type = ShapeT;
+        using value_type = ET;
+    public:
+        constexpr tensor_standard_base() {}
+        template <class ... EleTs>
+        constexpr tensor_standard_base(const shape_type & shape, const _with_elements &, EleTs && ... eles)
+            : _data{ {(value_type)forward<EleTs>(eles) ...} } {}
+        template <class IterT>
+        tensor_standard_base(const shape_type & shape, const _with_iterators &, IterT begin, IterT end) {
+            std::copy(begin, end, _data.begin());
+        }
+        
+        constexpr tensor_standard_base(const tensor_standard_base &) = default;
+        tensor_standard_base(tensor_standard_base &&) = default;
+        constexpr auto shape() const { return shape_type(); }
+        constexpr const auto & data() const { return _data; }
+        auto & data() { return _data; }
+    public:
+        template <class V>
+        decltype(auto) fields(V && visitor) {
+            return visitor(_data);
+        }
+        template <class V>
+        constexpr decltype(auto) fields(V && visitor) const {
+            return visitor(_data);
+        }
+    private:
+        std::array<value_type, shape_type::static_magnitude> _data;
+    };
+    template <class ShapeT, class ET, class T>
+    class tensor_standard_base<ShapeT, ET, T, false> : public tensor_base<T> {
+    public:
+        using shape_type = ShapeT;
+        using value_type = ET;
+    public:
+        constexpr tensor_standard_base() {}
+        template <class ... EleTs>
+        constexpr tensor_standard_base(const shape_type & shape, const _with_elements &, EleTs && ... eles)
+            : _shape(shape), _data({ (value_type)forward<EleTs>(eles) ... }) {}
+        template <class IterT>
+        tensor_standard_base(const shape_type & shape, const _with_iterators &, IterT begin, IterT end)
+            : _shape(shape), _data(begin, end){}
+
+        constexpr tensor_standard_base(const tensor_standard_base &) = default;
+        tensor_standard_base(tensor_standard_base &&) = default;
+        constexpr const auto & shape() const { return _shape; }
+        auto & shape() { return _shape; }
+        const auto & data() const { return _data; }
+        auto & data() { return _data; }
+    public:
+        template <class V>
+        decltype(auto) fields(V && visitor) {
+            return visitor(_shape, _data);
+        }
+        template <class V>
+        constexpr decltype(auto) fields(V && visitor) const {
+            return visitor(_shape, _data);
+        }
+    private:
+        shape_type _shape;
+        std::vector<value_type> _data;
+    };
+
+
+    namespace details {
+        template <class ShapeT, size_t ... Is>
+        constexpr ShapeT _make_shape_from_magnitude_seq(size_t magnitude, const_ints<size_t, Is...>) {
+            static_assert(ShapeT::dynamic_size_num == 1, "ShapeT::dynamic_size_num should be 1 here");
+            static_assert(ShapeT::last_dynamic_dim >= 0, "ShapeT::last_dynamic_dim is not valid");
+            return ShapeT(conditional(const_bool<Is == ShapeT::last_dynamic_dim>(), magnitude, std::ignore) ...);
+        }
+    }
+
+    template <class ET, class ShapeT>
+    class tensor : public tensor_standard_base<ShapeT, ET, tensor<ET, ShapeT>, ShapeT::is_static> {
+        using base_t = tensor_standard_base<ShapeT, ET, tensor<ET, ShapeT>, ShapeT::is_static>;
+    public:
+        using value_type = ET;
+        using shape_type = ShapeT;
 
         constexpr tensor() {}
 
+        template <class ... EleTs, class = std::enable_if_t<(ShapeT::dynamic_size_num == 0)>>
+        constexpr tensor(const _with_elements & we, EleTs && ... eles)
+            : base_t(ShapeT(), we, forward<EleTs>(eles) ... ) {}
+        
+        template <class ... EleTs, class = void, class = std::enable_if_t<(ShapeT::dynamic_size_num == 1)>>
+        constexpr tensor(const _with_elements & we, EleTs && ... eles)
+            : base_t(details::_make_shape_from_magnitude_seq<ShapeT>(sizeof...(EleTs), make_const_sequence(const_size<ShapeT::rank>())), 
+                we, forward<EleTs>(eles) ...) {}
+
         template <class ... EleTs>
-        constexpr tensor(const _with_elements &, EleTs && ... eles)
-            : _data{ { (T)forward<EleTs>(eles) ... } } {}
+        constexpr tensor(const ShapeT & shape, const _with_elements & we, EleTs && ... eles)
+            : base_t(shape, we, forward<EleTs>(eles) ...) {}
+        
+        template <class = std::enable_if_t<(ShapeT::dynamic_size_num == 0)>>
+        constexpr tensor(std::initializer_list<value_type> ilist)
+            : base_t(ShapeT(), with_iterators, ilist.begin(), ilist.end()) {}
+
+        template <class = void, class = std::enable_if_t<(ShapeT::dynamic_size_num == 1)>>
+        constexpr tensor(std::initializer_list<value_type> ilist)
+            : base_t(details::_make_shape_from_magnitude_seq<ShapeT>(ilist.size(), make_const_sequence(const_size<ShapeT::rank>())),
+                with_iterators, ilist.begin(), ilist.end()) {}
+
+        constexpr tensor(const ShapeT & shape, std::initializer_list<value_type> ilist)
+            : base_t(shape, with_iterators, ilist.begin(), ilist.end()) {}
+
+        template <class IterT, class = std::enable_if_t<(ShapeT::dynamic_size_num == 0)>>
+        constexpr tensor(IterT begin, IterT end)
+            : base_t(ShapeT(), with_iterators, begin, end) {}
+
+        template <class IterT, class = void, class = std::enable_if_t<(ShapeT::dynamic_size_num == 1)>>
+        constexpr tensor(IterT begin, IterT end)
+            : base_t(details::_make_shape_from_magnitude_seq<ShapeT>(std::distance(begin, end), make_const_sequence(const_size<ShapeT::rank>())),
+                with_iterators, begin, end) {}
+
+        template <class IterT>
+        constexpr tensor(const ShapeT & shape, IterT begin, IterT end)
+            : base_t(shape, with_iterators, begin, end) {}
+
+
 
         template <class AnotherT>
         constexpr tensor(const tensor_base<AnotherT> & another) {
@@ -452,88 +627,121 @@ namespace wheels {
             return *this;
         }
 
-    public:
-        constexpr auto shape() const {
-            return make_shape(const_size<Ss>() ...);
-        }
-        template <class ... SubTs>
-        constexpr const T & operator()(const SubTs & ... subs) const {
-            return _data[sub2ind(shape(), subs ...)];
-        }
-        template <class ... SubTs>
-        T & operator()(const SubTs & ... subs) {
-            return _data[sub2ind(shape(), subs ...)];
-        }
-        template <class IndexT>
-        constexpr const T & operator[](const IndexT & ind) const {
-            return _data[ind];
-        }
-        template <class IndexT>
-        T & operator[](const IndexT & ind) {
-            return _data[ind];
-        }
 
     public:
-        template <class V>
-        decltype(auto) fields(V && visitor) {
-            return visitor(_data);
+        constexpr decltype(auto) shape() const {
+            return base_t::shape();
         }
-        template <class V>
-        constexpr decltype(auto) fields(V && visitor) const {
-            return visitor(_data);
+        template <class ... SubTs>
+        constexpr decltype(auto) operator()(const SubTs & ... subs) const {
+            static_assert(sizeof...(SubTs) == ShapeT::rank, "invalid number of subscripts");
+            return base_t::data()[sub2ind(shape(), subs ...)];
         }
-
-    private:
-        std::array<T, shape_type::static_magnitude> _data;
+        template <class ... SubTs>
+        decltype(auto) operator()(const SubTs & ... subs) {
+            static_assert(sizeof...(SubTs) == ShapeT::rank, "invalid number of subscripts");
+            return base_t::data()[sub2ind(shape(), subs ...)];
+        }
+        template <class IndexT>
+        constexpr decltype(auto) operator[](const IndexT & ind) const {
+            return base_t::data()[ind];
+        }
+        template <class IndexT>
+        decltype(auto) operator[](const IndexT & ind) {
+            return base_t::data()[ind];
+        }
     };
 
 
+
     // necessary
-    template <class T, size_t ... Ss>
-    constexpr auto shape_of(const tensor<T, Ss ...> & t) {
+    template <class ET, class ShapeT>
+    constexpr auto shape_of(const tensor<ET, ShapeT> & t) {
         return t.shape();
     }
-    template <class T, size_t ... Ss, class ... SubTs>
-    constexpr const T & element_at(const tensor<T, Ss...> & t, const SubTs & ... subs) {
+    template <class ET, class ShapeT, class ... SubTs>
+    constexpr decltype(auto) element_at(const tensor<ET, ShapeT> & t, const SubTs & ... subs) {
         return t(subs ...);
     }
-    template <class T, size_t ... Ss, class ... SubTs>
-    T & element_at(tensor<T, Ss...> & t, const SubTs & ... subs) {
+    template <class ET, class ShapeT, class ... SubTs>
+    decltype(auto) element_at(tensor<ET, ShapeT> & t, const SubTs & ... subs) {
         return t(subs ...);
     }
 
     // auxiliary
-    template <class T, size_t ... Ss, class IndexT>
-    constexpr const T & element_at_index(const tensor<T, Ss...> & t, const IndexT & ind) {
+    template <class ET, class ShapeT, class IndexT>
+    constexpr decltype(auto) element_at_index(const tensor<ET, ShapeT> & t, const IndexT & ind) {
         return t[ind];
     }
-    template <class T, size_t ... Ss, class IndexT>
-    T & element_at_index(tensor<T, Ss...> & t, const IndexT & ind) {
+    template <class ET, class ShapeT, class IndexT>
+    decltype(auto) element_at_index(tensor<ET, ShapeT> & t, const IndexT & ind) {
         return t[ind];
     }
 
-    template <class T, size_t ... Ss, class ST, class ... SizeTs>
-    void reserve_shape(tensor<T, Ss...> & t, const tensor_shape<ST, SizeTs...> & shape) {
+    template <class ET, class ShapeT, class ST, class ... SizeTs>
+    void reserve_shape(tensor<ET, ShapeT> & t, const tensor_shape<ST, SizeTs...> & shape) {
         assert(t.shape() == shape);
     }
 
-    template <class FunT, class T, size_t ... Ss, class ... Ts>
-    void for_each_element(FunT && fun, const tensor<T, Ss...> & t, Ts && ... ts) {
+    template <class FunT, class ET, class ShapeT, class ... Ts>
+    void for_each_element(FunT && fun, const tensor<ET, ShapeT> & t, Ts && ... ts) {
         assert(all_same(shape_of(t), shape_of(ts) ...));
         for (size_t i = 0; i < numel(t); i++) {
             fun(element_at_index(t, i), element_at_index(ts, i), ...);
         }
     }
-    template <class FunT, class T, size_t ... Ss, class ... Ts>
-    void for_each_element(FunT && fun, tensor<T, Ss...> & t, Ts && ... ts) {
+    template <class FunT, class ET, class ShapeT, class ... Ts>
+    void for_each_element(FunT && fun, tensor<ET, ShapeT> & t, Ts && ... ts) {
         assert(all_same(shape_of(t), shape_of(ts) ...));
         for (size_t i = 0; i < numel(t); i++) {
             fun(element_at_index(t, i), element_at_index(ts, i) ...);
         }
     }
 
+    template <class FunT, class ET, class ShapeT, class ... Ts>
+    bool for_each_element_if(FunT && fun, const tensor<ET, ShapeT> & t, Ts && ... ts) {
+        assert(all_same(shape_of(t), shape_of(ts) ...));
+        for (size_t i = 0; i < numel(t); i++) {
+            if (!fun(element_at_index(t, i), element_at_index(ts, i), ...))
+                return false;
+        }
+        return true;
+    }
+    template <class FunT, class ET, class ShapeT, class ... Ts>
+    bool for_each_element_if(FunT && fun, tensor<ET, ShapeT> & t, Ts && ... ts) {
+        assert(all_same(shape_of(t), shape_of(ts) ...));
+        for (size_t i = 0; i < numel(t); i++) {
+            if (!fun(element_at_index(t, i), element_at_index(ts, i), ...))
+                return false;
+        }
+        return true;
+    }
 
+
+    template <class T, size_t N> using vec_ = tensor<T, tensor_shape<size_t, const_size<N>>>;
+    using vec2 = vec_<double, 2>;
+    using vec3 = vec_<double, 3>;
     
+    template <class T> using vecx_ = tensor<T, tensor_shape<size_t, size_t>>;
+    using vecx = vecx_<double>;
+
+    template <class T, size_t M, size_t N> using mat_ = tensor<T, tensor_shape<size_t, const_size<M>, const_size<N>>>;
+    using mat2 = mat_<double, 2, 2>;
+    using mat3 = mat_<double, 3, 3>;
+
+
+    // auto cross(ts1, ts2);
+    /*template <class A, class B>
+    constexpr auto cross(const A & a, const B & b) {
+    using result_t = std::common_type_t<details::_element_t<A>, details::_element_t<B>>;
+    return vec_<value_t, 3>(with_elements,
+    a.y() * b.z() - a.z() * b.y(),
+    a.z() * b.x() - a.x() * b.z(),
+    a.x() * b.y() - a.y() * b.x());
+    }*/
+
+
+
 
 
 }
