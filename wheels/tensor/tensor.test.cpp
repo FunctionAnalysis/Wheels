@@ -29,6 +29,9 @@ TEST(tensor, tensor) {
 
     vec3 v1(1, 2, 3);
 
-    
+    vecx vs(1, 2, 3, 4, 5);
+    ASSERT_TRUE(vs.numel() == 5);
+    tensor<tensor_shape<size_t, const_size<2>, size_t, const_size<2>>, double> ts(1, 2, 3, 4, 5, 6, 7, 8);
+    ASSERT_EQ(ts.numel(), 8);
 
 }

@@ -6,6 +6,8 @@
 #include <deque>
 #include <array>
 #include <utility>
+#include <random>
+#include <complex>
 
 #include "constants.hpp"
 #include "types.hpp"
@@ -29,7 +31,6 @@ namespace wheels {
 
     
     // empty classes -> nullptr_t
-    struct fields_category_empty {};
     template <class T, class U, class V, class = void, class = std::enable_if_t<
         !join_overloading<std::decay_t<T>, func_fields>::value &&
         std::is_empty<std::decay_t<T>>::value >>
@@ -40,7 +41,6 @@ namespace wheels {
 
 
     // tuple like types -> tuple
-    struct fields_category_tuple_like {};
     namespace details {
         template <class TupleT, class V, size_t ... Is>
         auto _fields_of_tuple_seq(TupleT && t, V && visitor, const const_ints<size_t, Is...> &) {
@@ -56,22 +56,21 @@ namespace wheels {
         }
     };
     template <class T1, class T2> 
-    constexpr auto category_for_overloading(const std::pair<T1, T2> &, const func_fields &) {
-        return types<fields_category_tuple_like>(); 
-    };
+    constexpr auto category_for_overloading(const std::pair<T1, T2> &, const func_fields &){
+        return fields_category_tuple_like();
+    }
     template <class T, size_t N> 
-    constexpr auto category_for_overloading(const std::array<T, N> &, const func_fields &) {
-        return types<fields_category_tuple_like>();
-    };
+    constexpr auto category_for_overloading(const std::array<T, N> &, const func_fields &){
+        return fields_category_tuple_like();
+    }
     template <class ... Ts> 
-    constexpr auto category_for_overloading(const std::tuple<Ts ...> &, const func_fields &) {
-        return types<fields_category_tuple_like>();
-    };
+    constexpr auto category_for_overloading(const std::tuple<Ts ...> &, const func_fields &){
+        return fields_category_tuple_like();
+    }
 
 
 
     // container types -> container_proxy
-    struct fields_category_container {};
     template <class ContT, class VisitorT>
     class container_proxy {
     public:
@@ -153,15 +152,15 @@ namespace wheels {
     };
     template <class T, class AllocT> 
     constexpr auto category_for_overloading(const std::vector<T, AllocT> &, const func_fields &) {
-        return types<fields_category_container>(); 
+        return fields_category_container(); 
     };
     template <class T, class AllocT>
     constexpr auto category_for_overloading(const std::list<T, AllocT> &, const func_fields &) {
-        return types<fields_category_container>();
+        return fields_category_container();
     };
     template <class T, class AllocT>
     constexpr auto category_for_overloading(const std::deque<T, AllocT> &, const func_fields &) {
-        return types<fields_category_container>();
+        return fields_category_container();
     };
 
 
@@ -348,7 +347,7 @@ namespace wheels {
         }
     };
     template <class FunT>
-    struct process_by_traverse /*: object_overloading<process_by_traverse<FunT>, member_op_paren>*/ {
+    struct process_by_traverse {
         constexpr process_by_traverse(FunT f) : fun(f) {}
         template <class ContT, class VisitorT>
         auto operator()(const container_proxy<ContT, VisitorT> & c) const {
@@ -372,27 +371,52 @@ namespace wheels {
         }
         FunT fun;
     };
-    /*template <class FunT, class T>
-    struct overloaded<member_op_paren, process_by_traverse<FunT>, T> {
-        template <class ProcessorT, class TT>
-        auto operator()(ProcessorT && pp, TT && tt) const {
-            pp.fun(forward<TT>(tt));
-            return nullptr;
-        }
-    };
-    template <class FunT, class ContT, class VisitorT>
-    struct overloaded<member_op_paren, process_by_traverse<FunT>, container_proxy<ContT, VisitorT>> {
-        template <class ProcessorT, class TT>
-        auto operator()(ProcessorT &&, TT && c) const {
-            for (auto it = c.begin(); it != c.end(); ++it) { *it; }
-            return nullptr;
-        }
-    };*/
-
     template <class T, class FunT>
     constexpr void traverse_elements(T && data, FunT fun) {
         make_field_visitor(pack_nothing(), process_by_traverse<FunT>(fun), visit_to_traverse())
             .visit(forward<T>(data));
+    }
+
+
+
+    // randomize_elements
+    template <class RNG>
+    struct element_randomizer {
+        RNG & rng;
+        constexpr element_randomizer(RNG & r) : rng(r) {}
+
+        template <class T>
+        std::enable_if_t<std::is_integral<T>::value> operator()(T & v) const {
+            const T minv = std::numeric_limits<T>::lowest();
+            const T maxv = std::numeric_limits<T>::max();
+            v = static_cast<T>(std::uniform_int_distribution<std::intmax_t>((std::intmax_t)minv, (std::intmax_t)maxv)(rng));
+        }
+        template <class T>
+        std::enable_if_t<std::is_integral<T>::value> operator()(std::complex<T> & v) const {
+            const T minv = std::numeric_limits<T>::lowest();
+            const T maxv = std::numeric_limits<T>::max();
+            std::uniform_int_distribution<std::intmax_t> dist((std::intmax_t)minv, (std::intmax_t)maxv);
+            v.real(static_cast<T>(dist(rng)));
+            v.imag(static_cast<T>(dist(rng)));
+        }
+        template <class T, class = void>
+        std::enable_if_t<std::is_floating_point<T>::value> operator()(T & v) const {
+            const T minv = T(-1.0);
+            const T maxv = T(1.0);
+            v = std::uniform_real_distribution<T>(minv, maxv)(rng);
+        }
+        template <class T, class = void>
+        std::enable_if_t<std::is_floating_point<T>::value> operator()(std::complex<T> & v) const {
+            const T minv = T(-1.0);
+            const T maxv = T(1.0);
+            std::uniform_real_distribution<T> dist(minv, maxv);
+            v.real(dist(rng));
+            v.imag(dist(rng));
+        }
+    };
+    template <class T, class RNG>
+    inline void randomize_elements(T & data, RNG & rng) {
+        traverse_elements(data, element_randomizer<RNG>(rng));
     }
 
 
@@ -422,6 +446,9 @@ namespace wheels {
         return make_field_visitor(pack_by_any(), process_by_any<CheckFunT>{checker}, visit_to_traverse())
             .visit(forward<T>(data));
     }
+
+
+
     // all_elements
     struct pack_by_all {
         template <class ... ArgTs>
@@ -463,7 +490,7 @@ namespace wheels {
     }
 
     // comparable
-    template <class T>
+    template <class T, class Kind = void>
     struct comparable {
         constexpr decltype(auto) as_tuple() const {
             static_assert(details::_has_func_fields_to_tuplize<const T &>::value,
@@ -474,28 +501,28 @@ namespace wheels {
         }
     };
 
-    template <class A, class B>
-    constexpr bool operator == (const comparable<A> & a, const comparable<B> & b) {
+    template <class A, class B, class Kind>
+    constexpr bool operator == (const comparable<A, Kind> & a, const comparable<B, Kind> & b) {
         return a.as_tuple() == b.as_tuple();
     }
-    template <class A, class B>
-    constexpr bool operator != (const comparable<A> & a, const comparable<B> & b) {
+    template <class A, class B, class Kind>
+    constexpr bool operator != (const comparable<A, Kind> & a, const comparable<B, Kind> & b) {
         return a.as_tuple() != b.as_tuple();
     }
-    template <class A, class B>
-    constexpr bool operator < (const comparable<A> & a, const comparable<B> & b) {
+    template <class A, class B, class Kind>
+    constexpr bool operator < (const comparable<A, Kind> & a, const comparable<B, Kind> & b) {
         return a.as_tuple() < b.as_tuple();
     }
-    template <class A, class B>
-    constexpr bool operator <= (const comparable<A> & a, const comparable<B> & b) {
+    template <class A, class B, class Kind>
+    constexpr bool operator <= (const comparable<A, Kind> & a, const comparable<B, Kind> & b) {
         return a.as_tuple() <= b.as_tuple();
     }
-    template <class A, class B>
-    constexpr bool operator > (const comparable<A> & a, const comparable<B> & b) {
+    template <class A, class B, class Kind>
+    constexpr bool operator > (const comparable<A, Kind> & a, const comparable<B, Kind> & b) {
         return a.as_tuple() > b.as_tuple();
     }
-    template <class A, class B>
-    constexpr bool operator >= (const comparable<A> & a, const comparable<B> & b) {
+    template <class A, class B, class Kind>
+    constexpr bool operator >= (const comparable<A, Kind> & a, const comparable<B, Kind> & b) {
         return a.as_tuple() >= b.as_tuple();
     }
 
@@ -515,13 +542,5 @@ namespace wheels {
             return static_cast<T &>(*this);
         }
     };
-
-
-
-
-
-    // randomizable
-
-
 
 }

@@ -5,6 +5,19 @@
 
 namespace wheels {
 
+
+    // category forward declarations for overloading
+    struct fields_category_tuple_like {};
+    struct fields_category_container {};
+
+    struct category_const_expr {};
+
+    template <class ShapeT, class EleT, class T> 
+    struct category_tensor {};
+
+
+
+
     // overload operators without losing any type information  
 
     // join_overloading
@@ -13,7 +26,7 @@ namespace wheels {
         struct _join_overloading {
             template <class TT, class OpTT>
             static constexpr auto test(int) -> decltype(
-                category_for_overloading(std::declval<TT>(), std::declval<OpTT>()), yes()) {
+                category_for_overloading(std::declval<const TT &>(), std::declval<const OpTT &>()), yes()) {
                 return yes();
             }
             template <class, class>
@@ -24,6 +37,8 @@ namespace wheels {
     template <class T, class OpT>
     struct join_overloading : const_bool<details::_join_overloading<T, OpT>::value> {};
 
+
+
     // category_for_overloading_t
     namespace details {
         template <class T, class OpT, 
@@ -33,8 +48,7 @@ namespace wheels {
         };
         template <class T, class OpT>
         struct _category_for_overloading_helper<T, OpT, true> {
-            using _t = decltype(category_for_overloading(std::declval<T>(), std::declval<OpT>()));
-            using type = typename _t::type;
+            using type = decltype(category_for_overloading(std::declval<const T &>(), std::declval<const OpT &>()));
         };
     }
     template <class T, class OpT>
@@ -48,7 +62,7 @@ namespace wheels {
     struct overloaded {
         constexpr overloaded() {}
         template <class ... ArgTs>
-        void operator()(ArgTs && ...) const {
+        int operator()(ArgTs && ...) const {
             static_assert(always<bool, false, ArgTs ...>::value,
                 "error: this overloaded operator/function is not implemented, "
                 "instantiate overloaded<...> to fix this.");
@@ -66,9 +80,9 @@ namespace wheels {
         } \
     }; \
     template <class T, \
-        class = std::enable_if_t<join_overloading<std::decay_t<T>, unary_op_##name>::value>> \
+        class = std::enable_if_t<join_overloading<T, unary_op_##name>::value>> \
     constexpr decltype(auto) operator op (T && v) { \
-        return overloaded<unary_op_##name, category_for_overloading_t<std::decay_t<T>, unary_op_##name>>()(forward<T>(v)); \
+        return overloaded<unary_op_##name, category_for_overloading_t<T, unary_op_##name>>()(forward<T>(v)); \
     }
 
     WHEELS_OVERLOAD_UNARY_OP(-, minus)
@@ -85,12 +99,12 @@ namespace wheels {
         } \
     }; \
     template <class T1, class T2, class = std::enable_if_t< \
-        join_overloading<std::decay_t<T1>, binary_op_##name>::value || \
-        join_overloading<std::decay_t<T2>, binary_op_##name>::value>> \
+        join_overloading<T1, binary_op_##name>::value || \
+        join_overloading<T2, binary_op_##name>::value>> \
     constexpr decltype(auto) operator op (T1 && v1, T2 && v2) { \
         return overloaded<binary_op_##name, \
-            category_for_overloading_t<std::decay_t<T1>, binary_op_##name>, \
-            category_for_overloading_t<std::decay_t<T2>, binary_op_##name> \
+            category_for_overloading_t<T1, binary_op_##name>, \
+            category_for_overloading_t<T2, binary_op_##name> \
         >()(forward<T1>(v1), forward<T2>(v2)); \
     }
 
@@ -125,11 +139,11 @@ namespace wheels {
         } \
     }; \
     template <class T, \
-        class = std::enable_if_t<join_overloading<std::decay_t<T>, func_##name>::value>, \
+        class = std::enable_if_t<join_overloading<T, func_##name>::value>, \
         class = void> \
     constexpr decltype(auto) name(T && f) { \
         return overloaded<func_##name, \
-            category_for_overloading_t<std::decay_t<T>, func_##name> \
+            category_for_overloading_t<T, func_##name> \
         >()(forward<T>(f)); \
     }
 
@@ -144,13 +158,13 @@ namespace wheels {
     }; \
     template <class T1, class T2, \
         class = std::enable_if_t<any( \
-            join_overloading<std::decay_t<T1>, func_##name>::value, \
-            join_overloading<std::decay_t<T2>, func_##name>::value)>, \
+            join_overloading<T1, func_##name>::value, \
+            join_overloading<T2, func_##name>::value)>, \
         class = void> \
     constexpr decltype(auto) name(T1 && t1, T2 && t2) { \
         return overloaded<func_##name, \
-            category_for_overloading_t<std::decay_t<T1>, func_##name>, \
-            category_for_overloading_t<std::decay_t<T2>, func_##name>\
+            category_for_overloading_t<T1, func_##name>, \
+            category_for_overloading_t<T2, func_##name>\
         >()(forward<T1>(t1), forward<T2>(t2)); \
     }
 
@@ -165,13 +179,13 @@ namespace wheels {
     }; \
     template <class FirstT, class ... RestTs, \
         class = std::enable_if_t<any( \
-            join_overloading<std::decay_t<FirstT>, func_##name>::value, \
-            join_overloading<std::decay_t<RestTs>, func_##name>::value ...)>, \
+            join_overloading<FirstT, func_##name>::value, \
+            join_overloading<RestTs, func_##name>::value ...)>, \
         class = void> \
     constexpr decltype(auto) name(FirstT && f, RestTs && ... rests) { \
         return overloaded<func_##name, \
-            category_for_overloading_t<std::decay_t<FirstT>, func_##name>, \
-            category_for_overloading_t<std::decay_t<RestTs>, func_##name> ...\
+            category_for_overloading_t<FirstT, func_##name>, \
+            category_for_overloading_t<RestTs, func_##name> ...\
         >()(forward<FirstT>(f), forward<RestTs>(rests) ...); \
     }
 

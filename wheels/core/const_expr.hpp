@@ -4,7 +4,6 @@
 
 namespace wheels {
 
-    struct category_const_expr {};
 
     // const_symbol
     template <size_t Idx>
@@ -18,7 +17,7 @@ namespace wheels {
 
     template <size_t Idx, class OpT>
     constexpr auto category_for_overloading(const const_symbol<Idx> &, const OpT &) {
-        return types<category_const_expr>();
+        return category_const_expr();
     };
 
     namespace literals {
@@ -52,7 +51,7 @@ namespace wheels {
 
     template <class T, class Op>
     constexpr auto category_for_overloading(const const_coeff<T> &, const Op &) {
-        return types<category_const_expr>();
+        return category_const_expr();
     };
 
     template <class T>
@@ -85,7 +84,7 @@ namespace wheels {
 
     template <class Op, class E, class OtherOp>
     constexpr auto category_for_overloading(const const_unary_op<Op, E> &, const OtherOp &) {
-        return types<category_const_expr>();
+        return category_const_expr();
     };
   
 
@@ -114,7 +113,7 @@ namespace wheels {
 
     template <class Op, class E1, class E2, class OtherOp>
     constexpr auto category_for_overloading(const const_binary_op<Op, E1, E2> &, const OtherOp &) {
-        return types<category_const_expr>();
+        return category_const_expr();
     };
 
 
@@ -137,8 +136,8 @@ namespace wheels {
         }
     };
 
-    template <class Op, class NotConstExprT>
-    struct overloaded<Op, category_const_expr, NotConstExprT> {
+    template <class Op>
+    struct overloaded<Op, category_const_expr, void> {
         constexpr overloaded() {}
         template <class TT1, class TT2>
         constexpr decltype(auto) operator()(TT1 && v1, TT2 && v2) const {
@@ -147,8 +146,8 @@ namespace wheels {
         }
     };
 
-    template <class Op, class NotConstExprT>
-    struct overloaded<Op, NotConstExprT, category_const_expr> {
+    template <class Op>
+    struct overloaded<Op, void, category_const_expr> {
         constexpr overloaded() {}
         template <class TT1, class TT2>
         constexpr decltype(auto) operator()(TT1 && v1, TT2 && v2) const {
