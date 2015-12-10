@@ -233,7 +233,7 @@ E reduce_elements(const T &t, E initial, ReduceT &&red) {
 template <class ShapeT, class ET, class T>
 ET norm_squared(const tensor_base<ShapeT, ET, T> &t) {
   ET result = 0.0;
-  for_each_element([&result](auto &&e) { result += e * e; }, t.derived());
+  for_each_nonzero_element([&result](auto &&e) { result += e * e; }, t.derived());
   return result;
 }
 
@@ -245,13 +245,13 @@ constexpr ET norm(const tensor_base<ShapeT, ET, T> &t) {
 
 // bool all(s)
 template <class ShapeT, class ET, class T>
-constexpr bool all(const tensor_base<ShapeT, ET, T> &t) {
+constexpr bool all_of(const tensor_base<ShapeT, ET, T> &t) {
   return for_each_element_if([](auto &&e) { return !!e; });
 }
 
 // bool any(s)
 template <class ShapeT, class ET, class T>
-constexpr bool any(const tensor_base<ShapeT, ET, T> &t) {
+constexpr bool any_of(const tensor_base<ShapeT, ET, T> &t) {
   return !for_each_element_if([](auto &&e) { return !e; });
 }
 
