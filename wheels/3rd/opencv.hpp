@@ -4,6 +4,7 @@
 
 namespace cv {
 
+
     // MUST be defined in the namespace of the underlying type (cv::XXX), 
     //    definition of alias names in namespace pano::core won't work!
     // see http://stackoverflow.com/questions/13192947/argument-dependent-name-lookup-and-typedef
@@ -11,6 +12,7 @@ namespace cv {
     // Serialization for cv::Mat
     template <class Archive>
     void save(Archive & ar, Mat const & im) {
+        //cv::solve(im);
         ar(im.elemSize(), im.type(), im.cols, im.rows);
         ar(cereal::binary_data(im.data, im.cols * im.rows * im.elemSize()));
     }
