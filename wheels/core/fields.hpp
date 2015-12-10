@@ -17,17 +17,6 @@
 namespace wheels {
 
 // fields
-struct func_fields {};
-
-template <class T, class U, class V, class = std::enable_if_t<join_overloading<
-                                         std::decay_t<T>, func_fields>::value>>
-constexpr decltype(auto) fields(T &&t, U &&usage, V &&visitor) {
-  return overloaded<func_fields,
-                    category_for_overloading_t<std::decay_t<T>, func_fields>,
-                    std::decay_t<U>, std::decay_t<V>>()(
-      forward<T>(t), forward<U>(usage), forward<V>(visitor));
-}
-
 // empty classes -> nullptr_t
 template <class T, class U, class V, class = void,
           class = std::enable_if_t<
@@ -348,7 +337,7 @@ constexpr auto make_field_visitor(PP &&pack, RR &&proc, UU &&usage) {
       forward<PP>(pack), forward<RR>(proc), forward<UU>(usage));
 }
 
-// tuplize
+struct visit_to_tuplize {};
 struct pack_as_tuple {
   template <class ContT, class VisitorT>
   constexpr auto operator()(container_proxy<ContT, VisitorT> &&c) const {
@@ -364,7 +353,8 @@ struct process_direct_pass {
     return static_cast<ArgT &&>(arg);
   }
 };
-struct visit_to_tuplize {};
+
+// tuplize
 template <class T> constexpr auto tuplize(T &&data) {
   return make_field_visitor(pack_as_tuple(), process_direct_pass(),
                             visit_to_tuplize())
@@ -373,7 +363,7 @@ template <class T> constexpr auto tuplize(T &&data) {
 using tuplizer =
     field_visitor<pack_as_tuple, process_direct_pass, visit_to_tuplize>;
 
-// traverse_elements
+// traverse_fields
 struct visit_to_traverse {};
 struct pack_nothing {
   template <class... ArgTs> constexpr auto operator()(ArgTs &&... args) const {
@@ -410,16 +400,16 @@ template <class FunT> struct process_by_traverse {
   FunT fun;
 };
 template <class T, class FunT>
-constexpr void traverse_elements(T &&data, FunT fun) {
+constexpr void traverse_fields(T &&data, FunT fun) {
   make_field_visitor(pack_nothing(), process_by_traverse<FunT>(fun),
                      visit_to_traverse())
       .visit(forward<T>(data));
 }
 
-// randomize_elements
-template <class RNG> struct element_randomizer {
+// randomize_fields
+template <class RNG> struct randomizer {
   RNG &rng;
-  constexpr element_randomizer(RNG &r) : rng(r) {}
+  constexpr randomizer(RNG &r) : rng(r) {}
 
   template <class T>
   std::enable_if_t<std::is_integral<T>::value> operator()(T &v) const {
@@ -455,11 +445,11 @@ template <class RNG> struct element_randomizer {
   }
 };
 template <class T, class RNG>
-inline void randomize_elements(T &data, RNG &rng) {
-  traverse_elements(data, element_randomizer<RNG>(rng));
+inline void randomize_fields(T &data, RNG &rng) {
+  traverse_fields(data, randomizer<RNG>(rng));
 }
 
-// any_elements
+
 struct pack_by_any {
   template <class... ArgTs> constexpr bool operator()(ArgTs &&... args) const {
     return any(forward<ArgTs>(args)...);
@@ -468,27 +458,36 @@ struct pack_by_any {
 template <class CheckFunT> struct process_by_any {
   template <class ContT, class VisitorT>
   constexpr bool operator()(const container_proxy<ContT, VisitorT> &c) const {
-    return std::any_of(c.begin(), c.end(), [](auto &&e) { return e; });
+    return std::any_of(c.begin(), c.end(), [](auto &&e) { return !!e; });
   }
   template <class ArgT> constexpr bool operator()(const ArgT &arg) const {
     return checker(arg);
   }
   CheckFunT checker;
 };
+
+// any_of_fields
 template <class T, class CheckFunT>
-constexpr bool any_elements(T &&data, CheckFunT checker) {
+constexpr bool any_of_fields(T &&data, CheckFunT checker) {
   return make_field_visitor(pack_by_any(), process_by_any<CheckFunT>{checker},
                             visit_to_traverse())
       .visit(forward<T>(data));
 }
 
-// all_elements
+// none_of_fields
+template <class T, class CheckFunT>
+constexpr bool none_of_fields(T &&data, CheckFunT checker) {
+  return !any_of_fields(forward<T>(data), checker);
+}
+
+// all_of_fields
 struct pack_by_all {
   template <class... ArgTs>
   constexpr decltype(auto) operator()(ArgTs &&... args) const {
     return all(forward<ArgTs>(args)...);
   }
 };
+
 template <class CheckFunT> struct process_by_all {
   template <class ContT, class VisitorT>
   constexpr bool operator()(const container_proxy<ContT, VisitorT> &c) const {
@@ -499,12 +498,15 @@ template <class CheckFunT> struct process_by_all {
   }
   CheckFunT checker;
 };
+
+// all_of_fields
 template <class T, class CheckFunT>
-constexpr bool all_elements(T &&data, CheckFunT checker) {
+constexpr bool all_of_fields(T &&data, CheckFunT checker) {
   return make_field_visitor(pack_by_all(), process_by_all<CheckFunT>{checker},
                             visit_to_traverse())
       .visit(forward<T>(data));
 }
+
 
 namespace details {
 template <class T> struct _has_func_fields_to_tuplize {

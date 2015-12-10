@@ -7,7 +7,7 @@
 
 using namespace wheels;
 
-TEST(math, tensor_shape) {
+TEST(tensor, shape) {
 
   using namespace wheels::literals;
 

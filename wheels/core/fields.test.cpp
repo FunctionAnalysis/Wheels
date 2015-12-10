@@ -174,17 +174,17 @@ struct PP {
 
 TEST(core, fields6) {
   std::vector<Z> zs(2);
-  traverse_elements(zs, [](auto &e) { e = 0; });
-  ASSERT_TRUE(!any_elements(zs, [](auto &&e) { return e != 0; }));
-  ASSERT_TRUE(all_elements(zs, [](auto &&e) { return e == 0; }));
-  traverse_elements(zs, [](auto &e) { e = 1; });
-  ASSERT_TRUE(!any_elements(zs, [](auto &&e) { return e != 1; }));
-  ASSERT_TRUE(all_elements(zs, [](auto &&e) { return e == 1; }));
+  traverse_fields(zs, [](auto &e) { e = 0; });
+  ASSERT_TRUE(!any_of_fields(zs, [](auto &&e) { return e != 0; }));
+  ASSERT_TRUE(all_of_fields(zs, [](auto &&e) { return e == 0; }));
+  traverse_fields(zs, [](auto &e) { e = 1; });
+  ASSERT_TRUE(!any_of_fields(zs, [](auto &&e) { return e != 1; }));
+  ASSERT_TRUE(all_of_fields(zs, [](auto &&e) { return e == 1; }));
 }
 
 TEST(core, fields7) {
   int data[2][3][4];
   std::default_random_engine rng;
-  randomize_elements(data, rng);
+  randomize_fields(data, rng);
   ASSERT_TRUE(tuplize(data) == tuplize(data));
 }

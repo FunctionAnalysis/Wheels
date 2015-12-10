@@ -13,6 +13,7 @@
 namespace wheels {
 
 // base of all tensor types
+// tensor_core
 template <class T> struct tensor_core {
   const tensor_core &core() const { return *this; }
   constexpr const T &derived() const { return static_cast<const T &>(*this); }
@@ -50,6 +51,7 @@ template <class T> struct tensor_core {
 
 template <class ShapeT, class ET> class tensor;
 
+// tensor_base
 template <class ShapeT, class ET, class T> struct tensor_base : tensor_core<T> {
   using shape_type = ShapeT;
   static constexpr size_t rank = ShapeT::rank;
@@ -122,11 +124,10 @@ struct tensor_base<tensor_shape<ST, MT, NT>, ET, T> : tensor_core<T> {
 };
 
 // category_for_overloading
-// except fields(...) and (t1 * t2)
-template <class ShapeT, class ET, class T, class OpT,
-          class = std::enable_if_t<!std::is_same<OpT, func_fields>::value>>
+// except fields(...)
+template <class ShapeT, class ET, class T, class OpT>
 constexpr auto category_for_overloading(const tensor_base<ShapeT, ET, T> &,
-                                        const OpT &) {
+                                        const common_func<OpT> &) {
   return category_tensor<ShapeT, ET, T>();
 }
 
@@ -180,7 +181,7 @@ template <class T, class ST, class... SizeTs>
 void reserve_shape(tensor_core<T> &, const tensor_shape<ST, SizeTs...> &shape) {
 }
 
-// void for_each_element(ts, functor);
+// for_each_element
 template <class FunT, class T, class... Ts>
 void for_each_element(FunT &&fun, T &&t, Ts &&... ts) {
   assert(all_same(shape_of(t), shape_of(ts)...));
@@ -189,12 +190,24 @@ void for_each_element(FunT &&fun, T &&t, Ts &&... ts) {
   });
 }
 
-// void for_each_element_util(ts, functor);
+// for_each_element_if
 template <class FunT, class T, class... Ts>
 bool for_each_element_if(FunT &&fun, T &&t, Ts &&... ts) {
   assert(all_same(shape_of(t), shape_of(ts)...));
   for_each_subscript_if(shape_of(t), [&](auto &&... subs) {
     return fun(element_at(t, subs...), element_at(ts, subs...)...);
+  });
+}
+
+// for_each_nonzero_element
+template <class FunT, class T, class... Ts>
+void for_each_nonzero_element(FunT &&fun, T &&t, Ts &&... ts) {
+  assert(all_same(shape_of(t), shape_of(ts)...));
+  for_each_subscript(shape_of(t), [&](auto &&... subs) {
+    decltype(auto) e = element_at(t, subs...);
+    if (e) {
+      fun(e, element_at(ts, subs...)...);
+    }
   });
 }
 
@@ -204,7 +217,7 @@ template <class To, class From> void assign_elements(To &to, const From &from) {
   if (shape_of(to) != s) {
     reserve_shape(to, s);
   }
-  for_each_element([](auto &to_e, const auto &from_e) { to_e = from_e; }, to,
+  for_each_element([](auto &to_e, const auto from_e) { to_e = from_e; }, to,
                    from);
 }
 
@@ -276,12 +289,14 @@ make_ewise_op_result(OpT op, InputT &&input, InputTs &&... inputs) {
   return ewise_op_result<ShapeT, ET, OpT, InputT, InputTs...>(
       op, forward<InputT>(input), forward<InputTs>(inputs)...);
 }
+
 // shape_of
 template <class ShapeT, class EleT, class OpT, class InputT, class... InputTs>
 constexpr ShapeT
 shape_of(const ewise_op_result<ShapeT, EleT, OpT, InputT, InputTs...> &ts) {
   return shape_of(std::get<0>(ts.inputs));
 }
+
 // element_at
 namespace details {
 template <class EwiseOpResultT, size_t... Is, class... SubTs>
@@ -300,6 +315,7 @@ element_at(const ewise_op_result<ShapeT, EleT, OpT, InputT, InputTs...> &ts,
   return details::_element_at_ewise_op_result_seq(
       ts, make_const_sequence_for<InputT, InputTs...>(), subs...);
 }
+
 // shortcuts
 namespace details {
 template <class EwiseOpResultT, size_t... Is, class IndexT>
@@ -334,6 +350,7 @@ struct overloaded<OpT, category_tensor<ShapeT, EleT, T>,
                                                forward<TTs>(ts)...);
   }
 };
+
 template <class ShapeT, class EleT, class T, class ShapeT2, class EleT2,
           class T2>
 struct overloaded<binary_op_mul, category_tensor<ShapeT, EleT, T>,
@@ -857,7 +874,26 @@ void for_each_element(FunT &&fun, tensor<ShapeT, ET> &t, Ts &&... ts) {
     fun(element_at_index(t, i), element_at_index(ts, i)...);
   }
 }
-
+template <class FunT, class ET, class ShapeT, class... Ts>
+void for_each_nonzero_element(FunT &&fun, const tensor<ShapeT, ET> &t, Ts &&... ts) {
+  assert(all_same(shape_of(t), shape_of(ts)...));
+  for (size_t i = 0; i < numel(t); i++) {
+    decltype(auto) e = element_at_index(t, i);
+    if (e) {
+      fun(e, element_at_index(ts, i)...);
+    }
+  }
+}
+template <class FunT, class ET, class ShapeT, class... Ts>
+void for_each_nonzero_element(FunT &&fun, tensor<ShapeT, ET> &t, Ts &&... ts) {
+  assert(all_same(shape_of(t), shape_of(ts)...));
+  for (size_t i = 0; i < numel(t); i++) {
+    decltype(auto) e = element_at_index(t, i);
+    if (e) {
+      fun(e, element_at_index(ts, i)...);
+    }
+  }
+}
 template <class FunT, class ET, class ShapeT, class... Ts>
 bool for_each_element_if(FunT &&fun, const tensor<ShapeT, ET> &t, Ts &&... ts) {
   assert(all_same(shape_of(t), shape_of(ts)...));
@@ -876,6 +912,8 @@ bool for_each_element_if(FunT &&fun, tensor<ShapeT, ET> &t, Ts &&... ts) {
   }
   return true;
 }
+
+
 
 template <class T, size_t N>
 using vec_ = tensor<tensor_shape<size_t, const_size<N>>, T>;

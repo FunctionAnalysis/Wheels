@@ -14,7 +14,7 @@ template <size_t Idx> struct const_symbol {
 
 template <size_t Idx, class OpT>
 constexpr auto category_for_overloading(const const_symbol<Idx> &,
-                                        const OpT &) {
+                                        const common_func<OpT> &) {
   return category_const_expr();
 };
 
@@ -39,7 +39,7 @@ template <class T> struct const_coeff {
 };
 
 template <class T, class Op>
-constexpr auto category_for_overloading(const const_coeff<T> &, const Op &) {
+constexpr auto category_for_overloading(const const_coeff<T> &, const common_func<Op> &) {
   return category_const_expr();
 };
 
@@ -68,7 +68,7 @@ template <class Op, class E> struct const_unary_op {
 
 template <class Op, class E, class OtherOp>
 constexpr auto category_for_overloading(const const_unary_op<Op, E> &,
-                                        const OtherOp &) {
+                                        const common_func<OtherOp> &) {
   return category_const_expr();
 };
 
@@ -93,7 +93,7 @@ template <class Op, class E1, class E2> struct const_binary_op {
 
 template <class Op, class E1, class E2, class OtherOp>
 constexpr auto category_for_overloading(const const_binary_op<Op, E1, E2> &,
-                                        const OtherOp &) {
+                                        const common_func<OtherOp> &) {
   return category_const_expr();
 };
 

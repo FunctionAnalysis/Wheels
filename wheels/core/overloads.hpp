@@ -63,20 +63,13 @@ template <class OpT, class... ArgInfoTs> struct overloaded {
   }
 };
 
-// ewise
-template <class OpT> struct func_ewise {
-  constexpr func_ewise() : op() {}
-  constexpr explicit func_ewise(const OpT &o) : op(o) {}
-  template <class... ArgTs>
-  constexpr decltype(auto) operator()(ArgTs &&... args) const {
-    return op(forward<ArgTs>(args)...);
-  }
-  template <class ArcT> void serialize(ArcT &ar) { ar(op); }
-  OpT op;
+// common_func
+template <class OpT> struct common_func {
+  const OpT &derived() const { return static_cast<const OpT &>(*this); }
 };
 
 #define WHEELS_OVERLOAD_UNARY_OP(op, name)                                     \
-  struct unary_op_##name {                                                     \
+  struct unary_op_##name : common_func<unary_op_##name> {                      \
     constexpr unary_op_##name() {}                                             \
     template <class TT> constexpr decltype(auto) operator()(TT &&v) const {    \
       return (op forward<TT>(v));                                              \
@@ -96,7 +89,7 @@ WHEELS_OVERLOAD_UNARY_OP(!, not)
 WHEELS_OVERLOAD_UNARY_OP(~, bitwise_not)
 
 #define WHEELS_OVERLOAD_BINARY_OP(op, name)                                    \
-  struct binary_op_##name {                                                    \
+  struct binary_op_##name : common_func<binary_op_##name> {                    \
     constexpr binary_op_##name() {}                                            \
     template <class TT1, class TT2>                                            \
     constexpr decltype(auto) operator()(TT1 &&v1, TT2 &&v2) const {            \
@@ -133,8 +126,8 @@ WHEELS_OVERLOAD_BINARY_OP(&, bitwise_and)
 WHEELS_OVERLOAD_BINARY_OP(|, bitwise_or)
 WHEELS_OVERLOAD_BINARY_OP (^, bitwise_xor)
 
-#define WHEELS_OVERLOAD_UNARY_FUNC(name)                                       \
-  struct func_##name {                                                         \
+#define WHEELS_OVERLOAD_STD_UNARY_FUNC(name)                                   \
+  struct func_##name : common_func<func_##name> {                              \
     constexpr func_##name() {}                                                 \
     template <class ArgT>                                                      \
     constexpr decltype(auto) operator()(ArgT &&v) const {                      \
@@ -151,8 +144,8 @@ WHEELS_OVERLOAD_BINARY_OP (^, bitwise_xor)
         forward<T>(f));                                                        \
   }
 
-#define WHEELS_OVERLOAD_BINARY_FUNC(name)                                      \
-  struct func_##name {                                                         \
+#define WHEELS_OVERLOAD_STD_BINARY_FUNC(name)                                  \
+  struct func_##name : common_func<func_##name> {                              \
     constexpr func_##name() {}                                                 \
     template <class ArgT1, class ArgT2>                                        \
     constexpr decltype(auto) operator()(ArgT1 &&v1, ArgT2 &&v2) const {        \
@@ -172,8 +165,8 @@ WHEELS_OVERLOAD_BINARY_OP (^, bitwise_xor)
         forward<T1>(t1), forward<T2>(t2));                                     \
   }
 
-#define WHEELS_OVERLOAD_FUNC(name)                                             \
-  struct func_##name {                                                         \
+#define WHEELS_OVERLOAD_STD_FUNC(name)                                         \
+  struct func_##name : common_func<func_##name> {                              \
     constexpr func_##name() {}                                                 \
     template <class... ArgTs>                                                  \
     constexpr decltype(auto) operator()(ArgTs &&... vs) const {                \
@@ -193,42 +186,49 @@ WHEELS_OVERLOAD_BINARY_OP (^, bitwise_xor)
         forward<FirstT>(f), forward<RestTs>(rests)...);                        \
   }
 
-WHEELS_OVERLOAD_UNARY_FUNC(sin)
-WHEELS_OVERLOAD_UNARY_FUNC(sinh)
-WHEELS_OVERLOAD_UNARY_FUNC(asin)
-WHEELS_OVERLOAD_UNARY_FUNC(asinh)
-WHEELS_OVERLOAD_UNARY_FUNC(cos)
-WHEELS_OVERLOAD_UNARY_FUNC(cosh)
-WHEELS_OVERLOAD_UNARY_FUNC(acos)
-WHEELS_OVERLOAD_UNARY_FUNC(acosh)
-WHEELS_OVERLOAD_UNARY_FUNC(tan)
-WHEELS_OVERLOAD_UNARY_FUNC(tanh)
-WHEELS_OVERLOAD_UNARY_FUNC(atan)
-WHEELS_OVERLOAD_UNARY_FUNC(atanh)
-WHEELS_OVERLOAD_UNARY_FUNC(log)
-WHEELS_OVERLOAD_UNARY_FUNC(log2)
-WHEELS_OVERLOAD_UNARY_FUNC(log10)
-WHEELS_OVERLOAD_UNARY_FUNC(exp)
-WHEELS_OVERLOAD_UNARY_FUNC(exp2)
-WHEELS_OVERLOAD_UNARY_FUNC(ceil)
-WHEELS_OVERLOAD_UNARY_FUNC(floor)
-WHEELS_OVERLOAD_UNARY_FUNC(round)
-WHEELS_OVERLOAD_UNARY_FUNC(isinf)
-WHEELS_OVERLOAD_UNARY_FUNC(isfinite)
-WHEELS_OVERLOAD_UNARY_FUNC(isnan)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(sin)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(sinh)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(asin)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(asinh)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(cos)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(cosh)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(acos)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(acosh)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(tan)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(tanh)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(atan)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(atanh)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(log)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(log2)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(log10)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(exp)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(exp2)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(ceil)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(floor)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(round)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(isinf)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(isfinite)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(isnan)
 
-WHEELS_OVERLOAD_BINARY_FUNC(atan2)
-WHEELS_OVERLOAD_BINARY_FUNC(pow)
-WHEELS_OVERLOAD_BINARY_FUNC(min)
-WHEELS_OVERLOAD_BINARY_FUNC(max)
+WHEELS_OVERLOAD_STD_BINARY_FUNC(atan2)
+WHEELS_OVERLOAD_STD_BINARY_FUNC(pow)
+WHEELS_OVERLOAD_STD_BINARY_FUNC(min)
+WHEELS_OVERLOAD_STD_BINARY_FUNC(max)
+
+
 
 // object_overloading
 template <class DerivedT, class OpT> struct object_overloading {};
 template <class DerivedT, class... OpTs>
 struct object_overloadings : object_overloading<DerivedT, OpTs>... {};
 
+// member_func
+template <class OpT> struct member_func {
+  const OpT &derived() const { return static_cast<const OpT &>(*this); }
+};
+
 #define WHEELS_OVERLOAD_MEMBER_UNARY_OP(op1, op2, op3, opsymbol, name)         \
-  struct member_op_##name {                                                    \
+  struct member_op_##name : member_func<member_op_##name> {                    \
     constexpr member_op_##name() {}                                            \
     template <class CallerT, class ArgT>                                       \
     constexpr decltype(auto) operator()(CallerT &&caller, ArgT &&arg) const {  \
@@ -276,7 +276,7 @@ WHEELS_OVERLOAD_MEMBER_UNARY_OP(, /=, , /=, div_equal)
 WHEELS_OVERLOAD_MEMBER_UNARY_OP(, =, , =, assign)
 
 #define WHEELS_OVERLOAD_MEMBER_VARARG_OP(op1, op2, op3, opsymbol, name)        \
-  struct member_op_##name {                                                    \
+  struct member_op_##name : member_func<member_op_##name> {                    \
     constexpr member_op_##name() {}                                            \
     template <class CallerT, class... ArgTs>                                   \
     constexpr decltype(auto) operator()(CallerT &&caller,                      \
@@ -320,4 +320,21 @@ WHEELS_OVERLOAD_MEMBER_UNARY_OP(, =, , =, assign)
 #define WHEELS_SYMBOL_RIGHT_PAREN )
 WHEELS_OVERLOAD_MEMBER_VARARG_OP(, WHEELS_SYMBOL_LEFT_PAREN,
                                  WHEELS_SYMBOL_RIGHT_PAREN, (), paren)
+
+// other functors
+// func_fields
+struct func_fields {
+  template <class T, class U, class V>
+  decltype(auto) operator()(T &&t, U &&u, V &&v) const {
+    return fields(forward<T>(t), forward<U>(u), forward<V>(v));
+  }
+};
+template <class T, class U, class V, class = std::enable_if_t<join_overloading<
+                                         std::decay_t<T>, func_fields>::value>>
+constexpr decltype(auto) fields(T &&t, U &&usage, V &&visitor) {
+  return overloaded<func_fields,
+                    category_for_overloading_t<std::decay_t<T>, func_fields>,
+                    std::decay_t<U>, std::decay_t<V>>()(
+      forward<T>(t), forward<U>(usage), forward<V>(visitor));
+}
 }
