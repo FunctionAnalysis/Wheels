@@ -132,4 +132,63 @@ template <class T, class ArcT, wheels_distinguish_3,
 void load(ArcT &arc, serializable<T> &data) {
   ::wheels::fields(static_cast<T &>(data), arc);
 }
+
+
+
+
+
+using namespace std::experimental;
+
+// write
+template <class ArchiveT = cereal::PortableBinaryOutputArchive, class... T>
+inline bool write(const filesystem::path &filename, const T &... data) {
+  std::ofstream out(filename, std::ios::binary);
+  if (!out.is_open()) {
+    ws::println("file \"", filename, "\" cannot be saved!");
+    return false;
+  }
+  try {
+    ArchiveT archive(out);
+    archive(data...);
+    ws::println("file \"", filename, "\" saved");
+    out.close();
+  } catch (std::exception &e) {
+    ws::println(e.what());
+    return false;
+  }
+  return true;
+}
+// write_tmp
+template <class ArchiveT = cereal::PortableBinaryOutputArchive, class... T>
+inline bool write_tmp(const filesystem::path &filename,
+                              const T &... data) {
+  return write<ArchiveT>(filesystem::temp_directory_path() / filename, data...);
+}
+
+// read
+template <class ArchiveT = cereal::PortableBinaryInputArchive, class... T>
+inline bool read(const filesystem::path &filename, T &... data) {
+  std::ifstream in(filename, std::ios::binary);
+  if (!in.is_open()) {
+    ws::println("file \"", filename, "\" cannot be loaded!");
+    return false;
+  }
+  try {
+    ArchiveT archive(in);
+    archive(data...);
+    ws::println("file \"", filename, "\" loaded");
+    in.close();
+  } catch (std::exception &e) {
+    ws::println(e.what());
+    return false;
+  }
+  return true;
+}
+
+// read_tmp
+template <class ArchiveT = cereal::PortableBinaryInputArchive, class... T>
+inline bool read_tmp(const filesystem::path &filename, T &... data) {
+  return read<ArchiveT>(filesystem::temp_directory_path() / filename,
+              data...);
+}
 }

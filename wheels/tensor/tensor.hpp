@@ -12,6 +12,8 @@
 
 namespace wheels {
 
+template <class ShapeT, class EleT, class T> struct category_tensor {};
+
 // base of all tensor types
 // tensor_core
 template <class T> struct tensor_core {
@@ -233,7 +235,8 @@ E reduce_elements(const T &t, E initial, ReduceT &&red) {
 template <class ShapeT, class ET, class T>
 ET norm_squared(const tensor_base<ShapeT, ET, T> &t) {
   ET result = 0.0;
-  for_each_nonzero_element([&result](auto &&e) { result += e * e; }, t.derived());
+  for_each_nonzero_element([&result](auto &&e) { result += e * e; },
+                           t.derived());
   return result;
 }
 
@@ -637,6 +640,11 @@ public:
   constexpr tensor_storage()
       : _data(details::_init_std_array<value_type,
                                        shape_type::static_magnitude>()) {}
+  constexpr tensor_storage(const shape_type &s)
+      : _data(details::_init_std_array<value_type,
+                                       shape_type::static_magnitude>()) {
+    assert(s.magnitude() == _data.size());
+  }
   template <class... EleTs>
   constexpr tensor_storage(const shape_type &shape, const _with_elements &,
                            EleTs &&... eles)
@@ -677,14 +685,20 @@ public:
 
 public:
   constexpr tensor_storage() {}
+  constexpr tensor_storage(const shape_type &shape)
+      : _shape(shape), _data(shape.magnitude()) {}
   template <class... EleTs>
   constexpr tensor_storage(const shape_type &shape, const _with_elements &,
                            EleTs &&... eles)
-      : _shape(shape), _data({(value_type)forward<EleTs>(eles)...}) {}
+      : _shape(shape), _data({(value_type)forward<EleTs>(eles)...}) {
+    _data.resize(_shape.magnitude());
+  }
   template <class IterT>
   tensor_storage(const shape_type &shape, const _with_iterators &, IterT begin,
                  IterT end)
-      : _shape(shape), _data(begin, end) {}
+      : _shape(shape), _data(begin, end) {
+    _data.resize(_shape.magnitude());
+  }
 
   constexpr tensor_storage(const tensor_storage &) = default;
   tensor_storage(tensor_storage &&) = default;
@@ -692,7 +706,10 @@ public:
   tensor_storage &operator=(tensor_storage &&) = default;
 
   constexpr const auto &shape() const { return _shape; }
-  auto &shape() { return _shape; }
+  template <class ShapeT2> void set_shape(const ShapeT2 &s) {
+    _shape = s;
+    _data.resize(_shape.magnitude());
+  }
   const auto &data() const { return _data; }
   auto &data() { return _data; }
 
@@ -756,6 +773,8 @@ public:
   constexpr tensor(const ShapeT &shape, const _with_elements &we,
                    EleTs &&... eles)
       : base_t(shape, we, forward<EleTs>(eles)...) {}
+
+  constexpr tensor(const ShapeT &shape) : base_t(shape) {}
 
   template <class = std::enable_if_t<(ShapeT::dynamic_size_num == 0)>>
   constexpr tensor(std::initializer_list<value_type> ilist)
@@ -854,10 +873,15 @@ decltype(auto) element_at_index(tensor<ShapeT, ET> &t, const IndexT &ind) {
   return t[ind];
 }
 
-template <class ET, class ShapeT, class ST, class... SizeTs>
-void reserve_shape(tensor<ShapeT, ET> &t,
+template <class ET, class ShapeT, class T, class ST, class... SizeTs>
+void reserve_shape(tensor_storage<ShapeT, ET, T, true> &t,
                    const tensor_shape<ST, SizeTs...> &shape) {
   assert(t.shape() == shape);
+}
+template <class ET, class ShapeT, class T, class ST, class... SizeTs>
+void reserve_shape(tensor_storage<ShapeT, ET, T, false> &t,
+                   const tensor_shape<ST, SizeTs...> &shape) {
+  t.set_shape(shape);
 }
 
 template <class FunT, class ET, class ShapeT, class... Ts>
@@ -875,7 +899,8 @@ void for_each_element(FunT &&fun, tensor<ShapeT, ET> &t, Ts &&... ts) {
   }
 }
 template <class FunT, class ET, class ShapeT, class... Ts>
-void for_each_nonzero_element(FunT &&fun, const tensor<ShapeT, ET> &t, Ts &&... ts) {
+void for_each_nonzero_element(FunT &&fun, const tensor<ShapeT, ET> &t,
+                              Ts &&... ts) {
   assert(all_same(shape_of(t), shape_of(ts)...));
   for (size_t i = 0; i < numel(t); i++) {
     decltype(auto) e = element_at_index(t, i);
@@ -913,8 +938,6 @@ bool for_each_element_if(FunT &&fun, tensor<ShapeT, ET> &t, Ts &&... ts) {
   return true;
 }
 
-
-
 template <class T, size_t N>
 using vec_ = tensor<tensor_shape<size_t, const_size<N>>, T>;
 using vec2 = vec_<double, 2>;
@@ -927,6 +950,10 @@ template <class T, size_t M, size_t N>
 using mat_ = tensor<tensor_shape<size_t, const_size<M>, const_size<N>>, T>;
 using mat2 = mat_<double, 2, 2>;
 using mat3 = mat_<double, 3, 3>;
+
+template <class T>
+using matx_ = tensor<tensor_shape<size_t, size_t, size_t>, T>;
+using matx = matx_<double>;
 
 template <class T, size_t M, size_t N, size_t L>
 using cube_ =

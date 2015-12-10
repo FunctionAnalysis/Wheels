@@ -4,6 +4,8 @@
 
 namespace wheels {
 
+struct category_const_expr {};
+
 // const_symbol
 template <size_t Idx> struct const_symbol {
   constexpr const_symbol() {}
@@ -39,7 +41,8 @@ template <class T> struct const_coeff {
 };
 
 template <class T, class Op>
-constexpr auto category_for_overloading(const const_coeff<T> &, const common_func<Op> &) {
+constexpr auto category_for_overloading(const const_coeff<T> &,
+                                        const common_func<Op> &) {
   return category_const_expr();
 };
 

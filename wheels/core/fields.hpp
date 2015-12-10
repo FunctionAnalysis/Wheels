@@ -16,7 +16,28 @@
 
 namespace wheels {
 
+// func_fields
+struct func_fields {
+  template <class T, class U, class V>
+  decltype(auto) operator()(T &&t, U &&u, V &&v) const {
+    return fields(forward<T>(t), forward<U>(u), forward<V>(v));
+  }
+};
+
 // fields
+template <class T, class U, class V, class = std::enable_if_t<join_overloading<
+                                         std::decay_t<T>, func_fields>::value>>
+constexpr decltype(auto) fields(T &&t, U &&usage, V &&visitor) {
+  return overloaded<func_fields,
+                    category_for_overloading_t<std::decay_t<T>, func_fields>,
+                    std::decay_t<U>, std::decay_t<V>>()(
+      forward<T>(t), forward<U>(usage), forward<V>(visitor));
+}
+
+// fields categories
+struct fields_category_tuple_like {};
+struct fields_category_container {};
+
 // empty classes -> nullptr_t
 template <class T, class U, class V, class = void,
           class = std::enable_if_t<
@@ -111,9 +132,11 @@ public:
 
   auto size() const { return _content.size(); }
   decltype(auto) operator[](size_t i) const & {
-    return _visitor.visit(_content[i]);
+    return _visitor.visit(*std::next(std::begin(_content), i));
   }
-  decltype(auto) operator[](size_t i) & { return _visitor.visit(_content[i]); }
+  decltype(auto) operator[](size_t i) & {
+    return _visitor.visit(*std::next(std::begin(_content), i));
+  }
 
 private:
   auto _visit_functor() const {
@@ -444,11 +467,9 @@ template <class RNG> struct randomizer {
     v.imag(dist(rng));
   }
 };
-template <class T, class RNG>
-inline void randomize_fields(T &data, RNG &rng) {
+template <class T, class RNG> inline void randomize_fields(T &data, RNG &rng) {
   traverse_fields(data, randomizer<RNG>(rng));
 }
-
 
 struct pack_by_any {
   template <class... ArgTs> constexpr bool operator()(ArgTs &&... args) const {
@@ -506,7 +527,6 @@ constexpr bool all_of_fields(T &&data, CheckFunT checker) {
                             visit_to_traverse())
       .visit(forward<T>(data));
 }
-
 
 namespace details {
 template <class T> struct _has_func_fields_to_tuplize {

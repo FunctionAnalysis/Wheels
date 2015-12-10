@@ -58,9 +58,15 @@ message(STATUS "wheels_sources:")
 foreach(i ${wheels_sources})
 	message (STATUS ${i})  
 endforeach()
-wheels_add_library(Wheels ${wheels_sources} ./dummy.cpp)
-target_link_libraries (Wheels ${DEPENDENCY_LIBS})
+wheels_add_library(Wheels.Lib ${wheels_sources} ./dummy.cpp)
+target_link_libraries (Wheels.Lib ${DEPENDENCY_LIBS})
 
+
+
+if (MSVC)
+	message (WARNING "CMake cannot configure Visual Studio to modify the environment path during program execution, "
+		"therefore you have to do this manually: add 'PATH=\$(PATH);${DEPENDENCY_BIN_PATHS};' to [Project Property]->[Debug]->[Environment] ")
+endif ()
 
 
 # the test project
@@ -72,10 +78,10 @@ find_package(GTest REQUIRED)
 enable_testing ()
 
 include_directories (${GTEST_INCLUDE_DIR})
-wheels_add_executable(WheelsUnitTest ${wheels_test_sources} ./unittest.cpp)
-target_link_libraries (WheelsUnitTest ${DEPENDENCY_LIBS})
-target_link_libraries (WheelsUnitTest Wheels)
-target_link_libraries (WheelsUnitTest optimized ${GTEST_LIBRARY})
-target_link_libraries (WheelsUnitTest optimized ${GTEST_MAIN_LIBRARY})
-target_link_libraries (WheelsUnitTest debug ${GTEST_LIBRARY_DEBUG})
-target_link_libraries (WheelsUnitTest debug ${GTEST_MAIN_LIBRARY_DEBUG})
+wheels_add_executable(Wheels.UnitTest ${wheels_test_sources} ./unittest.cpp)
+target_link_libraries (Wheels.UnitTest ${DEPENDENCY_LIBS})
+target_link_libraries (Wheels.UnitTest Wheels.Lib)
+target_link_libraries (Wheels.UnitTest optimized ${GTEST_LIBRARY})
+target_link_libraries (Wheels.UnitTest optimized ${GTEST_MAIN_LIBRARY})
+target_link_libraries (Wheels.UnitTest debug ${GTEST_LIBRARY_DEBUG})
+target_link_libraries (Wheels.UnitTest debug ${GTEST_MAIN_LIBRARY_DEBUG})

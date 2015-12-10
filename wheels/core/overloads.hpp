@@ -5,14 +5,6 @@
 
 namespace wheels {
 
-// category forward declarations for overloading
-struct fields_category_tuple_like {};
-struct fields_category_container {};
-
-struct category_const_expr {};
-
-template <class ShapeT, class EleT, class T> struct category_tensor {};
-
 // overload operators without losing any type information
 
 // join_overloading
@@ -321,20 +313,4 @@ WHEELS_OVERLOAD_MEMBER_UNARY_OP(, =, , =, assign)
 WHEELS_OVERLOAD_MEMBER_VARARG_OP(, WHEELS_SYMBOL_LEFT_PAREN,
                                  WHEELS_SYMBOL_RIGHT_PAREN, (), paren)
 
-// other functors
-// func_fields
-struct func_fields {
-  template <class T, class U, class V>
-  decltype(auto) operator()(T &&t, U &&u, V &&v) const {
-    return fields(forward<T>(t), forward<U>(u), forward<V>(v));
-  }
-};
-template <class T, class U, class V, class = std::enable_if_t<join_overloading<
-                                         std::decay_t<T>, func_fields>::value>>
-constexpr decltype(auto) fields(T &&t, U &&usage, V &&visitor) {
-  return overloaded<func_fields,
-                    category_for_overloading_t<std::decay_t<T>, func_fields>,
-                    std::decay_t<U>, std::decay_t<V>>()(
-      forward<T>(t), forward<U>(usage), forward<V>(visitor));
-}
 }
