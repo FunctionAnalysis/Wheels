@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "tensor.hpp"
+#include "methods.hpp"
 
 using namespace wheels;
 
@@ -16,9 +16,8 @@ TEST(tensor, tensor) {
   mat_<double, 3, 2> tr = normalize(rr).t();
 
   auto k = t1 * tr;
-  // auto kk = cube2() * cube2();
+  //auto kk = cube2() * cube2();
   cube2 c;
-  auto kk = ewise_mul(cube2(), cube2()).eval();
 
   ASSERT_TRUE(tr.t() != t1);
   // decltype(b)::value_type bb;

@@ -55,6 +55,17 @@ template <class OpT, class... ArgInfoTs> struct overloaded {
   }
 };
 
+// ewised wrapper
+template <class OpT> struct ewised {
+  constexpr ewised() : op() {}
+  template <class OpTT> constexpr ewised(OpTT &&o) : op(forward<OpTT>(o)) {}
+  template <class... ArgTs>
+  constexpr decltype(auto) operator()(ArgTs &&... args) const {
+    return op(forward<ArgTs>(args)...);
+  }
+  OpT op;
+};
+
 // common_func
 template <class OpT> struct common_func {
   const OpT &derived() const { return static_cast<const OpT &>(*this); }
@@ -72,6 +83,14 @@ template <class OpT> struct common_func {
                 std::enable_if_t<join_overloading<T, unary_op_##name>::value>> \
   constexpr decltype(auto) operator op(T &&v) {                                \
     return overloaded<unary_op_##name,                                         \
+                      category_for_overloading_t<T, unary_op_##name>>()(       \
+        forward<T>(v));                                                        \
+  }                                                                            \
+  template <class T,                                                           \
+            class =                                                            \
+                std::enable_if_t<join_overloading<T, unary_op_##name>::value>> \
+  constexpr decltype(auto) ewise_##name(T &&v) {                               \
+    return overloaded<ewised<unary_op_##name>,                                 \
                       category_for_overloading_t<T, unary_op_##name>>()(       \
         forward<T>(v));                                                        \
   }
@@ -94,6 +113,16 @@ WHEELS_OVERLOAD_UNARY_OP(~, bitwise_not)
                 join_overloading<T2, binary_op_##name>::value>>                \
   constexpr decltype(auto) operator op(T1 &&v1, T2 &&v2) {                     \
     return overloaded<binary_op_##name,                                        \
+                      category_for_overloading_t<T1, binary_op_##name>,        \
+                      category_for_overloading_t<T2, binary_op_##name>>()(     \
+        forward<T1>(v1), forward<T2>(v2));                                     \
+  }                                                                            \
+  template <class T1, class T2,                                                \
+            class = std::enable_if_t<                                          \
+                join_overloading<T1, binary_op_##name>::value ||               \
+                join_overloading<T2, binary_op_##name>::value>>                \
+  constexpr decltype(auto) ewise_##name(T1 &&v1, T2 &&v2) {                    \
+    return overloaded<ewised<binary_op_##name>,                                \
                       category_for_overloading_t<T1, binary_op_##name>,        \
                       category_for_overloading_t<T2, binary_op_##name>>()(     \
         forward<T1>(v1), forward<T2>(v2));                                     \
@@ -207,8 +236,6 @@ WHEELS_OVERLOAD_STD_BINARY_FUNC(pow)
 WHEELS_OVERLOAD_STD_BINARY_FUNC(min)
 WHEELS_OVERLOAD_STD_BINARY_FUNC(max)
 
-
-
 // object_overloading
 template <class DerivedT, class OpT> struct object_overloading {};
 template <class DerivedT, class... OpTs>
@@ -312,5 +339,4 @@ WHEELS_OVERLOAD_MEMBER_UNARY_OP(, =, , =, assign)
 #define WHEELS_SYMBOL_RIGHT_PAREN )
 WHEELS_OVERLOAD_MEMBER_VARARG_OP(, WHEELS_SYMBOL_LEFT_PAREN,
                                  WHEELS_SYMBOL_RIGHT_PAREN, (), paren)
-
 }
