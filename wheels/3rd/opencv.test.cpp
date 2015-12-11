@@ -12,7 +12,7 @@ TEST(third, opencv) {
   auto im = imread(filesystem::path(wheels_data_dir_str) / "wheels.jpg");
   auto ime = im.eval();
   im = zeros<uint8_t>(250, 250, 3);
-  im.write(filesystem::temp_directory_path() / "black.jpg");
+  im.write("I:/black.jpg");
 
   auto tt = tuplize(im);
   auto &tt1 = tt[0];

@@ -11,7 +11,7 @@ using std::move;
 
 // if_then_else for enumulating ?:
 template <class ThenT, class ElseT>
-constexpr auto conditional(bool b, ThenT &&thenv, ElseT &&elsev) {
+constexpr decltype(auto) conditional(bool b, ThenT &&thenv, ElseT &&elsev) {
   return b ? forward<ThenT>(thenv) : forward<ElseT>(elsev);
 }
 

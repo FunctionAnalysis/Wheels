@@ -246,11 +246,6 @@ constexpr ET norm(const tensor_base<ShapeT, ET, T> &t) {
   return sqrt(norm_squared(t.derived()));
 }
 
-// auto normalize(ts)
-template <class T> constexpr auto normalize(T &&t) {
-  return forward<T>(t) / norm(t);
-}
-
 // bool all(s)
 template <class ShapeT, class ET, class T>
 constexpr bool all_of(const tensor_base<ShapeT, ET, T> &t) {
