@@ -22,23 +22,46 @@ private:
   ET _val;
 };
 
+// shape_of
 template <class ShapeT, class ET>
 constexpr auto shape_of(const constant_result<ShapeT, ET> &t) {
   return t.shape();
 }
 
+// element_at
 template <class ShapeT, class ET, class... SubTs>
 constexpr const ET &element_at(const constant_result<ShapeT, ET> &t,
                                const SubTs &... subs) {
   return t.value();
 }
 
+// element_at_index
 template <class ShapeT, class ET, class IndexT>
 constexpr const ET &element_at_index(const constant_result<ShapeT, ET> &t,
                                      const IndexT &ind) {
   return t.value();
 }
 
+// for_each_element
+template <class FunT, class ShapeT, class ET>
+void for_each_element(FunT &&fun, const constant_result<ShapeT, ET> &t) {
+  for (size_t i = 0; i < numel(t); i++) {
+    fun(t.value());
+  }
+}
+
+// for_each_element_if
+template <class FunT, class ShapeT, class ET>
+bool for_each_element_if(FunT &&fun, const constant_result<ShapeT, ET> &t) {
+  for (size_t i = 0; i < numel(t); i++) {
+    if (!fun(t.value())) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// for_each_nonzero_element
 template <class FunT, class ShapeT, class ET, class... Ts>
 void for_each_nonzero_element(FunT &&fun, const constant_result<ShapeT, ET> &t,
                               Ts &&... ts) {
@@ -48,11 +71,30 @@ void for_each_nonzero_element(FunT &&fun, const constant_result<ShapeT, ET> &t,
   }
 }
 
+// reduce_elements
+template <class ShapeT, class ET, class E, class ReduceT>
+E reduce_elements(const constant_result<ShapeT, ET> &t, E initial,
+                  ReduceT &&red) {
+  for (size_t i = 0; i < numel(t); i++) {
+    initial = red(initial, t.value());
+  }
+  return initial;
+}
+
+// norm_squared
+template <class ShapeT, class ET>
+std::enable_if_t<std::is_arithmetic<ET>::value, ET>
+norm_squared(const constant_result<ShapeT, ET> &t) {
+  return t.value() * t.value() * numel(t);
+}
+
+// all_of
 template <class ShapeT, class ET>
 constexpr bool all_of(const constant_result<ShapeT, ET> &t) {
   return !!t.value();
 }
 
+// any_of
 template <class ShapeT, class ET>
 constexpr bool any_of(const constant_result<ShapeT, ET> &t) {
   return !!t.value();
@@ -85,14 +127,14 @@ constexpr auto ones(const SizeTs &... sizes) {
   return constants<ET>(make_shape(sizes...), 1);
 }
 
-// fast implementation of ewise ops
+// ewise ops
 // all constants
 template <class OpT, class ShapeT, class EleT, class... ShapeTs, class... EleTs>
 struct overloaded<
     OpT, category_tensor<ShapeT, EleT, constant_result<ShapeT, EleT>>,
     category_tensor<ShapeTs, EleTs, constant_result<ShapeTs, EleTs>>...> {
   template <class TT, class... TTs>
-  constexpr decltype(auto) operator()(TT &&t, TTs &&... ts) const {
+  constexpr auto operator()(TT &&t, TTs &&... ts) const {
     assert(all_same(shape_of(t), shape_of(ts)...));
     return constants(t.shape(), OpT()(t.value(), ts.value()...));
   }
@@ -114,7 +156,7 @@ struct overloaded<
     category_tensor<ShapeT, EleT, constant_result<ShapeT, EleT>>,
     category_tensor<ShapeT2, EleT2, constant_result<ShapeT2, EleT2>>> {
   template <class TT, class TT2>
-  constexpr decltype(auto) operator()(TT &&t, TT2 &&t2) const {
+  constexpr auto operator()(TT &&t, TT2 &&t2) const {
     assert(all_same(shape_of(t), shape_of(t2)));
     return constants(t.shape(), t.value() * t2.value());
   }
@@ -125,7 +167,7 @@ template <class OpT, class ShapeT, class EleT>
 struct overloaded<
     OpT, category_tensor<ShapeT, EleT, constant_result<ShapeT, EleT>>, void> {
   template <class T1, class T2>
-  constexpr decltype(auto) operator()(T1 &&t1, T2 &&t2) const {
+  constexpr auto operator()(T1 &&t1, T2 &&t2) const {
     return constants(t1.shape(), OpT()(t1.value(), forward<T2>(t2)));
   }
 };
@@ -134,9 +176,8 @@ template <class OpT, class ShapeT, class EleT>
 struct overloaded<
     OpT, void, category_tensor<ShapeT, EleT, constant_result<ShapeT, EleT>>> {
   template <class T1, class T2>
-  constexpr decltype(auto) operator()(T1 &&t1, T2 &&t2) const {
+  constexpr auto operator()(T1 &&t1, T2 &&t2) const {
     return constants(t2.shape(), OpT()(forward<T1>(t1), t2.value()));
   }
 };
-
 }

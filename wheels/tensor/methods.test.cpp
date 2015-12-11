@@ -12,4 +12,8 @@ TEST(tensor, methods) {
   auto t2 = t1 + 1;
   auto &k = t2[3];
   ASSERT_TRUE(t2 == ones(100, 100, 100));
+
+  auto a = ones(50, 30);
+  auto b = a.t().t() + 1;
+ 
 }

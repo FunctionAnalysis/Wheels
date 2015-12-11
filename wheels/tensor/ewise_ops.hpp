@@ -160,8 +160,6 @@ struct overloaded<OpT, category_const_expr, category_tensor<ShapeT, EleT, T>> {
   }
 };
 
-
-
 // auto normalize(ts)
 template <class T> constexpr auto normalize(T &&t) {
   return forward<T>(t) / norm(t);

@@ -90,6 +90,55 @@ decltype(auto) fields(cv::Mat_<T> &&mat, U &&, V &&visitor) {
   return visitor(as_container(std::move(mat), forward<V>(visitor)));
 }
 
+// cv_vec
+template <class T, size_t N>
+class cv_vec
+    : public tensor_base<tensor_shape<size_t, const_size<N>>, T, cv_vec<T, N>> {
+public:
+  using value_type = T;
+  using shape_type = tensor_shape<size_t, const_size<N>>;
+  cv_vec() {}
+  cv_vec(const cv::Vec<T, N> &v) : v(v) {}
+  operator cv::Vec<T, N>() const { return v; }
+
+  cv_vec(const cv_vec &) = default;
+  cv_vec(cv_vec &&) = default;
+  cv_vec &operator=(const cv_vec &) = default;
+  cv_vec &operator=(cv_vec &&) = default;
+
+  template <class AnotherT>
+  constexpr cv_vec(const tensor_core<AnotherT> &another) {
+    assign_elements(*this, another.derived());
+  }
+  template <class AnotherT>
+  cv_vec &operator=(const tensor_core<AnotherT> &another) {
+    assign_elements(*this, another.derived());
+    return *this;
+  }
+
+public:
+  template <class ArcT> void serialize(ArcT &ar) { ar(v); }
+  template <class V> constexpr decltype(auto) fields(V &&v) const {
+    return v(v);
+  }
+  template <class V> decltype(auto) fields(V &&visitor) { return visitor(v); }
+
+public:
+  cv::Vec<T, N> v;
+};
+
+template <class T, size_t N> constexpr auto shape_of(const cv_vec<T, N> &t) {
+  return tensor_shape<size_t, const_size<N>>();
+}
+template <class T, size_t N, class SubT>
+constexpr decltype(auto) element_at(const cv_vec<T, N> &t, const SubT &s) {
+  return t.v(s);
+}
+template <class T, size_t N, class SubT>
+decltype(auto) element_at(cv_vec<T, N> &t, const SubT &s) {
+  return t.v(s);
+}
+
 // cv_matx
 template <class T, size_t M, size_t N>
 class cv_matx
@@ -163,6 +212,8 @@ public:
   cv_image(const cv::Mat_<cv::Vec<T, Depth>> &m) : mat(m) {}
   template <wheels_enable_if(Depth == 1)>
   cv_image(const cv::Mat_<T> &m) : mat(m) {}
+
+  constexpr bool null() const { return mat.empty(); }
 
   bool write(const filesystem::path &path) const {
     return details::_imwrite(path, mat);
@@ -282,12 +333,147 @@ void for_each_element(FunT &&fun, cv_image<T, Depth> &t, Ts &&... ts) {
 
 // imread
 template <class T = uint8_t, size_t Depth = 3>
-inline cv_image<T, Depth> imread(const filesystem::path &path) {
+inline auto imread(const filesystem::path &path) {
   return cv_image<T, Depth>(path);
 }
 // imread
 template <class T = uint8_t, size_t Depth = 3>
-inline bool imread(const filesystem::path &path, const cv_image<T, Depth> &im) {
+inline bool imwrite(const filesystem::path &path,
+                    const cv_image<T, Depth> &im) {
   return im.write(path);
+}
+
+namespace details {
+std::vector<cv::Mat> _vdread(const filesystem::path &path);
+bool _vdwrite(const filesystem::path &path, const std::vector<cv::Mat> &frames);
+}
+
+// cv_video
+template <class T, size_t Depth>
+class cv_video
+    : public tensor_base<
+          tensor_shape<size_t, size_t, size_t, size_t, const_size<Depth>>, T,
+          cv_video<T, Depth>> {
+  static constexpr int _idetph = static_cast<int>(Depth);
+
+public:
+  using value_type = T;
+  using shape_type =
+      tensor_shape<size_t, size_t, size_t, size_t, const_size<Depth>>;
+  cv_video() {}
+  explicit cv_video(const filesystem::path &path) {
+    auto frms = details::_vdread(path);
+    frames.reserve(frms.size());
+    for (auto &f : frms) {
+      frames.emplace_back(f);
+    }
+  }
+
+  cv_video(const cv_video &) = default;
+  cv_video(cv_video &&) = default;
+  cv_video &operator=(const cv_video &) = default;
+  cv_video &operator=(cv_video &&) = default;
+
+  template <class AnotherT>
+  constexpr cv_video(const tensor_core<AnotherT> &another) {
+    assign_elements(*this, another.derived());
+  }
+  template <class AnotherT>
+  cv_video &operator=(const tensor_core<AnotherT> &another) {
+    assign_elements(*this, another.derived());
+    return *this;
+  }
+
+  template <class SubT1, class SubT2, class SubT3>
+  decltype(auto) operator()(const SubT1 &fram, const SubT2 &r,
+                            const SubT3 &c) const {
+    return frames[fram](r, c);
+  }
+  template <class SubT1, class SubT2, class SubT3>
+  decltype(auto) operator()(const SubT1 &fram, const SubT2 &r, const SubT3 &c) {
+    return frames[fram](r, c);
+  }
+
+  template <class SubT1, class SubT2, class SubT3, class SubT4>
+  decltype(auto) operator()(const SubT1 &fram, const SubT2 &r, const SubT3 &c,
+                            const SubT4 &channel) const {
+    return frames[fram](r, c, channel);
+  }
+  template <class SubT1, class SubT2, class SubT3, class SubT4>
+  decltype(auto) operator()(const SubT1 &fram, const SubT2 &r, const SubT3 &c,
+                            const SubT4 &channel) {
+    return frames[fram](r, c, channel);
+  }
+
+public:
+  std::vector<cv_image<T, Depth>> frames;
+};
+
+// shape_of
+template <class T, size_t Depth>
+auto shape_of(const cv_video<T, Depth> &t) {
+    size_t rows = t.frames.empty() ? 0 : t.frames.front().rows;
+    size_t cols = t.frames.empty() ? 0 : t.frames.front().cols;
+  return tensor_shape<size_t, size_t, size_t, size_t, const_size<Depth>>(
+      t.frames.size(), rows, cols, std::ignore);
+}
+
+// reserve_shape
+template <class T, size_t Depth, class ST, class FramsT, class RowsT,
+          class ColsT, class DepthT>
+void reserve_shape(
+    cv_video<T, Depth> &t,
+    const tensor_shape<ST, FramsT, RowsT, ColsT, DepthT> &shape) {
+  static constexpr int _idetph = static_cast<int>(Depth);
+  assert(Depth == shape.at(const_index<3>()));
+  t.frames.resize(shape.at(const_index<0>()));
+  const auto fram_shape =
+      make_shape(shape.at(const_index<1>()), shape.at(const_index<2>()),
+                 const_size<Depth>());
+  for (cv_image<T, Depth> &im : t.frames) {
+    reserve_shape(im, fram_shape);
+  }
+}
+
+// element_at
+template <class T, size_t Depth, class SubT1, class SubT2, class SubT3,
+          class SubT4>
+constexpr decltype(auto) element_at(const cv_video<T, Depth> &t,
+                                    const SubT1 &fram, const SubT2 &row,
+                                    const SubT3 &col, const SubT4 &depth) {
+  return t(static_cast<size_t>(fram), static_cast<int>(row),
+           static_cast<int>(col), static_cast<int>(depth));
+}
+template <class T, size_t Depth, class SubT1, class SubT2, class SubT3,
+          class SubT4>
+decltype(auto) element_at(cv_video<T, Depth> &t, const SubT1 &fram,
+                          const SubT2 &row, const SubT3 &col,
+                          const SubT4 &depth) {
+  return t(static_cast<size_t>(fram), static_cast<int>(row),
+           static_cast<int>(col), static_cast<int>(depth));
+}
+
+// for_each_element
+template <class FunT, class T, size_t Depth, class... Ts>
+void for_each_element(FunT &&fun, const cv_video<T, Depth> &t, Ts &&... ts) {
+  static constexpr int _idetph = static_cast<int>(Depth);
+  for (size_t f = 0; f < t.frames.size(); f++) {
+    t.frames[f].mat.forEach([&](cv::Vec<T, _idetph> &e, const int *position) {
+      for (size_t d = 0; d < Depth; d++) {
+        fun(e(d), element_at(ts, f, position[0], position[1], d)...);
+      }
+    });
+  }
+}
+template <class FunT, class T, size_t Depth, class... Ts>
+void for_each_element(FunT &&fun, cv_video<T, Depth> &t, Ts &&... ts) {
+  static constexpr int _idetph = static_cast<int>(Depth);
+  for (size_t f = 0; f < t.frames.size(); f++) {
+    t.frames[f].mat.forEach([&](cv::Vec<T, _idetph> &e, const int *position) {
+      for (size_t d = 0; d < Depth; d++) {
+        fun(e(d), element_at(ts, f, position[0], position[1], d)...);
+      }
+    });
+  }
 }
 }

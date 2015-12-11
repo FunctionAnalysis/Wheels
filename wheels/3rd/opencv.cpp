@@ -52,5 +52,27 @@ bool _imwrite(const filesystem::path &path, const cv::Mat &mat) {
   file.close();
   return true;
 }
+
+// _vdread
+std::vector<cv::Mat> _vdread(const filesystem::path &filepath) {
+  std::vector<cv::Mat> frames;
+  cv::VideoCapture cap(filepath.string());
+  if (!cap.isOpened()) {
+    return frames;
+  }
+  auto n = static_cast<size_t>(cap.get(cv::CAP_PROP_FRAME_COUNT));
+  frames.reserve(n);
+  cv::Mat cur_fram;
+  while (cap.read(cur_fram)) {
+    frames.push_back(cur_fram.clone());
+  }
+  return frames;
+}
+// _vdwrite
+bool _vdwrite(const filesystem::path &path,
+              const std::vector<cv::Mat> &frames) {
+  throw std::runtime_error("not implemented yet");
+  return false;
+}
 }
 }
