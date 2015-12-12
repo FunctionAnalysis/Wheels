@@ -311,7 +311,7 @@ decltype(auto) element_at(cv_image<T, Depth> &t, const SubT1 &s1,
 }
 
 template <class FunT, class T, size_t Depth, class... Ts>
-void for_each_element(FunT &&fun, const cv_image<T, Depth> &t, Ts &&... ts) {
+void for_each_element(order_flag<unordered>, FunT &&fun, const cv_image<T, Depth> &t, Ts &&... ts) {
   static constexpr int _idetph = static_cast<int>(Depth);
   t.mat.forEach([&](cv::Vec<T, _idetph> &e, const int *position) {
     for (size_t d = 0; d < Depth; d++) {
@@ -320,7 +320,7 @@ void for_each_element(FunT &&fun, const cv_image<T, Depth> &t, Ts &&... ts) {
   });
 }
 template <class FunT, class T, size_t Depth, class... Ts>
-void for_each_element(FunT &&fun, cv_image<T, Depth> &t, Ts &&... ts) {
+void for_each_element(order_flag<unordered>, FunT &&fun, cv_image<T, Depth> &t, Ts &&... ts) {
   static constexpr int _idetph = static_cast<int>(Depth);
   t.mat.forEach([&](cv::Vec<T, _idetph> &e, const int *position) {
     for (int d = 0; d < _idetph; d++) {
@@ -343,9 +343,32 @@ inline bool imwrite(const filesystem::path &path,
   return im.write(path);
 }
 
+// cv_video_props
+class cv_video_props : public serializable<cv_video_props> {
+public:
+  cv_video_props() : fps(0), fourCC(0) {}
+
+public:
+  template <class V> constexpr decltype(auto) fields(V &&visitor) const {
+    return visitor(fps, fourCC);
+  }
+  template <class V> decltype(auto) fields(V &&visitor) {
+    return visitor(fps, fourCC);
+  }
+
+public:
+  double fps;
+  int fourCC;
+};
+
 namespace details {
-std::vector<cv::Mat> _vdread(const filesystem::path &path);
-bool _vdwrite(const filesystem::path &path, const std::vector<cv::Mat> &frames);
+std::vector<cv::Mat> _vdread(const filesystem::path &path,
+                             cv_video_props *vp = nullptr);
+size_t _vdread(const filesystem::path &path,
+               const std::function<bool(const cv::Mat &fram)> &processor,
+               cv_video_props *vp = nullptr);
+bool _vdwrite(const filesystem::path &path, const std::vector<cv::Mat> &frames,
+              const cv_video_props &props);
 }
 
 // cv_video
@@ -362,11 +385,20 @@ public:
       tensor_shape<size_t, size_t, size_t, size_t, const_size<Depth>>;
   cv_video() {}
   explicit cv_video(const filesystem::path &path) {
-    auto frms = details::_vdread(path);
+    auto frms = details::_vdread(path, &props);
     frames.reserve(frms.size());
     for (auto &f : frms) {
       frames.emplace_back(f);
     }
+  }
+
+  bool write(const filesystem::path &path) const {
+    std::vector<cv::Mat> frms;
+    frms.reserve(frames.size());
+    for (auto &f : frames) {
+      frms.push_back(f.mat);
+    }
+    return details::_vdwrite(path, frms, props);
   }
 
   cv_video(const cv_video &) = default;
@@ -384,6 +416,7 @@ public:
     return *this;
   }
 
+public:
   template <class SubT1, class SubT2, class SubT3>
   decltype(auto) operator()(const SubT1 &fram, const SubT2 &r,
                             const SubT3 &c) const {
@@ -406,14 +439,21 @@ public:
   }
 
 public:
+  template <class ArcT> void serialize(ArcT &ar) { ar(props, frames); }
+  template <class V> constexpr decltype(auto) fields(V &&v) const {
+    return v(props, frames);
+  }
+  template <class V> decltype(auto) fields(V &&v) { return v(props, frames); }
+
+public:
+  cv_video_props props;
   std::vector<cv_image<T, Depth>> frames;
 };
 
 // shape_of
-template <class T, size_t Depth>
-auto shape_of(const cv_video<T, Depth> &t) {
-    size_t rows = t.frames.empty() ? 0 : t.frames.front().rows;
-    size_t cols = t.frames.empty() ? 0 : t.frames.front().cols;
+template <class T, size_t Depth> auto shape_of(const cv_video<T, Depth> &t) {
+  size_t rows = t.frames.empty() ? 0 : t.frames.front().rows;
+  size_t cols = t.frames.empty() ? 0 : t.frames.front().cols;
   return tensor_shape<size_t, size_t, size_t, size_t, const_size<Depth>>(
       t.frames.size(), rows, cols, std::ignore);
 }
@@ -426,10 +466,13 @@ void reserve_shape(
     const tensor_shape<ST, FramsT, RowsT, ColsT, DepthT> &shape) {
   static constexpr int _idetph = static_cast<int>(Depth);
   assert(Depth == shape.at(const_index<3>()));
-  t.frames.resize(shape.at(const_index<0>()));
-  const auto fram_shape =
-      make_shape(shape.at(const_index<1>()), shape.at(const_index<2>()),
-                 const_size<Depth>());
+  size_t newframs = shape.at(const_index<0>());
+  size_t newrows = shape.at(const_index<1>());
+  size_t newcols = shape.at(const_index<2>());
+  size_t oldrows = shape_of(t).at(const_index<1>());
+  size_t oldcols = shape_of(t).at(const_index<2>());
+  t.frames.resize(newframs);
+  const auto fram_shape = make_shape(newrows, newcols, const_size<Depth>());
   for (cv_image<T, Depth> &im : t.frames) {
     reserve_shape(im, fram_shape);
   }
@@ -455,7 +498,7 @@ decltype(auto) element_at(cv_video<T, Depth> &t, const SubT1 &fram,
 
 // for_each_element
 template <class FunT, class T, size_t Depth, class... Ts>
-void for_each_element(FunT &&fun, const cv_video<T, Depth> &t, Ts &&... ts) {
+void for_each_element(order_flag<unordered>, FunT &&fun, const cv_video<T, Depth> &t, Ts &&... ts) {
   static constexpr int _idetph = static_cast<int>(Depth);
   for (size_t f = 0; f < t.frames.size(); f++) {
     t.frames[f].mat.forEach([&](cv::Vec<T, _idetph> &e, const int *position) {
@@ -466,7 +509,7 @@ void for_each_element(FunT &&fun, const cv_video<T, Depth> &t, Ts &&... ts) {
   }
 }
 template <class FunT, class T, size_t Depth, class... Ts>
-void for_each_element(FunT &&fun, cv_video<T, Depth> &t, Ts &&... ts) {
+void for_each_element(order_flag<unordered>, FunT &&fun, cv_video<T, Depth> &t, Ts &&... ts) {
   static constexpr int _idetph = static_cast<int>(Depth);
   for (size_t f = 0; f < t.frames.size(); f++) {
     t.frames[f].mat.forEach([&](cv::Vec<T, _idetph> &e, const int *position) {

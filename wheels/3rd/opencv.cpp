@@ -54,11 +54,15 @@ bool _imwrite(const filesystem::path &path, const cv::Mat &mat) {
 }
 
 // _vdread
-std::vector<cv::Mat> _vdread(const filesystem::path &filepath) {
+std::vector<cv::Mat> _vdread(const filesystem::path &filepath, cv_video_props *vp) {
   std::vector<cv::Mat> frames;
   cv::VideoCapture cap(filepath.string());
   if (!cap.isOpened()) {
     return frames;
+  }
+  if (vp) {
+      vp->fps = cap.get(cv::CAP_PROP_FPS);
+      vp->fourCC = cap.get(cv::CAP_PROP_FOURCC);
   }
   auto n = static_cast<size_t>(cap.get(cv::CAP_PROP_FRAME_COUNT));
   frames.reserve(n);
@@ -68,11 +72,47 @@ std::vector<cv::Mat> _vdread(const filesystem::path &filepath) {
   }
   return frames;
 }
+
+// _vdread
+size_t _vdread(const filesystem::path &path,
+               const std::function<bool(const cv::Mat &fram)> &processor,
+               cv_video_props *vp) {
+  cv::VideoCapture cap(path.string());
+  if (!cap.isOpened()) {
+    return 0;
+  }
+  if (vp) {
+    vp->fps = cap.get(cv::CAP_PROP_FPS);
+    vp->fourCC = cap.get(cv::CAP_PROP_FOURCC);
+  }
+  size_t count = 0;
+  cv::Mat cur_fram;
+  while (cap.read(cur_fram)) {
+    if (!processor(cur_fram)) {
+      break;
+    }
+    count++;
+  }
+  return count;
+}
+
 // _vdwrite
-bool _vdwrite(const filesystem::path &path,
-              const std::vector<cv::Mat> &frames) {
-  throw std::runtime_error("not implemented yet");
-  return false;
+bool _vdwrite(const filesystem::path &path, const std::vector<cv::Mat> &frames,
+              const cv_video_props &props) {
+  if (frames.empty()) {
+    return false;
+  }
+  int width = frames.front().cols;
+  int height = frames.front().rows;
+  cv::VideoWriter wrt(path.string(), props.fourCC, props.fps,
+                      cv::Size(width, height));
+  if (!wrt.isOpened()) {
+    return false;
+  }
+  for (auto &f : frames) {
+    wrt.write(f);
+  }
+  return true;
 }
 }
 }

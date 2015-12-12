@@ -283,64 +283,6 @@ void reserve_shape(tensor_storage<ShapeT, ET, T, false> &t,
   t.set_shape(shape);
 }
 
-// for_each_element
-template <class FunT, class ET, class ShapeT, class... Ts>
-void for_each_element(FunT &&fun, const tensor<ShapeT, ET> &t, Ts &&... ts) {
-  assert(all_same(shape_of(t), shape_of(ts)...));
-  for (size_t i = 0; i < numel(t); i++) {
-    fun(element_at_index(t, i), element_at_index(ts, i)...);
-  }
-}
-template <class FunT, class ET, class ShapeT, class... Ts>
-void for_each_element(FunT &&fun, tensor<ShapeT, ET> &t, Ts &&... ts) {
-  assert(all_same(shape_of(t), shape_of(ts)...));
-  for (size_t i = 0; i < numel(t); i++) {
-    fun(element_at_index(t, i), element_at_index(ts, i)...);
-  }
-}
-
-// for_each_nonzero_element
-template <class FunT, class ET, class ShapeT, class... Ts>
-void for_each_nonzero_element(FunT &&fun, const tensor<ShapeT, ET> &t,
-                              Ts &&... ts) {
-  assert(all_same(shape_of(t), shape_of(ts)...));
-  for (size_t i = 0; i < numel(t); i++) {
-    decltype(auto) e = element_at_index(t, i);
-    if (e) {
-      fun(e, element_at_index(ts, i)...);
-    }
-  }
-}
-template <class FunT, class ET, class ShapeT, class... Ts>
-void for_each_nonzero_element(FunT &&fun, tensor<ShapeT, ET> &t, Ts &&... ts) {
-  assert(all_same(shape_of(t), shape_of(ts)...));
-  for (size_t i = 0; i < numel(t); i++) {
-    decltype(auto) e = element_at_index(t, i);
-    if (e) {
-      fun(e, element_at_index(ts, i)...);
-    }
-  }
-}
-
-// for_each_element_if
-template <class FunT, class ET, class ShapeT, class... Ts>
-bool for_each_element_if(FunT &&fun, const tensor<ShapeT, ET> &t, Ts &&... ts) {
-  assert(all_same(shape_of(t), shape_of(ts)...));
-  for (size_t i = 0; i < numel(t); i++) {
-    if (!fun(element_at_index(t, i), element_at_index(ts, i)...))
-      return false;
-  }
-  return true;
-}
-template <class FunT, class ET, class ShapeT, class... Ts>
-bool for_each_element_if(FunT &&fun, tensor<ShapeT, ET> &t, Ts &&... ts) {
-  assert(all_same(shape_of(t), shape_of(ts)...));
-  for (size_t i = 0; i < numel(t); i++) {
-    if (!fun(element_at_index(t, i), element_at_index(ts, i)...))
-      return false;
-  }
-  return true;
-}
 
 // vec_
 template <class T, size_t N>

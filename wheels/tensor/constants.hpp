@@ -43,16 +43,16 @@ constexpr const ET &element_at_index(const constant_result<ShapeT, ET> &t,
 }
 
 // for_each_element
-template <class FunT, class ShapeT, class ET>
-void for_each_element(FunT &&fun, const constant_result<ShapeT, ET> &t) {
+template <order_flag_enum O, class FunT, class ShapeT, class ET>
+void for_each_element(order_flag<O>, FunT &&fun, const constant_result<ShapeT, ET> &t) {
   for (size_t i = 0; i < numel(t); i++) {
     fun(t.value());
   }
 }
 
-// for_each_element_if
-template <class FunT, class ShapeT, class ET>
-bool for_each_element_if(FunT &&fun, const constant_result<ShapeT, ET> &t) {
+// for_each_element_with_short_circuit
+template <order_flag_enum O, class FunT, class ShapeT, class ET>
+bool for_each_element_with_short_circuit(order_flag<O>, FunT &&fun, const constant_result<ShapeT, ET> &t) {
   for (size_t i = 0; i < numel(t); i++) {
     if (!fun(t.value())) {
       return false;
@@ -62,12 +62,12 @@ bool for_each_element_if(FunT &&fun, const constant_result<ShapeT, ET> &t) {
 }
 
 // for_each_nonzero_element
-template <class FunT, class ShapeT, class ET, class... Ts>
-void for_each_nonzero_element(FunT &&fun, const constant_result<ShapeT, ET> &t,
+template <order_flag_enum O, class FunT, class ShapeT, class ET, class... Ts>
+void for_each_nonzero_element(order_flag<O> o, FunT &&fun, const constant_result<ShapeT, ET> &t,
                               Ts &&... ts) {
   assert(all_same(shape_of(t), shape_of(ts)...));
   if (t.value()) {
-    for_each_element(forward<FunT>(fun), t, forward<Ts>(ts)...);
+    for_each_element(o, forward<FunT>(fun), t, forward<Ts>(ts)...);
   }
 }
 

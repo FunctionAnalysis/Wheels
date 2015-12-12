@@ -13,7 +13,7 @@ public:
   using shape_type = ShapeT;
   constexpr explicit matrix_transpose(T &&in) : _input(forward<T>(in)) {}
   constexpr const T &input() const { return _input; }
-  T & input() {return _input;}
+  T &input() { return _input; }
   constexpr auto shape() const {
     return make_shape(size_at(_input, const_index<1>()),
                       size_at(_input, const_index<0>()));
@@ -40,21 +40,24 @@ constexpr decltype(auto) element_at(const matrix_transpose<ShapeT, ET, T> &m,
 }
 // for_each_element
 template <class FunT, class ShapeT, class ET, class T>
-void for_each_element(FunT &&fun, const matrix_transpose<ShapeT, ET, T> &m) {
-  for_each_element(forward<FunT>(fun), m.input());
+void for_each_element(order_flag<unordered> o, FunT &&fun,
+                      const matrix_transpose<ShapeT, ET, T> &m) {
+  for_each_element(o, forward<FunT>(fun), m.input());
 }
 
 // for_each_element_if
 template <class FunT, class ShapeT, class ET, class T>
-bool for_each_element_if(FunT &&fun, const matrix_transpose<ShapeT, ET, T> &m) {
-  return for_each_element_if(forward<FunT>(fun), m.input());
+bool for_each_element_with_short_circuit(
+    order_flag<unordered> o, FunT &&fun,
+    const matrix_transpose<ShapeT, ET, T> &m) {
+  return for_each_element_with_short_circuit(o, forward<FunT>(fun), m.input());
 }
 
 // for_each_nonzero_element
 template <class FunT, class ShapeT, class ET, class T>
-void for_each_nonzero_element(FunT &&fun,
+void for_each_nonzero_element(order_flag<unordered> o, FunT &&fun,
                               const matrix_transpose<ShapeT, ET, T> &m) {
-  for_each_nonzero_element(forward<FunT>(fun), m.input());
+  for_each_nonzero_element(o, forward<FunT>(fun), m.input());
 }
 // reduce_elements
 template <class ShapeT, class ET, class T, class E, class ReduceT>

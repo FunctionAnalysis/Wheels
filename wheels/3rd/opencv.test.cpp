@@ -17,9 +17,6 @@ TEST(third, opencv) {
   auto tt = tuplize(im);
   auto &tt1 = tt[0];
 
-  cv::String str(filesystem::path(L"ÄãºÃ").string());
 
-  std::vector<float> v1;
-  std::vector<double> v2;
-  v2 = v1;
+
 }
