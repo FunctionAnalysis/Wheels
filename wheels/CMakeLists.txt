@@ -2,39 +2,25 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # all files
 file (GLOB core_sources 
-	"${CMAKE_CURRENT_SOURCE_DIR}/core/*.cpp" 
-	"${CMAKE_CURRENT_SOURCE_DIR}/core/*.hpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/core/*.cu" 
-	"${CMAKE_CURRENT_SOURCE_DIR}/core/*.cuh"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/*.cpp" 
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/*.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/*.cu" 
+    "${CMAKE_CURRENT_SOURCE_DIR}/core/*.cuh"
 )
 source_group ("core" FILES ${core_sources})
 
 file (GLOB tensor_sources 
-	"${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.cpp" 
-	"${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.hpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.cu" 
-	"${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.cuh")
+    "${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.cpp" 
+    "${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.cu" 
+    "${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.cuh")
 source_group ("tensor" FILES ${tensor_sources})
 
-file (GLOB math_sources 
-	"${CMAKE_CURRENT_SOURCE_DIR}/math/*.cpp" 
-	"${CMAKE_CURRENT_SOURCE_DIR}/math/*.hpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/math/*.cu" 
-	"${CMAKE_CURRENT_SOURCE_DIR}/math/*.cuh")
-source_group ("math" FILES ${math_sources})
-
-file (GLOB feature_sources 
-	"${CMAKE_CURRENT_SOURCE_DIR}/feature/*.cpp" 
-	"${CMAKE_CURRENT_SOURCE_DIR}/feature/*.hpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/feature/*.cu" 
-	"${CMAKE_CURRENT_SOURCE_DIR}/feature/*.cuh")
-source_group ("feature" FILES ${feature_sources})
-
 file (GLOB 3rd_sources 
-	"${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.cpp" 
-	"${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.hpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.cu" 
-	"${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.cuh")
+    "${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.cpp" 
+    "${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.cu" 
+    "${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.cuh")
 source_group ("3rd" FILES ${3rd_sources})
 
 
@@ -42,8 +28,6 @@ source_group ("3rd" FILES ${3rd_sources})
 set (wheels_sources 
     ${core_sources} 
     ${tensor_sources} 
-    ${math_sources} 
-    ${feature_sources}
     ${3rd_sources})
 file (GLOB_RECURSE wheels_test_sources "." *.test.cpp *.test.hpp *.test.cu *.test.cuh)
 # remove test sources from the lib sources
@@ -56,7 +40,7 @@ include_directories (${DEPENDENCY_INCLUDES})
 # the lib project
 message(STATUS "wheels_sources:")
 foreach(i ${wheels_sources})
-	message (STATUS ${i})  
+    message (STATUS ${i})  
 endforeach()
 wheels_add_library(Wheels.Lib ${wheels_sources} ./dummy.cpp)
 target_link_libraries (Wheels.Lib ${DEPENDENCY_LIBS})
@@ -64,15 +48,15 @@ target_link_libraries (Wheels.Lib ${DEPENDENCY_LIBS})
 
 
 if (MSVC)
-	message (WARNING "CMake cannot configure Visual Studio to modify the environment path during program execution, "
-		"therefore you have to do this manually: add 'PATH=\$(PATH);${DEPENDENCY_BIN_PATHS};' to [Project Property]->[Debug]->[Environment] ")
+    message (WARNING "CMake cannot configure Visual Studio to modify the environment path during program execution, "
+        "therefore you have to do this manually: add 'PATH=\$(PATH);${DEPENDENCY_BIN_PATHS};' to [Project Property]->[Debug]->[Environment] ")
 endif ()
 
 
 # the test project
 message(STATUS "wheels_test_sources:")
 foreach(i ${wheels_test_sources})
-	message (STATUS ${i})  
+    message (STATUS ${i})  
 endforeach()
 find_package(GTest REQUIRED)
 enable_testing ()
