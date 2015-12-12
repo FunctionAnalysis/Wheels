@@ -1,7 +1,5 @@
 #pragma once
 
-#include <armadillo>
-
 #include "base.hpp"
 
 namespace wheels {
@@ -17,7 +15,7 @@ auto solve(const tensor_base<tensor_shape<size_t, MT1, NT1>, ET1, T1> &a,
            const tensor_base<tensor_shape<size_t, MT2>, ET2, T2> &b) {
   assert(a.size(const_index<0>()) == b.size(const_index<0>()));
 #ifdef wheels_with_opencv
-
+  // todo
 #endif
 }
 }

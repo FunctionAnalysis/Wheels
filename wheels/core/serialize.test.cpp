@@ -22,9 +22,8 @@ struct E : serializable<E>, comparable<E> {
 };
 
 TEST(core, serialize) {
-
   std::error_code errc;
-  auto path = std::experimental::filesystem::temp_directory_path(errc);
+  auto path = filesystem::temp_directory_path(errc);
   if (!errc) {
     E e({{1}, {2}, {3}, {4}, {5}, {6}});
     auto filepath = path.append("wheels.core.serialize.cereal");

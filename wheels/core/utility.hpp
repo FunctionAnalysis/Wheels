@@ -98,9 +98,9 @@ constexpr decltype(auto) make_ordered_pair(T1 &&a, T2 &&b) {
   return conditional(a < b, std::make_pair(a, b), std::make_pair(b, a));
 }
 
-// bounded [lb, ub]
+// close_bounded [lb, ub]
 template <class T, class LowBT, class UpBT>
-constexpr decltype(auto) bounded(T &&v, LowBT &&lb, UpBT &&ub) {
+constexpr decltype(auto) close_bounded(T &&v, LowBT &&lb, UpBT &&ub) {
   return conditional(v < lb, lb, conditional(v < ub, v, ub));
 }
 
@@ -108,6 +108,36 @@ constexpr decltype(auto) bounded(T &&v, LowBT &&lb, UpBT &&ub) {
 template <class T, class LowBT, class UpBT>
 constexpr decltype(auto) is_between(T &&v, LowBT &&lb, UpBT &&ub) {
   return !(v < lb) && v < ub;
+}
+
+// right_open_wrapped [lb, ub)
+namespace details {
+template <class T>
+constexpr T _right_open_wrapped(const T &input, const T &low, const T &high,
+                                const std::false_type &isint) {
+  if (low >= high)
+    return input;
+  if (low <= input && input < high)
+    return input;
+  const auto sz = high - low;
+  auto result = input - int((input - low) / sz) * sz + (input < low ? sz : 0);
+  return result == high ? low : result;
+}
+template <class T>
+constexpr T _right_open_wrapped(const T &input, const T &low, const T &high,
+                                const std::true_type &isint) {
+  if (low >= high)
+    return input;
+  if (low <= input && input < high)
+    return input;
+  const auto sz = high - low;
+  auto result = (input - low) % sz + low + (input < low ? sz : 0);
+  return result == high ? low : result;
+}
+}
+template <class T>
+constexpr T right_open_wrapped(const T &v, const T &lb, const T &ub) {
+  return details::_right_open_wrapped(v, lb, ub, std::is_integral<T>());
 }
 
 // always

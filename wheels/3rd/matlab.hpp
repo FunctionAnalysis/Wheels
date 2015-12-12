@@ -248,8 +248,8 @@ public:
 
 public:
   matlab_matfile();
-  explicit matlab_matfile(const std::string &fname, const std::string &mode);
-  explicit matlab_matfile(const std::string &fname, OpeningMode mode);
+  explicit matlab_matfile(const filesystem::path &fname, const std::string &mode);
+  explicit matlab_matfile(const filesystem::path &fname, OpeningMode mode);
 
   matlab_matfile(matlab_matfile &&a);
   matlab_matfile &operator=(matlab_matfile &&a);
@@ -270,14 +270,14 @@ public:
   bool remove_var(const std::string &name);
 
 private:
-  std::string _fname;
+  filesystem::path _fname;
   void *_fp;
 };
 
 // the matlab engine
 class matlab_engine {
 public:
-  matlab_engine(const std::string &defaultDir = std::string(),
+  matlab_engine(const filesystem::path &defaultDir = filesystem::path(),
                 bool singleUse = false);
   ~matlab_engine();
 

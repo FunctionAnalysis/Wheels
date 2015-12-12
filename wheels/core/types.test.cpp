@@ -4,7 +4,6 @@
 using namespace wheels;
 
 TEST(core, type) {
-
   using namespace wheels::literals;
 
   int a = 0, b = 0;

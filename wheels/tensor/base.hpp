@@ -15,6 +15,24 @@ namespace wheels {
 template <class ShapeT, class EleT, class T> struct category_tensor {};
 //
 
+namespace index_tags {
+constexpr auto first = const_index<0>();
+constexpr auto length = const_symbol<0>();
+constexpr auto last = length - const_index<1>();
+}
+
+namespace details {
+template <class E, class SizeT, class = std::enable_if_t<!is_int<E>::value>>
+constexpr auto _eval_index_expr(const E &e, const SizeT &sz) {
+  return e(sz);
+}
+template <class T, class SizeT, class = std::enable_if_t<is_int<T>::value>,
+          class = void>
+constexpr auto _eval_index_expr(const T &t, const SizeT &) {
+  return t;
+}
+}
+
 // tensor_core
 template <class T> struct tensor_core {
   const tensor_core &core() const { return *this; }
@@ -35,19 +53,37 @@ template <class T> struct tensor_core {
   constexpr auto normalized() const & { return derived() / this->norm(); }
   auto normalized() && { return std::move(derived()) / this->norm(); }
 
+  // operator()(subs ...)
   template <class... SubTs>
   constexpr decltype(auto) operator()(const SubTs &... subs) const {
-    return ::wheels::element_at(derived(), subs...);
-  }
-  template <class IndexT>
-  constexpr decltype(auto) operator[](const IndexT &ind) const {
-    return ::wheels::element_at_index(derived(), ind);
+    return _parenthesis_seq(make_const_sequence_for<SubTs...>(), subs...);
   }
   template <class... SubTs> decltype(auto) operator()(const SubTs &... subs) {
-    return ::wheels::element_at(derived(), subs...);
+    return _parenthesis_seq(make_const_sequence_for<SubTs...>(), subs...);
   }
-  template <class IndexT> decltype(auto) operator[](const IndexT &ind) {
-    return ::wheels::element_at_index(derived(), ind);
+
+  // operator[](index)
+  template <class E> constexpr decltype(auto) operator[](const E &e) const {
+    return ::wheels::element_at_index(derived(),
+                                      details::_eval_index_expr(e, numel()));
+  }
+  template <class E> decltype(auto) operator[](const E &e) {
+    return ::wheels::element_at_index(derived(),
+                                      details::_eval_index_expr(e, numel()));
+  }
+
+private:
+  template <class... SubEs, size_t... Is>
+  constexpr decltype(auto) _parenthesis_seq(const_ints<size_t, Is...>,
+                                            const SubEs &... subes) const {
+    return ::wheels::element_at(
+        derived(), details::_eval_index_expr(subes, size(const_size<Is>()))...);
+  }
+  template <class... SubEs, size_t... Is>
+  decltype(auto) _parenthesis_seq(const_ints<size_t, Is...>,
+                                  const SubEs &... subes) {
+    return ::wheels::element_at(
+        derived(), details::_eval_index_expr(subes, size(const_size<Is>()))...);
   }
 };
 
@@ -203,6 +239,13 @@ template <class FunT, class T, class... Ts>
 void for_each_element(order_flag<unordered>, FunT &&fun, T &&t, Ts &&... ts) {
   for_each_element(order_flag<index_ascending>(), forward<FunT>(fun),
                    forward<T>(t), forward<Ts>(ts)...);
+}
+
+// for_each
+template <class FunT, class T, class... Ts>
+void for_each(FunT &&fun, T &&t, Ts &&... ts) {
+  for_each_element(order_flag<unordered>(), forward<FunT>(fun), forward<T>(t),
+                   forward<Ts>(ts)...);
 }
 
 // for_each_element_with_short_circuit

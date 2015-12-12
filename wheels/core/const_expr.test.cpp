@@ -3,7 +3,6 @@
 #include "const_expr.hpp"
 
 TEST(core, const_symbols) {
-
   using namespace wheels::literals;
 
   constexpr auto n1 = 0_symbol;

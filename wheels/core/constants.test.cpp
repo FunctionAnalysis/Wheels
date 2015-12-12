@@ -5,7 +5,6 @@
 using namespace wheels;
 
 TEST(core, constants) {
-
   using namespace wheels::literals;
 
   auto test1 = 1_c != 2_uc && 1_c == 1_uc;

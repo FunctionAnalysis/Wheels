@@ -15,12 +15,16 @@ constexpr struct _with_iterators {
 template <class ShapeT, class ET, class T, bool StaticShape>
 class tensor_storage;
 namespace details {
+template <class T, size_t I> struct _always_val {
+  constexpr _always_val(const T &v) : val(v) {}
+  T val;
+};
 template <class T, size_t N, size_t... Is>
-constexpr auto _init_std_array_seq(const_ints<size_t, Is...>) {
-  return std::array<T, N>{{(T)always<int, 0, const_index<Is>>::value...}};
+constexpr auto _init_std_array_seq(const T &init, const_ints<size_t, Is...>) {
+  return std::array<T, N>{{(T)_always_val<T, Is>(init).val...}};
 }
-template <class T, size_t N> constexpr auto _init_std_array() {
-  return _init_std_array_seq<T, N>(make_const_sequence(const_size<N>()));
+template <class T, size_t N> constexpr auto _init_std_array(const T &init) {
+  return _init_std_array_seq<T, N>(init, make_const_sequence(const_size<N>()));
 }
 }
 template <class ShapeT, class ET, class T>
@@ -31,11 +35,19 @@ public:
 
 public:
   constexpr tensor_storage()
-      : _data(details::_init_std_array<value_type,
-                                       shape_type::static_magnitude>()) {}
+      : _data(
+            details::_init_std_array<value_type, shape_type::static_magnitude>(
+                0)) {}
   constexpr tensor_storage(const shape_type &s)
-      : _data(details::_init_std_array<value_type,
-                                       shape_type::static_magnitude>()) {
+      : _data(
+            details::_init_std_array<value_type, shape_type::static_magnitude>(
+                0)) {
+    assert(s.magnitude() == _data.size());
+  }
+  constexpr tensor_storage(const shape_type &s, const value_type &v)
+      : _data(
+            details::_init_std_array<value_type, shape_type::static_magnitude>(
+                v)) {
     assert(s.magnitude() == _data.size());
   }
   template <class... EleTs>
@@ -80,6 +92,8 @@ public:
   constexpr tensor_storage() {}
   constexpr tensor_storage(const shape_type &shape)
       : _shape(shape), _data(shape.magnitude()) {}
+  constexpr tensor_storage(const shape_type &shape, const value_type &v)
+      : _shape(shape), _data(shape.magnitude(), v) {}
   template <class... EleTs>
   constexpr tensor_storage(const shape_type &shape, const _with_elements &,
                            EleTs &&... eles)
@@ -138,72 +152,84 @@ constexpr ShapeT _make_shape_from_magnitude_seq(size_t magnitude,
 template <class ShapeT, class ET>
 class tensor
     : public tensor_storage<ShapeT, ET, tensor<ShapeT, ET>, ShapeT::is_static> {
-  using base_t =
+  using storage_t =
       tensor_storage<ShapeT, ET, tensor<ShapeT, ET>, ShapeT::is_static>;
 
 public:
   using value_type = ET;
   using shape_type = ShapeT;
 
-  constexpr tensor() : base_t() {}
+  // tensor()
+  constexpr tensor() : storage_t() {}
 
+  // tensor(e1, e2, e3 ...)
   template <class... EleTs,
             class = std::enable_if_t<
                 (ShapeT::dynamic_size_num == 0 &&
                  ::wheels::all(std::is_convertible<EleTs, ET>::value...))>>
   constexpr tensor(EleTs &&... eles)
-      : base_t(ShapeT(), with_elements, forward<EleTs>(eles)...) {}
+      : storage_t(ShapeT(), with_elements, forward<EleTs>(eles)...) {}
 
   template <class... EleTs, class = void,
             class = std::enable_if_t<
                 (ShapeT::dynamic_size_num == 1 &&
                  ::wheels::all(std::is_convertible<EleTs, ET>::value...))>>
   constexpr tensor(EleTs &&... eles)
-      : base_t(details::_make_shape_from_magnitude_seq<ShapeT>(
+      : storage_t(details::_make_shape_from_magnitude_seq<ShapeT>(
                    sizeof...(EleTs),
                    make_const_sequence(const_size<ShapeT::rank>())),
                with_elements, forward<EleTs>(eles)...) {}
 
+  // tensor(shape)
+  constexpr tensor(const ShapeT &shape) : storage_t(shape) {}
+
+  // tensor(shape, e)
+  constexpr tensor(const ShapeT &shape, const value_type &v)
+      : storage_t(shape, v) {}
+
+  // tensor(shape, with_elements, e1, e2, e3 ...)
   template <class... EleTs>
   constexpr tensor(const ShapeT &shape, const _with_elements &we,
                    EleTs &&... eles)
-      : base_t(shape, we, forward<EleTs>(eles)...) {}
+      : storage_t(shape, we, forward<EleTs>(eles)...) {}
 
-  constexpr tensor(const ShapeT &shape) : base_t(shape) {}
-
-  template <class = std::enable_if_t<(ShapeT::dynamic_size_num == 0)>>
-  constexpr tensor(std::initializer_list<value_type> ilist)
-      : base_t(ShapeT(), with_iterators, ilist.begin(), ilist.end()) {}
-
-  template <class = void,
+  // tensor({e1, e2, e3 ...})
+  template <class EleT,
+            class = std::enable_if_t<(ShapeT::dynamic_size_num == 0)>>
+  constexpr tensor(std::initializer_list<EleT> ilist)
+      : storage_t(ShapeT(), with_iterators, ilist.begin(), ilist.end()) {}
+  template <class EleT, class = void,
             class = std::enable_if_t<(ShapeT::dynamic_size_num == 1)>>
-  constexpr tensor(std::initializer_list<value_type> ilist)
-      : base_t(
+  constexpr tensor(std::initializer_list<EleT> ilist)
+      : storage_t(
             details::_make_shape_from_magnitude_seq<ShapeT>(
                 ilist.size(), make_const_sequence(const_size<ShapeT::rank>())),
             with_iterators, ilist.begin(), ilist.end()) {}
 
+  // tensor(shape, {e1, e2, e3 ...})
   constexpr tensor(const ShapeT &shape, std::initializer_list<value_type> ilist)
-      : base_t(shape, with_iterators, ilist.begin(), ilist.end()) {}
+      : storage_t(shape, with_iterators, ilist.begin(), ilist.end()) {}
 
+  // tensor(begin, end)
   template <class IterT,
             class = std::enable_if_t<(ShapeT::dynamic_size_num == 0 &&
                                       is_iterator<IterT>::value)>>
   constexpr tensor(IterT begin, IterT end, yes * = nullptr)
-      : base_t(ShapeT(), with_iterators, begin, end) {}
+      : storage_t(ShapeT(), with_iterators, begin, end) {}
 
   template <class IterT,
             class = std::enable_if_t<(ShapeT::dynamic_size_num == 1 &&
                                       is_iterator<IterT>::value)>>
   constexpr tensor(IterT begin, IterT end, no * = nullptr)
-      : base_t(details::_make_shape_from_magnitude_seq<ShapeT>(
+      : storage_t(details::_make_shape_from_magnitude_seq<ShapeT>(
                    std::distance(begin, end),
                    make_const_sequence(const_size<ShapeT::rank>())),
                with_iterators, begin, end) {}
 
+  // tensor(shape, begin, end)
   template <class IterT, class = std::enable_if_t<is_iterator<IterT>::value>>
   constexpr tensor(const ShapeT &shape, IterT begin, IterT end)
-      : base_t(shape, with_iterators, begin, end) {}
+      : storage_t(shape, with_iterators, begin, end) {}
 
   tensor(const tensor &) = default;
   tensor(tensor &&) = default;
@@ -221,25 +247,8 @@ public:
   }
 
 public:
-  constexpr decltype(auto) shape() const { return base_t::shape(); }
-  template <class... SubTs>
-  constexpr decltype(auto) operator()(const SubTs &... subs) const {
-    static_assert(sizeof...(SubTs) == ShapeT::rank,
-                  "invalid number of subscripts");
-    return base_t::data()[sub2ind(shape(), subs...)];
-  }
-  template <class... SubTs> decltype(auto) operator()(const SubTs &... subs) {
-    static_assert(sizeof...(SubTs) == ShapeT::rank,
-                  "invalid number of subscripts");
-    return base_t::data()[sub2ind(shape(), subs...)];
-  }
-  template <class IndexT>
-  constexpr decltype(auto) operator[](const IndexT &ind) const {
-    return base_t::data()[ind];
-  }
-  template <class IndexT> decltype(auto) operator[](const IndexT &ind) {
-    return base_t::data()[ind];
-  }
+    constexpr decltype(auto) at(size_t ind) const {return data()[ind]; }
+    decltype(auto) at(size_t ind)  {return data()[ind]; }
 };
 
 // shape_of
@@ -252,11 +261,11 @@ constexpr auto shape_of(const tensor<ShapeT, ET> &t) {
 template <class ET, class ShapeT, class... SubTs>
 constexpr decltype(auto) element_at(const tensor<ShapeT, ET> &t,
                                     const SubTs &... subs) {
-  return t(subs...);
+  return t.at(sub2ind(t.shape(), subs...));
 }
 template <class ET, class ShapeT, class... SubTs>
 decltype(auto) element_at(tensor<ShapeT, ET> &t, const SubTs &... subs) {
-  return t(subs...);
+  return t.at(sub2ind(t.shape(), subs...));
 }
 
 // auxiliary
@@ -264,11 +273,11 @@ decltype(auto) element_at(tensor<ShapeT, ET> &t, const SubTs &... subs) {
 template <class ET, class ShapeT, class IndexT>
 constexpr decltype(auto) element_at_index(const tensor<ShapeT, ET> &t,
                                           const IndexT &ind) {
-  return t[ind];
+  return t.at(ind);
 }
 template <class ET, class ShapeT, class IndexT>
 decltype(auto) element_at_index(tensor<ShapeT, ET> &t, const IndexT &ind) {
-  return t[ind];
+  return t.at(ind);
 }
 
 // reserve_shape
@@ -282,7 +291,6 @@ void reserve_shape(tensor_storage<ShapeT, ET, T, false> &t,
                    const tensor_shape<ST, SizeTs...> &shape) {
   t.set_shape(shape);
 }
-
 
 // vec_
 template <class T, size_t N>
@@ -312,6 +320,11 @@ using cube_ =
            T>;
 using cube2 = cube_<double, 2, 2, 2>;
 using cube3 = cube_<double, 3, 3, 3>;
+
+// cubex_
+template <class T>
+using cubex_ = tensor<tensor_shape<size_t, size_t, size_t, size_t>, T>;
+using cubex = matx_<double>;
 
 // tensor_of_rank
 namespace details {
