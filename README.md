@@ -1,5 +1,6 @@
 # Wheels
-A C++ Toolkit for Geometry, Graphics and Vision
+A C++ Toolkit for Geometry, Graphics and Vision.
+Currently 
 
 ## Features
 ### generic tensors
@@ -44,25 +45,26 @@ void foo(const tensor_base<tensor_shape<size_t, RowsT, ColsT>, std::complex<T>, 
   // ... 
 }
 ```
-### more...
+### more tools ...
+Index tags can be used in element retrieval.
 ```cpp
-// element retreival
-auto t = ones(100, 200).eval(); // a 100x200 matrix
-auto efirst = t[0];     // via vectoized index
-auto efirst2 = t(0, 0); // via tensor subscripts
-// index tags can be used to represent sizes
 using namespace wheels::index_tags;
-auto e1 = t[length - 1]; // same with t[100*200-1]
+auto t = ones(100, 200).eval(); // a 100x200 matrix
+auto efirst = t[10];      // element at vectoized index 10
+auto efirst2 = t(20, 30); // element at tensor subscripts (20, 30)
+auto e1 = t[length - 1];  // same with t[100*200-1]
 auto e2 = t(length / 2, (length - 20) / 2);   // same with t(100/2, (200-20)/2)
-auto e3 = t(10, (length / 10 + 2) * 2); // same with t(10, (200/10+2)*2)
-auto e4 = t(last, last / 3);            // last = length-1
-
-// symbolic expressions
-auto fun = max(0_symbol + 1_symbol * 2);
-auto result1 = fun(3, 2); // 0_symbol->3, 1_symbol->2, scalar calculation
-auto result2 = fun(vec3(2, 3, 4), ones(3)); // 0_symbol->vec3(2, 3, 4), 1_symbol->ones(3), vector calculation
-
-// wheels classes are all serializable using cereal
+auto e3 = t(10, (length / 10 + 2) * 2);       // same with t(10, (200/10+2)*2)
+auto e4 = t(last, last / 3);                  // last = length-1
+```
+Symbolic expressions. 
+```cpp
+auto fun = max(0_symbol + 1, 1_symbol * 2);
+auto result1 = fun(3, 2);                          // 0_symbol->3, 1_symbol->2, result1 = 4 of int
+auto result2 = fun(vec3(2, 3, 4), ones(3)).eval(); // 0_symbol->vec3(2, 3, 4), 1_symbol->ones(3), result2 = [4, 4, 5] of vec3
+```
+Tensors are all serializable based on [cereal](https://github.com/USCiLab/cereal).
+```cpp
 write(filesystem::temp_directory_path() / "vec3.cereal", vec3(1, 2, 3));
 vec3 v;
 read(filesystem::temp_directory_path() / "vec3.cereal", v); // v == vec3(1, 2, 3)
