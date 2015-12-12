@@ -1,5 +1,5 @@
 # Wheels
-A C++ Toolkit for Computer Vision and Computer Graphics
+A C++ Toolkit for Geometry, Graphics and Vision
 
 ## Implemented Features
 ### generic tensors
@@ -68,4 +68,9 @@ auto e4 = rr(last, last / 3);            // last = length-1
 auto fun = max(0_symbol + 1_symbol * 2);
 auto result1 = fun(3, 2); // 0_symbol->3, 1_symbol->2, scalar calculation
 auto result2 = fun(vec3(2, 3, 4), ones(3)); // 0_symbol->vec3(2, 3, 4), 1_symbol->ones(3), vector calculation
+
+// wheels classes are all serializable using cereal
+write(filesystem::temp_directory_path() / "vec3.cereal", vec3(1, 2, 3));
+vec3 v;
+read(filesystem::temp_directory_path() / "vec3.cereal", v); // v == vec3(1, 2, 3)
 ```
