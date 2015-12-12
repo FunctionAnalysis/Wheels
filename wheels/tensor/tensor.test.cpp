@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "tensor.hpp"
+#include "methods.hpp"
 
 using namespace wheels;
 using namespace wheels::literals;
@@ -60,4 +60,11 @@ TEST(tensor, element) {
       ASSERT_TRUE(m1(last - i, last - j) == 8);
     }
   }
+}
+
+TEST(tensor, serialize) {
+  write(filesystem::temp_directory_path() / "vec3.cereal", vec3(1, 2, 3));
+  vec3 v;
+  read(filesystem::temp_directory_path() / "vec3.cereal", v);
+  ASSERT_TRUE(v == vec3(1, 2, 3));
 }

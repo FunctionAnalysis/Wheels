@@ -144,16 +144,16 @@ template <class ArchiveT = cereal::PortableBinaryOutputArchive, class... T>
 inline bool write(const filesystem::path &filename, const T &... data) {
   std::ofstream out(filename, std::ios::binary);
   if (!out.is_open()) {
-    ws::println("file \"", filename, "\" cannot be saved!");
+    println("file \"", filename, "\" cannot be saved!");
     return false;
   }
   try {
     ArchiveT archive(out);
     archive(data...);
-    ws::println("file \"", filename, "\" saved");
+    println("file \"", filename, "\" saved");
     out.close();
   } catch (std::exception &e) {
-    ws::println(e.what());
+    println(e.what());
     return false;
   }
   return true;
@@ -170,16 +170,16 @@ template <class ArchiveT = cereal::PortableBinaryInputArchive, class... T>
 inline bool read(const filesystem::path &filename, T &... data) {
   std::ifstream in(filename, std::ios::binary);
   if (!in.is_open()) {
-    ws::println("file \"", filename, "\" cannot be loaded!");
+    println("file \"", filename, "\" cannot be loaded!");
     return false;
   }
   try {
     ArchiveT archive(in);
     archive(data...);
-    ws::println("file \"", filename, "\" loaded");
+    println("file \"", filename, "\" loaded");
     in.close();
   } catch (std::exception &e) {
-    ws::println(e.what());
+    println(e.what());
     return false;
   }
   return true;
