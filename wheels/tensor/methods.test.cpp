@@ -3,6 +3,7 @@
 #include "methods.hpp"
 
 using namespace wheels;
+using namespace literals;
 
 TEST(tensor, methods) {
   auto kk = ewise_mul(cube2(), cube2()).eval();
@@ -37,6 +38,20 @@ TEST(tensor, methods2) {
       rr(length / 2, (length - 20) / 2);   // same with rr(100/2, (200-20)/2)
   auto e3 = rr(9, (length / 10 + 2) * 2); // same with rr(10, (200/10+2)*2)
   auto e4 = rr(last, last / 3);            // last = length-1
+}
+
+TEST(tensor, methods3) {
+  auto fun = max(0_symbol + 1, 1_symbol);
+  auto result1 = fun(3, 2); // 0_symbol->3, 1_symbol->2, result1 = 4 of int
+  //ASSERT_EQ(result1, 4);
+  auto result2 = fun(vec3(2, 3, 4), ones(3) * 2); // 0_symbol->vec3(2, 3, 4),
+  auto e0 = element_at(result2, 0);
+  auto e1 = element_at(result2, 1);
+  auto e2 = element_at(result2, 2);
+  auto r = result2.eval();                                                   // 1_symbol->ones(3),
+                                                     // result2 = [4, 4, 5] of
+                                                     // vec3
+  ASSERT_TRUE(result2 == vec3(4, 4, 5));
 }
 
 TEST(tensor, demo) {
