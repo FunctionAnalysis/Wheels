@@ -1,6 +1,5 @@
 # Wheels
 A C++ Toolkit for Geometry, Graphics and Vision.
-Currently 
 
 ## Features
 ### generic tensors
@@ -69,3 +68,6 @@ write(filesystem::temp_directory_path() / "vec3.cereal", vec3(1, 2, 3));
 vec3 v;
 read(filesystem::temp_directory_path() / "vec3.cereal", v); // v == vec3(1, 2, 3)
 ```
+
+## Tested Compilers
+Visual Studio 2015
