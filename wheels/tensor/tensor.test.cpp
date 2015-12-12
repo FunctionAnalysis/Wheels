@@ -10,26 +10,28 @@ TEST(tensor, tensor) {
   static_assert(std::is_standard_layout<mat2>::value, "");
   static_assert(!std::is_standard_layout<matx>::value, "");
 
-  for_each([](double e) { ASSERT_EQ(e, 0.0); }, vec3());
-  for_each([](double e) { ASSERT_EQ(e, 5.0); }, vec3(5, 5, 5));
-  for_each([](double e) { ASSERT_EQ(e, 6.0); }, vecx(6, 6, 6));
-  for_each([](double e) { ASSERT_EQ(e, 0.0); },
-           cubex_<double>(make_shape(3, 4, 5)));
-  for_each([](double e) { ASSERT_EQ(e, 123.0); },
-           matx(make_shape(100, 100), 123));
-  for_each([](double e) { ASSERT_EQ(e, 7.0); },
-           matx(make_shape(2, 2), with_elements, 7, 7, 7, 7));
-  for_each([](double e) { ASSERT_EQ(e, 15.0); }, vec3({15.0, 15.0, 15.0}));
-  for_each([](double e) { ASSERT_EQ(e, 16.0); }, vecx({16.0, 16.0, 16.0}));
-  for_each([](double e) { ASSERT_EQ(e, 17.0); },
-           matx(make_shape(2, 2), {17.0, 17.0, 17.0, 17.0}));
+  constexpr auto sss = sizeof(vec3);
+
+  vec3().for_each([](double e) { ASSERT_EQ(e, 0.0); });
+  vec3(5, 5, 5).for_each([](double e) { ASSERT_EQ(e, 5.0); });
+  vecx(6, 6, 6).for_each([](double e) { ASSERT_EQ(e, 6.0); });
+  cubex_<double>(make_shape(3, 4, 5))
+      .for_each([](double e) { ASSERT_EQ(e, 0.0); });
+  matx(make_shape(100, 100), 123)
+      .for_each([](double e) { ASSERT_EQ(e, 123.0); });
+  matx(make_shape(2, 2), with_elements, 7, 7, 7, 7)
+      .for_each([](double e) { ASSERT_EQ(e, 7.0); });
+  vec3({15.0, 15.0, 15.0}).for_each([](double e) { ASSERT_EQ(e, 15.0); });
+  vecx({16.0, 16.0, 16.0}).for_each([](double e) { ASSERT_EQ(e, 16.0); });
+  matx(make_shape(2, 2), {17.0, 17.0, 17.0, 17.0})
+      .for_each([](double e) { ASSERT_EQ(e, 17.0); });
 
   double data[] = {8.0, 8.0, 8.0, 8.0};
-  for_each([](double e) { ASSERT_EQ(e, 8.0); },
-           vec_<double, 4>(data, data + 4));
-  for_each([](double e) { ASSERT_EQ(e, 8.0); }, vecx_<double>(data, data + 4));
-  for_each([](double e) { ASSERT_EQ(e, 8.0); },
-           matx(make_shape(2, 2), data, data + 4));
+  vec_<double, 4>(data, data + 4).for_each([](double e) { ASSERT_EQ(e, 8.0); });
+  vecx_<double>(data, data + 4).for_each([](double e) { ASSERT_EQ(e, 8.0); });
+
+  matx(make_shape(2, 2), data, data + 4)
+      .for_each([](double e) { ASSERT_EQ(e, 8.0); });
 
   ASSERT_TRUE(vecx(1, 2, 3).numel() == 3);
   ASSERT_TRUE(vecx(1, 2, 3, 4).numel() == 4);

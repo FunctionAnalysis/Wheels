@@ -72,6 +72,14 @@ template <class T> struct tensor_core {
                                       details::_eval_index_expr(e, numel()));
   }
 
+  // for_each
+  template <class FunT> void for_each(FunT &fun) const {
+    for_each_element(order_flag<unordered>(), fun, derived());
+  }
+  template <class FunT> void for_each(FunT &fun) {
+    for_each_element(order_flag<unordered>(), fun, derived());
+  }
+
 private:
   template <class... SubEs, size_t... Is>
   constexpr decltype(auto) _parenthesis_seq(const_ints<size_t, Is...>,
@@ -239,13 +247,6 @@ template <class FunT, class T, class... Ts>
 void for_each_element(order_flag<unordered>, FunT &&fun, T &&t, Ts &&... ts) {
   for_each_element(order_flag<index_ascending>(), forward<FunT>(fun),
                    forward<T>(t), forward<Ts>(ts)...);
-}
-
-// for_each
-template <class FunT, class T, class... Ts>
-void for_each(FunT &&fun, T &&t, Ts &&... ts) {
-  for_each_element(order_flag<unordered>(), forward<FunT>(fun), forward<T>(t),
-                   forward<Ts>(ts)...);
 }
 
 // for_each_element_with_short_circuit

@@ -176,9 +176,9 @@ public:
                  ::wheels::all(std::is_convertible<EleTs, ET>::value...))>>
   constexpr tensor(EleTs &&... eles)
       : storage_t(details::_make_shape_from_magnitude_seq<ShapeT>(
-                   sizeof...(EleTs),
-                   make_const_sequence(const_size<ShapeT::rank>())),
-               with_elements, forward<EleTs>(eles)...) {}
+                      sizeof...(EleTs),
+                      make_const_sequence(const_size<ShapeT::rank>())),
+                  with_elements, forward<EleTs>(eles)...) {}
 
   // tensor(shape)
   constexpr tensor(const ShapeT &shape) : storage_t(shape) {}
@@ -222,9 +222,9 @@ public:
                                       is_iterator<IterT>::value)>>
   constexpr tensor(IterT begin, IterT end, no * = nullptr)
       : storage_t(details::_make_shape_from_magnitude_seq<ShapeT>(
-                   std::distance(begin, end),
-                   make_const_sequence(const_size<ShapeT::rank>())),
-               with_iterators, begin, end) {}
+                      std::distance(begin, end),
+                      make_const_sequence(const_size<ShapeT::rank>())),
+                  with_iterators, begin, end) {}
 
   // tensor(shape, begin, end)
   template <class IterT, class = std::enable_if_t<is_iterator<IterT>::value>>
@@ -247,8 +247,8 @@ public:
   }
 
 public:
-    constexpr decltype(auto) at(size_t ind) const {return data()[ind]; }
-    decltype(auto) at(size_t ind)  {return data()[ind]; }
+  constexpr decltype(auto) at(size_t ind) const { return data()[ind]; }
+  decltype(auto) at(size_t ind) { return data()[ind]; }
 };
 
 // shape_of
