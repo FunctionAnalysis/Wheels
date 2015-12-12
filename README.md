@@ -52,9 +52,9 @@ auto efirst = t[0];     // via vectoized index
 auto efirst2 = t(0, 0); // via tensor subscripts
 // index tags can be used to represent sizes
 using namespace wheels::index_tags;
-auto e1 = t[length - 1]; // same with rr[100*200-1]
-auto e2 = t(length / 2, (length - 20) / 2);   // same with rr(100/2, (200-20)/2)
-auto e3 = t(10, (length / 10 + 2) * 2); // same with rr(10, (200/10+2)*2)
+auto e1 = t[length - 1]; // same with t[100*200-1]
+auto e2 = t(length / 2, (length - 20) / 2);   // same with t(100/2, (200-20)/2)
+auto e3 = t(10, (length / 10 + 2) * 2); // same with t(10, (200/10+2)*2)
 auto e4 = t(last, last / 3);            // last = length-1
 
 // symbolic expressions
