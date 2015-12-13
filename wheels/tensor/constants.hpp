@@ -7,8 +7,8 @@ namespace wheels {
 // constant_result
 template <class ShapeT, class ET, class OpT>
 class constant_result
-    : public tensor_op_result<ShapeT, ET, OpT,
-                              constant_result<ShapeT, ET, OpT>> {
+    : public tensor_op_result_base<ShapeT, ET, OpT,
+                                   constant_result<ShapeT, ET, OpT>> {
 public:
   using shape_type = ShapeT;
   using value_type = ET;

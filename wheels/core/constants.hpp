@@ -336,6 +336,22 @@ constexpr auto make_const_range(const const_ints<T, From> &from,
   return typename details::_make_seq_range<T, From, To>::type();
 }
 
+// repeat
+namespace details {
+template <class T, T S, class SeqT> struct _repeat { using type = void; };
+template <class T, T S, size_t... Is>
+struct _repeat<T, S, const_ints<size_t, Is...>> {
+  using type = const_ints<T, always<T, S, const_index<Is>>::value...>;
+};
+}
+template <class T, T Val, class K, K Times>
+constexpr auto repeat(const const_ints<T, Val> &v,
+                     const const_ints<K, Times> &times) {
+  return typename details::_repeat<
+      T, Val, typename details::_make_seq<size_t, Times == 0,
+                                          (size_t)Times>::type>::type();
+}
+
 // count
 namespace details {
 template <class T, T S, T... Ss, T V>

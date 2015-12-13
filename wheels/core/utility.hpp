@@ -148,6 +148,13 @@ template <class T, T Val, class... ArgTs> struct always {
 template <class T, size_t... ArgIs> struct always2 { using type = T; };
 template <class T, size_t... ArgIs>
 using always_t = typename always2<T, ArgIs...>::type;
+template <class T> struct always_val {
+  constexpr always_val(const T &v) : val(v) {}
+  template <class... ArgTs> constexpr const T &operator(ArgTs &&...) const {
+    return val;
+  }
+  T val;
+};
 
 // print_to
 inline std::ostream &print_to(std::ostream &os) { return os; }

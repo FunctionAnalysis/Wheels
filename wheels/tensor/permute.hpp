@@ -7,8 +7,8 @@ namespace wheels {
 // permute_result
 template <class ShapeT, class ET, class T, size_t... Inds>
 class permute_result
-    : public tensor_op_result<ShapeT, ET, void,
-                              permute_result<ShapeT, ET, T, Inds...>> {
+    : public tensor_op_result_base<ShapeT, ET, void,
+                                   permute_result<ShapeT, ET, T, Inds...>> {
   static_assert(sizeof...(Inds) == ShapeT::rank,
                 "invalid number of inds in permute");
 
@@ -24,18 +24,18 @@ private:
 };
 
 // shape_of
-template <class ShapeT, class ET, class T, size_t ... Inds>
-constexpr auto shape_of(const permute_result<ShapeT, ET, T, Inds ...> &m) {
-  return ::wheels::permute(m.input().shape(), const_index<Inds>() ...);
+template <class ShapeT, class ET, class T, size_t... Inds>
+constexpr auto shape_of(const permute_result<ShapeT, ET, T, Inds...> &m) {
+  return ::wheels::permute(m.input().shape(), const_index<Inds>()...);
 }
 
 // element_at
 namespace details {
 template <class ShapeT, class ET, class T, size_t... Inds, class SubsTupleT,
           size_t... Is>
-constexpr decltype(auto) _element_at_permute_result_seq(
-    const permute_result<ShapeT, ET, T, Inds...> &m, SubsTupleT &&subs,
-    const_ints<size_t, Is...>) {
+constexpr decltype(auto)
+_element_at_permute_result_seq(const permute_result<ShapeT, ET, T, Inds...> &m,
+                               SubsTupleT &&subs, const_ints<size_t, Is...>) {
   return ::wheels::element_at(
       m.input(),
       std::get<decltype(::wheels::find_first_of(
@@ -51,24 +51,24 @@ element_at(const permute_result<ShapeT, ET, T, Inds...> &m,
 }
 
 // for_each_element
-template <class FunT, class ShapeT, class ET, class T, size_t ... Inds>
+template <class FunT, class ShapeT, class ET, class T, size_t... Inds>
 void for_each_element(order_flag<unordered> o, FunT &&fun,
-                      const permute_result<ShapeT, ET, T, Inds ...> &m) {
+                      const permute_result<ShapeT, ET, T, Inds...> &m) {
   for_each_element(o, forward<FunT>(fun), m.input());
 }
 
 // for_each_element_if
-template <class FunT, class ShapeT, class ET, class T, size_t ... Inds>
+template <class FunT, class ShapeT, class ET, class T, size_t... Inds>
 bool for_each_element_with_short_circuit(
     order_flag<unordered> o, FunT &&fun,
-    const permute_result<ShapeT, ET, T, Inds ...> &m) {
+    const permute_result<ShapeT, ET, T, Inds...> &m) {
   return for_each_element_with_short_circuit(o, forward<FunT>(fun), m.input());
 }
 
 // for_each_nonzero_element
-template <class FunT, class ShapeT, class ET, class T, size_t ... Inds>
+template <class FunT, class ShapeT, class ET, class T, size_t... Inds>
 void for_each_nonzero_element(order_flag<unordered> o, FunT &&fun,
-                              const permute_result<ShapeT, ET, T, Inds ...> &m) {
+                              const permute_result<ShapeT, ET, T, Inds...> &m) {
   for_each_nonzero_element(o, forward<FunT>(fun), m.input());
 }
 
@@ -81,8 +81,8 @@ E reduce_elements(const permute_result<ShapeT, ET, T, Inds...> &t, E initial,
 }
 
 // norm_squared
-template <class ShapeT, class ET, class T, size_t ... Inds>
-ET norm_squared(const permute_result<ShapeT, ET, T, Inds ...> &t) {
+template <class ShapeT, class ET, class T, size_t... Inds>
+ET norm_squared(const permute_result<ShapeT, ET, T, Inds...> &t) {
   return norm_squared(t.input());
 }
 
@@ -108,12 +108,12 @@ constexpr auto permute(const tensor_base<ShapeT, ET, T> &t,
 }
 
 template <class ShapeT, class ET, class T, class... IndexTs>
-constexpr auto permute(tensor_base<ShapeT, ET, T> &&t,
-                       const IndexTs &...) {
+constexpr auto permute(tensor_base<ShapeT, ET, T> &&t, const IndexTs &...) {
   static_assert(sizeof...(IndexTs) == ShapeT::rank,
                 "invalid number of inds in permute");
   using shape_t = decltype(::wheels::permute(t.shape(), IndexTs()...));
-  return permute_result<shape_t, ET, T, IndexTs::value...>(std::move(t.derived()));
+  return permute_result<shape_t, ET, T, IndexTs::value...>(
+      std::move(t.derived()));
 }
 
 // transpose

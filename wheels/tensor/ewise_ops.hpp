@@ -7,7 +7,7 @@ namespace wheels {
 // ewise ops
 template <class ShapeT, class EleT, class OpT, class InputT, class... InputTs>
 class ewise_op_result
-    : public tensor_op_result<
+    : public tensor_op_result_base<
           ShapeT, EleT, OpT,
           ewise_op_result<ShapeT, EleT, OpT, InputT, InputTs...>> {
 public:

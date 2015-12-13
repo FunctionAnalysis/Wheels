@@ -53,6 +53,15 @@ template <class T> struct tensor_core {
   constexpr auto normalized() const & { return derived() / this->norm(); }
   auto normalized() && { return std::move(derived()) / this->norm(); }
 
+  constexpr auto sum() const { return ::wheels::sum_of(derived()); }
+
+  // at_or(otherwisev, subs ...)
+  template <class E, class... SubTs>
+  constexpr decltype(auto) at_or(E &&otherwise, const SubTs &... subs) const {
+    return _at_or_seq(forward<E>(otherwise),
+                      make_const_sequence_for<SubTs...>(), subs...);
+  }
+
   // operator()(subs ...)
   template <class... SubTs>
   constexpr decltype(auto) operator()(const SubTs &... subs) const {
@@ -89,6 +98,17 @@ template <class T> struct tensor_core {
   }
 
 private:
+  template <class E, class... SubEs, size_t... Is>
+  constexpr decltype(auto) _at_or_seq(E &&otherwise,
+                                      const_ints<size_t, Is...> seq,
+                                      const SubEs &... subes) const {
+    return ::wheels::all(::wheels::is_between(
+               details::_eval_index_expr(subes, size(const_size<Is>())), 0,
+               size(const_size<Is>()))...)
+               ? _parenthesis_seq(seq, subes...)
+               : forward<E>(otherwise);
+  }
+
   template <class... SubEs, size_t... Is>
   constexpr decltype(auto) _parenthesis_seq(const_ints<size_t, Is...>,
                                             const SubEs &... subes) const {
@@ -243,20 +263,20 @@ constexpr auto category_for_overloading(const tensor_base<ShapeT, ET, T> &,
   return category_tensor<ShapeT, ET, T>();
 }
 
-// tensor_op_result
+// tensor_op_result_base
 template <class ShapeT, class EleT, class OpT, class T>
-struct tensor_op_result : tensor_base<ShapeT, EleT, T> {};
+struct tensor_op_result_base : tensor_base<ShapeT, EleT, T> {};
 
 // t1 == t2
 template <class ShapeT, class T>
-struct tensor_op_result<ShapeT, bool, binary_op_eq, T>
+struct tensor_op_result_base<ShapeT, bool, binary_op_eq, T>
     : tensor_base<ShapeT, bool, T> {
   constexpr operator bool() const { return ::wheels::all_of(derived()); }
 };
 
 // t1 != t2
 template <class ShapeT, class T>
-struct tensor_op_result<ShapeT, bool, binary_op_neq, T>
+struct tensor_op_result_base<ShapeT, bool, binary_op_neq, T>
     : tensor_base<ShapeT, bool, T> {
   constexpr operator bool() const { return ::wheels::any_of(derived()); }
 };
@@ -320,7 +340,7 @@ template <class FunT, class T, class... Ts>
 void for_each_element(order_flag<index_ascending>, FunT &fun, T &t,
                       Ts &... ts) {
   assert(all_same(shape_of(t), shape_of(ts)...));
-  for_each_subscript(shape_of(t), [&fun, &t, &ts ...](auto &... subs) {
+  for_each_subscript(shape_of(t), [&fun, &t, &ts...](auto &... subs) {
     fun(element_at(t, subs...), element_at(ts, subs...)...);
   });
 }
@@ -384,8 +404,7 @@ void assign_elements(tensor_base<ToShapeT, ToET, ToT> &to,
 template <class T, class E, class ReduceT>
 E reduce_elements(const T &t, E initial, ReduceT &red) {
   for_each_element(order_flag<unordered>(),
-                   [&initial, &red](auto &e) { initial = red(initial, e); },
-                   t);
+                   [&initial, &red](auto &e) { initial = red(initial, e); }, t);
   return initial;
 }
 
@@ -417,5 +436,14 @@ template <class ShapeT, class ET, class T>
 constexpr bool any_of(const tensor_base<ShapeT, ET, T> &t) {
   return !for_each_element_with_short_circuit(
       order_flag<unordered>(), [](auto &&e) { return !e; }, t.derived());
+}
+
+// Scalar sum(s)
+template <class ShapeT, class ET, class T>
+constexpr ET sum_of(const tensor_base<ShapeT, ET, T> &t) {
+  ET s = types<ET>::zero();
+  for_each_nonzero_element(order_flag<unordered>(),
+                           [&s](const auto &e) { s += e; }, t.derived());
+  return s;
 }
 }
