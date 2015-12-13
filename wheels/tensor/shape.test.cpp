@@ -68,4 +68,8 @@ TEST(tensor, shape) {
               make_shape(1, 3, 5, 7, 9, 11));
 
   ASSERT_TRUE(repeat_shape(make_shape(5_c), 3_c) == make_shape(5_c, 5_c, 5_c));
+
+  static_assert(types<shape_of_rank<int, 4>>() ==
+                    types<tensor_shape<int, int, int, int, int>>(),
+                "");
 }

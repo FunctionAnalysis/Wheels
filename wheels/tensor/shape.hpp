@@ -247,6 +247,20 @@ private:
   T _mag;
 };
 
+// shape_of_rank
+namespace details {
+template <class T, class SeqT> struct _make_shape_of_rank_seq {
+  using type = void;
+};
+template <class T, size_t... Is>
+struct _make_shape_of_rank_seq<T, const_ints<size_t, Is...>> {
+  using type = tensor_shape<T, always_t<T, Is>...>;
+};
+}
+template <class T, size_t Rank>
+using shape_of_rank = typename details::_make_shape_of_rank_seq<
+    T, decltype(make_const_sequence(const_size<Rank>()))>::type;
+
 // sub2ind
 template <class T> constexpr T sub2ind(const tensor_shape<T> &) { return 0; }
 template <class T, class SizeT, class... SizeTs>
