@@ -4,7 +4,7 @@
 #include "ewise_ops.hpp"
 #include "matrix_mul.hpp"
 #include "tensor.hpp"
-#include "transpose.hpp"
+#include "permute.hpp"
 
 namespace wheels {
 // distance

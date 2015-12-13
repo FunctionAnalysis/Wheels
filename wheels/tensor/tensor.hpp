@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base.hpp"
+#include "methods.hpp"
 
 namespace wheels {
 
@@ -290,6 +291,26 @@ template <class ET, class ShapeT, class T, class ST, class... SizeTs>
 void reserve_shape(tensor_storage<ShapeT, ET, T, false> &t,
                    const tensor_shape<ST, SizeTs...> &shape) {
   t.set_shape(shape);
+}
+
+// for_each_element
+template <class FunT, class ET, class ShapeT, class... Ts>
+void for_each_element(order_flag<index_ascending>, FunT &fun,
+                      const tensor<ShapeT, ET> &t, Ts &... ts) {
+  assert(all_same(shape_of(t), shape_of(ts)...));
+  for (size_t i = 0; i < t.numel(); i++) {
+    fun(element_at_index(t, i), element_at_index(ts, i)...);
+  }
+}
+template <class FunT, class ET, class ShapeT, class Ts>
+void for_each_element(order_flag<index_ascending>, FunT &fun,
+                      tensor<ShapeT, ET> &t, Ts & ts) {
+  assert(all_same(shape_of(t), shape_of(ts)));
+  for (size_t i = 0; i < t.numel(); i++) {
+      //auto tt = std::forward_as_tuple(element_at_index(ts, i) ...);
+      auto e = element_at_index(ts, i);
+    fun(element_at_index(t, i), element_at_index(ts, i));
+  }
 }
 
 // vec_

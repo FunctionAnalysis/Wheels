@@ -74,10 +74,18 @@ template <class T> struct tensor_core {
 
   // for_each
   template <class FunT> void for_each(FunT &fun) const {
-    for_each_element(order_flag<unordered>(), fun, derived());
+    ::wheels::for_each_element(order_flag<unordered>(), fun, derived());
   }
   template <class FunT> void for_each(FunT &fun) {
-    for_each_element(order_flag<unordered>(), fun, derived());
+    ::wheels::for_each_element(order_flag<unordered>(), fun, derived());
+  }
+
+  // transform
+  template <class FunT> auto transform(FunT &&fun) const & {
+    return ::wheels::transform(derived(), forward<FunT>(fun));
+  }
+  template <class FunT> auto transform(FunT &&fun) && {
+    return ::wheels::transform(std::move(derived()), forward<FunT>(fun));
   }
 
 private:
@@ -103,7 +111,6 @@ template <class ET, class T> struct tensor_base_ : tensor_core<T> {
 };
 template <class T> struct tensor_base_<bool, T> : tensor_core<T> {
   using value_type = bool;
-  constexpr operator bool() const { return ::wheels::all_of(derived()); }
 };
 
 // tensor_base<ShapeT, ET, T>
@@ -130,10 +137,48 @@ struct tensor_base<tensor_shape<ST, NT>, ET, T> : tensor_base_<ET, T> {
 
   const tensor_base &base() const { return *this; }
 
-  constexpr tensor<tensor_shape<ST, NT>, ET> eval() const {
-    return tensor<tensor_shape<ST, NT>, ET>(derived());
+  constexpr tensor<shape_type, value_type> eval() const {
+    return tensor<shape_type, value_type>(derived());
   }
-  constexpr operator tensor<tensor_shape<ST, NT>, ET>() const { return eval(); }
+  constexpr operator tensor<shape_type, value_type>() const { return eval(); }
+
+  // xyzw
+  constexpr decltype(auto) x() const {
+    return ::wheels::element_at(derived(), 0);
+  }
+  constexpr decltype(auto) y() const {
+    return ::wheels::element_at(derived(), 1);
+  }
+  constexpr decltype(auto) z() const {
+    return ::wheels::element_at(derived(), 2);
+  }
+  constexpr decltype(auto) w() const {
+    return ::wheels::element_at(derived(), 3);
+  }
+
+  decltype(auto) x() { return ::wheels::element_at(derived(), 0); }
+  decltype(auto) y() { return ::wheels::element_at(derived(), 1); }
+  decltype(auto) z() { return ::wheels::element_at(derived(), 2); }
+  decltype(auto) w() { return ::wheels::element_at(derived(), 3); }
+
+  // rgba
+  constexpr decltype(auto) r() const {
+    return ::wheels::element_at(derived(), 0);
+  }
+  constexpr decltype(auto) g() const {
+    return ::wheels::element_at(derived(), 1);
+  }
+  constexpr decltype(auto) b() const {
+    return ::wheels::element_at(derived(), 2);
+  }
+  constexpr decltype(auto) a() const {
+    return ::wheels::element_at(derived(), 3);
+  }
+
+  decltype(auto) r() { return ::wheels::element_at(derived(), 0); }
+  decltype(auto) g() { return ::wheels::element_at(derived(), 1); }
+  decltype(auto) b() { return ::wheels::element_at(derived(), 2); }
+  decltype(auto) a() { return ::wheels::element_at(derived(), 3); }
 
   template <class ST2, class NT2, class ET2, class T2>
   constexpr decltype(auto)
@@ -156,12 +201,10 @@ struct tensor_base<tensor_shape<ST, MT, NT>, ET, T> : tensor_base_<ET, T> {
 
   const tensor_base &base() const { return *this; }
 
-  constexpr tensor<tensor_shape<ST, MT, NT>, ET> eval() const {
-    return tensor<tensor_shape<ST, MT, NT>, ET>(derived());
+  constexpr tensor<shape_type, value_type> eval() const {
+    return tensor<shape_type, value_type>(derived());
   }
-  constexpr operator tensor<tensor_shape<ST, MT, NT>, ET>() const {
-    return eval();
-  }
+  constexpr operator tensor<shape_type, value_type>() const { return eval(); }
 
   constexpr auto rows() const { return size(const_index<0>()); }
   constexpr auto cols() const { return size(const_index<1>()); }
@@ -171,6 +214,27 @@ struct tensor_base<tensor_shape<ST, MT, NT>, ET, T> : tensor_base_<ET, T> {
   auto t() && { return ::wheels::transpose(std::move(derived())); }
 };
 
+// 3 dimensional (only third dimension is static) tensor (image)
+template <class ST, ST D, class ET, class T>
+struct tensor_base<tensor_shape<ST, ST, ST, const_ints<ST, D>>, ET, T>
+    : tensor_base_<ET, T> {
+  using shape_type = tensor_shape<ST, ST, ST, const_ints<ST, D>>;
+  static constexpr size_t rank = 3;
+  using value_type = ET;
+
+  const tensor_base &base() const { return *this; }
+
+  constexpr tensor<shape_type, value_type> eval() const {
+    return tensor<shape_type, value_type>(derived());
+  }
+  constexpr operator tensor<shape_type, value_type>() const { return eval(); }
+
+  constexpr auto rows() const { return size(const_index<0>()); }
+  constexpr auto cols() const { return size(const_index<1>()); }
+  constexpr auto pixels() const { return rows() * cols(); }
+  static constexpr auto channels() { return const_ints<ST, D>(); }
+};
+
 // category_for_overloading
 // common_func
 template <class ShapeT, class ET, class T, class OpT>
@@ -178,6 +242,24 @@ constexpr auto category_for_overloading(const tensor_base<ShapeT, ET, T> &,
                                         const common_func<OpT> &) {
   return category_tensor<ShapeT, ET, T>();
 }
+
+// tensor_op_result
+template <class ShapeT, class EleT, class OpT, class T>
+struct tensor_op_result : tensor_base<ShapeT, EleT, T> {};
+
+// t1 == t2
+template <class ShapeT, class T>
+struct tensor_op_result<ShapeT, bool, binary_op_eq, T>
+    : tensor_base<ShapeT, bool, T> {
+  constexpr operator bool() const { return ::wheels::all_of(derived()); }
+};
+
+// t1 != t2
+template <class ShapeT, class T>
+struct tensor_op_result<ShapeT, bool, binary_op_neq, T>
+    : tensor_base<ShapeT, bool, T> {
+  constexpr operator bool() const { return ::wheels::any_of(derived()); }
+};
 
 // -- necessary tensor functions
 // Shape shape_of(ts);
@@ -294,11 +376,8 @@ void assign_elements(tensor_base<ToShapeT, ToET, ToT> &to,
     reserve_shape(to.derived(), s);
   }
   for_each_element(order_flag<unordered>(),
-                   [](auto &to_e, auto from_e) {
-                     auto e = from_e;
-                     to_e = e;
-                   },
-                   to.derived(), from.derived());
+                   [](auto &to_e, auto from_e) { to_e = from_e; }, to.derived(),
+                   from.derived());
 }
 
 // Scalar reduce_elements(ts, initial, functor);

@@ -2,7 +2,7 @@
 
 #include "const_expr.hpp"
 
-TEST(core, const_symbols) {
+TEST(core, const_exprs) {
   using namespace wheels::literals;
 
   constexpr auto n1 = 0_symbol;

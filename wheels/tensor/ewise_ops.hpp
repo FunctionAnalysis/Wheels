@@ -7,8 +7,9 @@ namespace wheels {
 // ewise ops
 template <class ShapeT, class EleT, class OpT, class InputT, class... InputTs>
 class ewise_op_result
-    : public tensor_base<ShapeT, EleT, ewise_op_result<ShapeT, EleT, OpT,
-                                                       InputT, InputTs...>> {
+    : public tensor_op_result<
+          ShapeT, EleT, OpT,
+          ewise_op_result<ShapeT, EleT, OpT, InputT, InputTs...>> {
 public:
   using shape_type = ShapeT;
   using value_type = EleT;
@@ -27,6 +28,8 @@ public:
   OpT op;
   std::tuple<InputT, InputTs...> inputs;
 };
+
+// make_ewise_op_result
 template <class ShapeT, class ET, class OpT, class InputT, class... InputTs>
 constexpr ewise_op_result<ShapeT, ET, OpT, InputT, InputTs...>
 make_ewise_op_result(OpT op, InputT &&input, InputTs &&... inputs) {
@@ -159,6 +162,32 @@ struct overloaded<OpT, category_const_expr, category_tensor<ShapeT, EleT, T>> {
         OpT(), forward<T1>(t1), as_const_coeff(forward<T2>(t2)));
   }
 };
+
+// auto transform(ts)
+template <class ShapeT, class EleT, class T, class FunT>
+constexpr auto transform(const tensor_base<ShapeT, EleT, T> &t, FunT &&fun) {
+  using ele_t = std::decay_t<decltype(fun(std::declval<EleT>()))>;
+  return make_ewise_op_result<ShapeT, ele_t>(std::forward<FunT>(fun),
+                                             t.derived());
+}
+template <class ShapeT, class EleT, class T, class FunT>
+constexpr auto transform(tensor_base<ShapeT, EleT, T> &&t, FunT &&fun) {
+  using ele_t = std::decay_t<decltype(fun(std::declval<EleT>()))>;
+  return make_ewise_op_result<ShapeT, ele_t>(std::forward<FunT>(fun),
+                                             std::move(t.derived()));
+}
+
+// cast
+template <class TargetEleT, class ShapeT, class EleT, class T>
+constexpr auto static_ecast(const tensor_base<ShapeT, EleT, T> &t) {
+  return transform(t.derived(),
+                   [](const auto &e) { return static_cast<TargetEleT>(e); })
+}
+template <class TargetEleT, class ShapeT, class EleT, class T>
+constexpr auto static_ecast(tensor_base<ShapeT, EleT, T> &&t) {
+  return transform(std::move(t.derived()),
+                   [](const auto &e) { return static_cast<TargetEleT>(e); });
+}
 
 // auto normalize(ts)
 template <class T> constexpr auto normalize(T &&t) {

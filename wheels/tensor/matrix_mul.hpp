@@ -10,8 +10,9 @@ class matrix_mul_result;
 // matrix + matrix -> matrix
 template <class ShapeT, class EleT, class A, class B>
 class matrix_mul_result<ShapeT, EleT, A, B, true, true>
-    : public tensor_base<ShapeT, EleT,
-                         matrix_mul_result<ShapeT, EleT, A, B, true, true>> {
+    : public tensor_op_result<
+          ShapeT, EleT, binary_op_mul,
+          matrix_mul_result<ShapeT, EleT, A, B, true, true>> {
 public:
   using value_type = EleT;
   using shape_type = ShapeT;
@@ -37,8 +38,9 @@ private:
 // matrix + vector -> vector
 template <class ShapeT, class EleT, class A, class B>
 class matrix_mul_result<ShapeT, EleT, A, B, true, false>
-    : public tensor_base<ShapeT, EleT,
-                         matrix_mul_result<ShapeT, EleT, A, B, true, false>> {
+    : public tensor_op_result<
+          ShapeT, EleT, binary_op_mul,
+          matrix_mul_result<ShapeT, EleT, A, B, true, false>> {
 public:
   using value_type = EleT;
   using shape_type = ShapeT;
@@ -62,8 +64,9 @@ private:
 // vector + matrix -> vector
 template <class ShapeT, class EleT, class A, class B>
 class matrix_mul_result<ShapeT, EleT, A, B, false, true>
-    : public tensor_base<ShapeT, EleT,
-                         matrix_mul_result<ShapeT, EleT, A, B, false, true>> {
+    : public tensor_op_result<
+          ShapeT, EleT, binary_op_mul,
+          matrix_mul_result<ShapeT, EleT, A, B, false, true>> {
 public:
   using value_type = EleT;
   using shape_type = ShapeT;

@@ -8,6 +8,7 @@ namespace wheels {
 
 using std::forward;
 using std::move;
+template <class T> constexpr T copy(const T &t) { return t; }
 
 // if_then_else for enumulating ?:
 template <class ThenT, class ElseT>
