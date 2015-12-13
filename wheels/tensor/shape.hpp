@@ -498,26 +498,27 @@ constexpr auto cat(const IntT &a, const tensor_shape<T, Ss...> &b) {
 // repeat_shape
 namespace details {
 template <class ShapeOrSizeT>
-constexpr auto _repeat(const ShapeOrSizeT &s, const_size<0>) {
-  static_assert(always<bool, false, SizeT>::value, "times is zero");
+constexpr auto _repeat_shape(const ShapeOrSizeT &s, const_size<0>) {
+  static_assert(always<bool, false, ShapeOrSizeT>::value, "times is zero");
 }
-template <class SizeT> constexpr auto _repeat(const SizeT &s, const_size<1>) {
+template <class SizeT>
+constexpr auto _repeat_shape(const SizeT &s, const_size<1>) {
   return make_shape(s);
 }
 template <class T, class... Ss>
-constexpr decltype(auto) _repeat(const tensor_shape<T, Ss...> &s,
-                                 const_size<1>) {
+constexpr decltype(auto) _repeat_shape(const tensor_shape<T, Ss...> &s,
+                                       const_size<1>) {
   return s;
 }
 template <class ShapeOrSizeT, size_t Times>
-constexpr auto _repeat(const ShapeOrSizeT &s, const_size<Times>) {
-  return cat(_repeat(s, const_size<Times - 1>()), s);
+constexpr auto _repeat_shape(const ShapeOrSizeT &s, const_size<Times>) {
+  return cat(_repeat_shape(s, const_size<Times - 1>()), s);
 }
 }
 template <class ShapeOrSizeT, class T, T Times>
 constexpr auto repeat_shape(const ShapeOrSizeT &s,
                             const const_ints<T, Times> &times) {
-  return details::_repeat(s, const_size<(size_t)Times>());
+  return details::_repeat_shape(s, const_size<(size_t)Times>());
 }
 
 // permute

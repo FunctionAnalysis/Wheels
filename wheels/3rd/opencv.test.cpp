@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include "../core/time.hpp"
 #include "opencv.hpp"
 
 using namespace wheels;
@@ -11,12 +12,12 @@ TEST(third, opencv) {
 
   auto im = imread(filesystem::path(wheels_data_dir_str) / "wheels.jpg");
   auto ime = im.eval();
-  im = zeros<uint8_t>(250, 250, 3);
-  im.write("I:/black.jpg");
 
-  auto tt = tuplize(im);
-  auto &tt1 = tt[0];
+  auto nim = remap(ime, make_shape(800, 200, 3), [](auto y, auto x, auto c) {
+    return vec3(x * 2.0 + 300.0, y * 1.5, c / 2.0);
+  });
 
-
-
+  print(time_cost([&]() { im = nim; }));
+  cv::imshow("remap", im.mat);
+  cv::waitKey();
 }

@@ -150,7 +150,7 @@ template <class T, size_t... ArgIs>
 using always_t = typename always2<T, ArgIs...>::type;
 template <class T> struct always_val {
   constexpr always_val(const T &v) : val(v) {}
-  template <class... ArgTs> constexpr const T &operator(ArgTs &&...) const {
+  template <class... ArgTs> constexpr const T &operator()(ArgTs &&...) const {
     return val;
   }
   T val;

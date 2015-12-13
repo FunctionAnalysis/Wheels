@@ -67,5 +67,5 @@ TEST(tensor, shape) {
   ASSERT_TRUE(cat(cat(1_c, 3_c, 5_c, 7_sizec), make_shape(9, 11)) ==
               make_shape(1, 3, 5, 7, 9, 11));
 
-  ASSERT_TRUE(repeat_shape(make_shape(5_c), 3_c) == make_shape(5_c, 5_c, 5_c), "");
+  ASSERT_TRUE(repeat_shape(make_shape(5_c), 3_c) == make_shape(5_c, 5_c, 5_c));
 }

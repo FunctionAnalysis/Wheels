@@ -7,6 +7,7 @@
 #include "../core/overloads.hpp"
 #include "../core/serialize.hpp"
 #include "../core/types.hpp"
+#include "../core/parallel.hpp"
 
 #include "shape.hpp"
 
@@ -347,7 +348,15 @@ void for_each_element(order_flag<index_ascending>, FunT &fun, T &t,
 
 template <class FunT, class T, class... Ts>
 void for_each_element(order_flag<unordered>, FunT &fun, T &t, Ts &... ts) {
-  for_each_element(order_flag<index_ascending>(), fun, t, ts...);
+  if (t.numel() < (int)4e4) {
+    for_each_element(order_flag<index_ascending>(), fun, t, ts...);
+  } else {
+    parallel_for_each(t.numel(),
+                      [&](size_t i) {
+                        fun(element_at_index(t, i), element_at_index(ts, i)...);
+                      },
+                      (int)2e4);
+  }
 }
 
 // for_each_element_with_short_circuit

@@ -5,6 +5,7 @@
 #include "matrix_mul.hpp"
 #include "tensor.hpp"
 #include "permute.hpp"
+#include "remap.hpp"
 
 namespace wheels {
 // distance
