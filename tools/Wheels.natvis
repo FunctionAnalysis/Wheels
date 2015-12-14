@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <Type Name="wheels::const_ints&lt;*,*&gt;">
+    <DisplayString>{$T2}</DisplayString>
+    <Expand/>
+  </Type>
+  <Type Name="wheels::const_ints&lt;*,*,*&gt;">
+    <DisplayString>{$T2},{$T3}</DisplayString>
+    <Expand/>
+  </Type>
+  <Type Name="wheels::const_ints&lt;*,*,*,*&gt;">
+    <DisplayString>{$T2},{$T3},{$T4}</DisplayString>
+    <Expand/>
+  </Type>
+  <Type Name="wheels::const_ints&lt;*,*,*,*&gt;">
+    <DisplayString>$T2},{$T3},{$T4}</DisplayString>
+    <Expand/>
+  </Type>
+  <Type Name="wheels::const_ints&lt;*,*,*,*,*&gt;">
+    <DisplayString>$T2},{$T3},{$T4},{$T5}</DisplayString>
+    <Expand/>
+  </Type>
+
+  <Type Name="wheels::const_symbol&lt;*&gt;">
+    <DisplayString>symbol{$T1}</DisplayString>
+    <Expand/>
+  </Type>
+
+  <Type Name="wheels::tensor_shape&lt;*&gt;">
+    <DisplayString ExcludeView="noparens">empty shape</DisplayString>
+  </Type>
+  
+  <Type Name="wheels::tensor_shape&lt;*,*&gt;">
+    <DisplayString ExcludeView="noparens">{this->_val}</DisplayString>
+    <Expand>
+      <Item Name="[0]">this->_val</Item>
+    </Expand>
+  </Type>
+  <Type Name="wheels::tensor_shape&lt;*,wheels::const_ints&lt;*,*&gt;&gt;">
+    <DisplayString ExcludeView="noparens">{$T3}</DisplayString>
+    <Expand>
+      <Item Name="[0]">$T3</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="wheels::tensor_shape&lt;*,*,*&gt;">
+    <DisplayString ExcludeView="noparens">{this->_val} x {((rest_tensor_shape_t*)this)->_val}</DisplayString>
+    <Expand>
+      <Item Name="[0]">this->_val</Item>
+      <Item Name="[1]">((rest_tensor_shape_t*)this)->_val</Item>
+    </Expand>
+  </Type>
+  <Type Name="wheels::tensor_shape&lt;*,*,wheels::const_ints&lt;*,*&gt;&gt;">
+    <DisplayString ExcludeView="noparens">{this->_val} x {$T4}</DisplayString>
+    <Expand>
+      <Item Name="[0]">this->_val</Item>
+      <Item Name="[1]">$T4</Item>
+    </Expand>
+  </Type>
+  <Type Name="wheels::tensor_shape&lt;*,wheels::const_ints&lt;*,*&gt;,*&gt;">
+    <DisplayString ExcludeView="noparens">{$T3} x {((rest_tensor_shape_t*)this)->_val}</DisplayString>
+    <Expand>
+      <Item Name="[0]">$T3</Item>
+      <Item Name="[1]">((rest_tensor_shape_t*)this)->_val</Item>
+    </Expand>
+  </Type>
+  <Type Name="wheels::tensor_shape&lt;*,wheels::const_ints&lt;*,*&gt;,wheels::const_ints&lt;*,*&gt;&gt;">
+    <DisplayString ExcludeView="noparens">{$T3} x {$T5}</DisplayString>
+    <Expand>
+      <Item Name="[0]">$T3</Item>
+      <Item Name="[0]">$T5</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="wheels::tensor_shape&lt;*,*,*,*&gt;">
+    <DisplayString>{this->_val} x ...</DisplayString>
+  </Type>
+  <Type Name="wheels::tensor_shape&lt;*,wheels::const_ints&lt;*,*&gt;,*,*&gt;">
+    <DisplayString>{$T3} x ...</DisplayString>
+  </Type>
+</AutoVisualizer>

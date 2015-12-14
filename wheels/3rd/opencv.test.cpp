@@ -14,7 +14,7 @@ TEST(third, opencv) {
   auto ime = im.eval();
 
   auto nim = remap(ime, make_shape(800, 200, 3), [](auto y, auto x, auto c) {
-    return vec3(x * 2.0 + 300.0, y * 1.5, c / 2.0);
+    return vec3(x / 2.0 + 300.0, y / 3.0, c / 2.0);
   });
 
   print(time_cost([&]() { im = nim; }));
