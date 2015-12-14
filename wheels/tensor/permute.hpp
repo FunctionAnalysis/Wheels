@@ -16,8 +16,9 @@ public:
   using value_type = ET;
   using shape_type = ShapeT;
   constexpr explicit permute_result(T &&in) : _input(forward<T>(in)) {}
-  constexpr const T &input() const { return _input; }
-  T &input() { return _input; }
+  constexpr const T &input() const & { return _input; }
+  T &input() & { return _input; }
+  T input() && { return std::move(_input); }
 
 private:
   T _input;
@@ -114,6 +115,49 @@ constexpr auto permute(tensor_base<ShapeT, ET, T> &&t, const IndexTs &...) {
   using shape_t = decltype(::wheels::permute(t.shape(), IndexTs()...));
   return permute_result<shape_t, ET, T, IndexTs::value...>(
       std::move(t.derived()));
+}
+
+// permute a permuted tensor
+namespace details {
+template <class ShapeT, class ET, class T, size_t... Inds>
+constexpr decltype(auto)
+_simplify_impl(permute_result<ShapeT, ET, T, Inds...> &&p, no simplifiable) {
+  return static_cast<permute_result<ShapeT, ET, T, Inds...> &&>(p);
+}
+template <class ShapeT, class ET, class T, size_t... Inds>
+constexpr decltype(auto)
+_simplify_impl(permute_result<ShapeT, ET, T, Inds...> &&p, yes simplifiable) {
+  return std::move(p).input();
+}
+template <class ShapeT, class ET, class T, size_t... Inds>
+constexpr decltype(auto) _simplify(permute_result<ShapeT, ET, T, Inds...> &&p) {
+  return _simplify_impl(std::move(p),
+                        (const_ints<size_t, Inds...>() ==
+                         make_const_sequence(const_size<sizeof...(Inds)>()))
+                            .all());
+}
+}
+template <class ShapeT, class ET, class T, size_t... Inds, class... IndexTs>
+constexpr auto permute(const permute_result<ShapeT, ET, T, Inds...> &t,
+                       const IndexTs &...) {
+  static_assert(sizeof...(Inds) == sizeof...(IndexTs),
+                "invalid indices number");
+  using shape_t = decltype(::wheels::permute(t.shape(), IndexTs()...));
+  return details::_simplify(
+      permute_result<shape_t, ET, T, (details::_element<IndexTs::value, size_t,
+                                                        Inds...>::value)...>(
+          t.input()));
+}
+template <class ShapeT, class ET, class T, size_t... Inds, class... IndexTs>
+constexpr auto permute(permute_result<ShapeT, ET, T, Inds...> &&t,
+                       const IndexTs &...) {
+  static_assert(sizeof...(Inds) == sizeof...(IndexTs),
+                "invalid indices number");
+  using shape_t = decltype(::wheels::permute(t.shape(), IndexTs()...));
+  return details::_simplify(
+      permute_result<shape_t, ET, T, (details::_element<IndexTs::value, size_t,
+                                                        Inds...>::value)...>(
+          move(t).input()));
 }
 
 // transpose

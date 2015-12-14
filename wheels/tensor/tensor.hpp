@@ -169,10 +169,10 @@ public:
   }
 
   template <class V> decltype(auto) fields(V &&visitor) {
-    return visitor(_shape, _data);
+    return visitor(_data);
   }
   template <class V> constexpr decltype(auto) fields(V &&visitor) const {
-    return visitor(_shape, _data);
+    return visitor(_data);
   }
 
 private:
@@ -245,10 +245,10 @@ public:
   }
 
   template <class V> decltype(auto) fields(V &&visitor) {
-    return visitor(_shape, _data);
+    return visitor(_data);
   }
   template <class V> constexpr decltype(auto) fields(V &&visitor) const {
-    return visitor(_shape, _data);
+    return visitor(_data);
   }
 
 private:
