@@ -5,9 +5,9 @@
 #include "../core/const_expr.hpp"
 #include "../core/constants.hpp"
 #include "../core/overloads.hpp"
+#include "../core/parallel.hpp"
 #include "../core/serialize.hpp"
 #include "../core/types.hpp"
-#include "../core/parallel.hpp"
 
 #include "shape.hpp"
 
@@ -346,17 +346,35 @@ void for_each_element(order_flag<index_ascending>, FunT &fun, T &t,
   });
 }
 
+namespace details {
 template <class FunT, class T, class... Ts>
-void for_each_element(order_flag<unordered>, FunT &fun, T &t, Ts &... ts) {
-  if (t.numel() < (int)4e4) {
+void _for_each_element_unordered_default(yes staticShape, FunT &fun, T &t,
+                                         Ts &... ts) {
+  for_each_element(order_flag<index_ascending>(), fun, t, ts...);
+}
+constexpr size_t _numel_parallel_thres = (size_t)4e4;
+template <class FunT, class T, class... Ts>
+void _for_each_element_unordered_default(no staticShape, FunT &fun, T &t,
+                                         Ts &... ts) {
+  if (t.numel() < _numel_parallel_thres) {
     for_each_element(order_flag<index_ascending>(), fun, t, ts...);
   } else {
     parallel_for_each(t.numel(),
                       [&](size_t i) {
                         fun(element_at_index(t, i), element_at_index(ts, i)...);
                       },
-                      (int)2e4);
+                      _numel_parallel_thres / 2);
   }
+}
+}
+
+template <class FunT, class T, class... Ts>
+void for_each_element(order_flag<unordered>, FunT &fun, T &t, Ts &... ts) {
+  details::_for_each_element_unordered_default(
+      const_bool<::wheels::any(
+          std::decay_t<decltype(t.shape())>::is_static,
+          std::decay_t<decltype(ts.shape())>::is_static...)>(),
+      fun, t, ts...);
 }
 
 // for_each_element_with_short_circuit

@@ -40,6 +40,18 @@ if (${ARMADILLO_FOUND})
     endif ()
 endif()
 
+find_package(OpenBLAS)
+if (${OpenBLAS_FOUND})
+	list (APPEND DEPENDENCY_INCLUDES ${OpenBLAS_INCLUDE_DIR})
+    list (APPEND DEPENDENCY_LIBS ${OpenBLAS_LIB})
+    if (MSVC)
+        add_definitions ( "/Dwheels_with_openblas" )
+    else ()
+        add_definitions ( "-Dwheels_with_openblas" )
+    endif ()
+endif()
+
+
 find_package(CUDA)
 if (${CUDA_FOUND})  
     list (APPEND DEPENDENCY_INCLUDES ${CUDA_TOOLKIT_INCLUDE})
