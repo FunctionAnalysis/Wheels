@@ -105,6 +105,10 @@ TEST(tensor, methods2) {
   rr.t().for_each([](double e) { ASSERT_EQ(e, min(1.0, sin(1) + 2)); });
   rr.t().t().for_each([](double e) { ASSERT_EQ(e, min(1.0, sin(1) + 2)); });
 
+  auto rre = rr.eval().t().t().t().t();
+  static_assert(types<decltype(rre)>() == types<decltype(rr.eval())>(), "");
+  ASSERT_TRUE(rre == rr);
+
   // element retreival
   auto efirst = rr[0];     // via vectoized index
   auto efirst2 = rr(0, 0); // via tensor subscripts
@@ -126,7 +130,7 @@ TEST(tensor, methods3) {
   auto e1 = element_at(result2, 1);
   auto e2 = element_at(result2, 2);
   auto t = result2.eval();
-  //ASSERT_TRUE(t == vec3(4, 4, 5));
+  ASSERT_TRUE(result2 == vec3(4, 4, 5));
 }
 
 TEST(tensor, demo) {
