@@ -134,7 +134,11 @@ public:
     resize(const_index<Idx>(), ns);
   }
 
-  template <class Archive> void serialize(Archive &ar) { ar(rest()); }
+  template <class Archive> void serialize(Archive &ar) {
+    T val = value(), mag = magnitude();
+    ar(val, mag);
+    ar(rest());
+  }
   template <class V> decltype(auto) fields(V &&v) { return v(rest()); }
   template <class V> constexpr decltype(auto) fields(V &&v) const {
     return v(rest());

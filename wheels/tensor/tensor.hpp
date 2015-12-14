@@ -1,7 +1,6 @@
 #pragma once
 
 #include "base.hpp"
-#include "methods.hpp"
 
 namespace wheels {
 
@@ -15,19 +14,32 @@ constexpr struct _with_iterators {
 // tensor_storage
 template <class ShapeT, class ET, class T, bool StaticShape>
 class tensor_storage;
+
 namespace details {
-template <class T, size_t I> struct _always_val {
-  constexpr _always_val(const T &v) : val(v) {}
-  T val;
-};
 template <class T, size_t N, size_t... Is>
 constexpr auto _init_std_array_seq(const T &init, const_ints<size_t, Is...>) {
-  return std::array<T, N>{{(T)_always_val<T, Is>(init).val...}};
+  return std::array<T, N>{{always_val<T>(init)(const_index<Is>())...}};
 }
 template <class T, size_t N> constexpr auto _init_std_array(const T &init) {
   return _init_std_array_seq<T, N>(init, make_const_sequence(const_size<N>()));
 }
+template <class ArcT, class ST, class... SS>
+void _save_shape(ArcT &ar, const tensor_shape<ST, SS...> &s) {
+  ar(sizeof...(SS));
+  tensor_shape<size_t, always2_t<size_t, SS> ...> stdshape = s;
+  ar(stdshape);
 }
+template <class ArcT, class ST, class... SS>
+void _load_shape(ArcT &ar, tensor_shape<ST, SS...> &s) {
+  size_t rank;
+  ar(rank);
+  assert(rank == sizeof...(SS));
+  tensor_shape<size_t, always2_t<size_t, SS> ...> stdshape;
+  ar(stdshape);
+  s = stdshape;
+}
+}
+
 template <class ShapeT, class ET, class T>
 class tensor_storage<ShapeT, ET, T, true> : public tensor_base<ShapeT, ET, T> {
 public:
@@ -71,7 +83,24 @@ public:
   auto &data() { return _data; }
 
 public:
-  template <class ArcT> void serialize(ArcT &ar) { ar(_data); }
+  constexpr decltype(auto) at(size_t ind) const { return data()[ind]; }
+  decltype(auto) at(size_t ind) { return data()[ind]; }
+
+public:
+  template <class ArcT> void save(ArcT &ar) const {
+    details::_save_shape(ar, shape());
+    ar(cereal::make_size_tag(_data.size()));
+    ar(cereal::binary_data(_data.data(), sizeof(value_type) * _data.size()));
+  }
+  template <class ArcT> void load(ArcT &ar) {
+    auto s = shape();
+    details::_load_shape(ar, s);
+    size_t n;
+    ar(cereal::make_size_tag(n));
+    assert(n == _data.size());
+    ar(cereal::binary_data(_data.data(), sizeof(value_type) * _data.size()));
+  }
+
   template <class V> decltype(auto) fields(V &&visitor) {
     return visitor(_data);
   }
@@ -122,7 +151,23 @@ public:
   auto &data() { return _data; }
 
 public:
-  template <class ArcT> void serialize(ArcT &ar) { ar(_shape, _data); }
+  constexpr decltype(auto) at(size_t ind) const { return data()[ind]; }
+  decltype(auto) at(size_t ind) { return data()[ind]; }
+
+public:
+  template <class ArcT> void save(ArcT &ar) const {
+    details::_save_shape(ar, _shape);
+    ar(cereal::make_size_tag(_data.size()));
+    ar(cereal::binary_data(_data.data(), sizeof(value_type) * _data.size()));
+  }
+  template <class ArcT> void load(ArcT &ar) {
+    details::_load_shape(ar, _shape);
+    size_t n;
+    ar(cereal::make_size_tag(n));
+    _data.resize(n);
+    ar(cereal::binary_data(_data.data(), sizeof(value_type) * _data.size()));
+  }
+
   template <class V> decltype(auto) fields(V &&visitor) {
     return visitor(_shape, _data);
   }
@@ -133,6 +178,82 @@ public:
 private:
   shape_type _shape;
   std::vector<value_type> _data;
+};
+
+template <class ShapeT, class T>
+class tensor_storage<ShapeT, bool, T, false>
+    : public tensor_base<ShapeT, bool, T> {
+public:
+  using shape_type = ShapeT;
+  using value_type = bool;
+  using stored_value_type = uint8_t;
+
+public:
+  constexpr tensor_storage() {}
+  constexpr tensor_storage(const shape_type &shape)
+      : _shape(shape), _data(shape.magnitude()) {}
+  constexpr tensor_storage(const shape_type &shape, const value_type &v)
+      : _shape(shape), _data(shape.magnitude(), (stored_value_type)v) {}
+  template <class... EleTs>
+  constexpr tensor_storage(const shape_type &shape, const _with_elements &,
+                           EleTs &&... eles)
+      : _shape(shape), _data({(stored_value_type)forward<EleTs>(eles)...}) {
+    _data.resize(_shape.magnitude());
+  }
+  template <class IterT>
+  tensor_storage(const shape_type &shape, const _with_iterators &, IterT begin,
+                 IterT end)
+      : _shape(shape) {
+    _data.resize(_shape.magnitude());
+    size_t i = 0;
+    for (auto it = begin; it != end; ++it) {
+      _data[i++] = (stored_value_type)*it;
+    }
+  }
+
+  constexpr tensor_storage(const tensor_storage &) = default;
+  tensor_storage(tensor_storage &&) = default;
+  tensor_storage &operator=(const tensor_storage &) = default;
+  tensor_storage &operator=(tensor_storage &&) = default;
+
+  constexpr const auto &shape() const { return _shape; }
+  template <class ShapeT2> void set_shape(const ShapeT2 &s) {
+    _shape = s;
+    _data.resize(_shape.magnitude());
+  }
+  const auto &data() const { return _data; }
+  auto &data() { return _data; }
+
+public:
+  constexpr bool at(size_t ind) const { return data()[ind]; }
+  stored_value_type &at(size_t ind) { return data()[ind]; }
+
+public:
+  template <class ArcT> void save(ArcT &ar) const {
+    details::_save_shape(ar, _shape);
+    ar(cereal::make_size_tag(_data.size()));
+    ar(cereal::binary_data(_data.data(),
+                           sizeof(stored_value_type) * _data.size()));
+  }
+  template <class ArcT> void load(ArcT &ar) {
+    details::_load_shape(ar, _shape);
+    size_t n;
+    ar(cereal::make_size_tag(n));
+    _data.resize(n);
+    ar(cereal::binary_data(_data.data(),
+                           sizeof(stored_value_type) * _data.size()));
+  }
+
+  template <class V> decltype(auto) fields(V &&visitor) {
+    return visitor(_shape, _data);
+  }
+  template <class V> constexpr decltype(auto) fields(V &&visitor) const {
+    return visitor(_shape, _data);
+  }
+
+private:
+  shape_type _shape;
+  std::vector<stored_value_type> _data;
 };
 
 namespace details {
@@ -246,10 +367,6 @@ public:
     assign_elements(*this, another.derived());
     return *this;
   }
-
-public:
-  constexpr decltype(auto) at(size_t ind) const { return data()[ind]; }
-  decltype(auto) at(size_t ind) { return data()[ind]; }
 };
 
 // shape_of
@@ -304,11 +421,9 @@ void for_each_element(order_flag<index_ascending>, FunT &fun,
 }
 template <class FunT, class ET, class ShapeT, class Ts>
 void for_each_element(order_flag<index_ascending>, FunT &fun,
-                      tensor<ShapeT, ET> &t, Ts & ts) {
+                      tensor<ShapeT, ET> &t, Ts &ts) {
   assert(all_same(shape_of(t), shape_of(ts)));
   for (size_t i = 0; i < t.numel(); i++) {
-      //auto tt = std::forward_as_tuple(element_at_index(ts, i) ...);
-      auto e = element_at_index(ts, i);
     fun(element_at_index(t, i), element_at_index(ts, i));
   }
 }

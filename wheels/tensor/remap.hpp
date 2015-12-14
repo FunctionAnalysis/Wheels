@@ -58,24 +58,25 @@ ET _element_at_remap_result_seq(
 }
 
 // _linear_interpolate
-template <class ET, class SamplerFunT, class DistToZeroFunT, class... SubTs>
-constexpr ET _linear_interpolate(const_size<0>, SamplerFunT &samplerfun,
+template <class SamplerFunT, class DistToZeroFunT, class... SubTs>
+constexpr auto _linear_interpolate(const_size<0>, SamplerFunT &samplerfun,
                                  DistToZeroFunT &dist0fun,
                                  const SubTs &... subs) {
   return samplerfun(subs...);
 }
-template <class ET, size_t Undetermined, class SamplerFunT,
+template <size_t Undetermined, class SamplerFunT,
           class DistToZeroFunT, class... SubTs>
-ET _linear_interpolate(const_size<Undetermined>, SamplerFunT &samplerfun,
+auto _linear_interpolate(const_size<Undetermined>, SamplerFunT &samplerfun,
                        DistToZeroFunT &dist0fun, const SubTs &... subs) {
   double dist0 = dist0fun(const_index<Undetermined - 1>());
-  ET v0 = _linear_interpolate<ET>(const_size<Undetermined - 1>(), samplerfun,
+  auto v0 = _linear_interpolate(const_size<Undetermined - 1>(), samplerfun,
                                   dist0fun, no(), subs...);
-  ET v1 = _linear_interpolate<ET>(const_size<Undetermined - 1>(), samplerfun,
+  auto v1 = _linear_interpolate(const_size<Undetermined - 1>(), samplerfun,
                                   dist0fun, yes(), subs...);
   return v0 * (1.0 - dist0) + v1 * dist0;
 }
 
+// _element_at_ceil_or_floor_helper
 template <class T, class E, class SubsInputT, class NoYesTupleT, size_t... Is>
 constexpr decltype(auto)
 _element_at_ceil_or_floor_helper(T &t, E &&otherwise, SubsInputT &subs,
@@ -99,7 +100,7 @@ ET _element_at_remap_result_seq(
   static constexpr size_t input_rank =
       std::decay_t<decltype(std::declval<T>().shape())>::rank;
   // the size of subsInput should be same with input_rank
-  return _linear_interpolate<ET>(
+  return (ET)_linear_interpolate(
       const_size<input_rank>(),
       [&r, &subsInput](auto &... noyeses) {
         return _element_at_ceil_or_floor_helper(

@@ -66,10 +66,19 @@ TEST(tensor, element) {
 }
 
 TEST(tensor, serialize) {
-  write(filesystem::temp_directory_path() / "vec3.cereal", vec3(1, 2, 3));
+  write_tmp("vec3.cereal", vec3(1, 2, 3));
   vec3 v;
-  read(filesystem::temp_directory_path() / "vec3.cereal", v);
+  read_tmp("vec3.cereal", v);
   ASSERT_TRUE(v == vec3(1, 2, 3));
+  vecx v2;
+  read_tmp("vec3.cereal", v2);
+  ASSERT_TRUE(v2 == vec3(1, 2, 3));
+
+  auto vb = ones<bool>(5).eval();
+  write_tmp("vecb5", vb);
+  vecx_<bool> vb2;
+  read_tmp("vecb5", vb2);
+  ASSERT_TRUE(vb == vb2);
 }
 
 
