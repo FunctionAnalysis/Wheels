@@ -13,11 +13,11 @@
     <Expand/>
   </Type>
   <Type Name="wheels::const_ints&lt;*,*,*,*&gt;">
-    <DisplayString>$T2},{$T3},{$T4}</DisplayString>
+    <DisplayString>{$T2},{$T3},{$T4}</DisplayString>
     <Expand/>
   </Type>
   <Type Name="wheels::const_ints&lt;*,*,*,*,*&gt;">
-    <DisplayString>$T2},{$T3},{$T4},{$T5}</DisplayString>
+    <DisplayString>{$T2},{$T3},{$T4},{$T5}</DisplayString>
     <Expand/>
   </Type>
 
