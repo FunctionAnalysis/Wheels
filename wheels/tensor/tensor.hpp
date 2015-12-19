@@ -26,7 +26,7 @@ template <class T, size_t N> constexpr auto _init_std_array(const T &init) {
 template <class ArcT, class ST, class... SS>
 void _save_shape(ArcT &ar, const tensor_shape<ST, SS...> &s) {
   ar(sizeof...(SS));
-  tensor_shape<size_t, always2_t<size_t, SS> ...> stdshape = s;
+  tensor_shape<size_t, always2_t<size_t, SS>...> stdshape = s;
   ar(stdshape);
 }
 template <class ArcT, class ST, class... SS>
@@ -34,12 +34,13 @@ void _load_shape(ArcT &ar, tensor_shape<ST, SS...> &s) {
   size_t rank;
   ar(rank);
   assert(rank == sizeof...(SS));
-  tensor_shape<size_t, always2_t<size_t, SS> ...> stdshape;
+  tensor_shape<size_t, always2_t<size_t, SS>...> stdshape;
   ar(stdshape);
   s = stdshape;
 }
 }
 
+// static tensor
 template <class ShapeT, class ET, class T>
 class tensor_storage<ShapeT, ET, T, true> : public tensor_base<ShapeT, ET, T> {
 public:
@@ -112,6 +113,7 @@ private:
   std::array<value_type, shape_type::static_magnitude> _data;
 };
 
+// dynamic tensor
 template <class ShapeT, class ET, class T>
 class tensor_storage<ShapeT, ET, T, false> : public tensor_base<ShapeT, ET, T> {
 public:
@@ -180,6 +182,7 @@ private:
   std::vector<value_type> _data;
 };
 
+// dynamic boolean tensor
 template <class ShapeT, class T>
 class tensor_storage<ShapeT, bool, T, false>
     : public tensor_base<ShapeT, bool, T> {

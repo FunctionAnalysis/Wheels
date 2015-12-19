@@ -1,26 +1,6 @@
 #pragma once
 
-#include <complex>
-
-extern "C" {
-#define lapack_complex_float std::complex<float>
-#define lapack_complex_double std::complex<double>
-#define lapack_complex_float_real(z) (z.real())
-#define lapack_complex_float_imag(z) (z.image())
-#define lapack_complex_double_real(z) (z.real())
-#define lapack_complex_double_imag(z) (z.imag())
-
-lapack_complex_float lapack_make_complex_float(float re, float im) {
-  return std::complex<float>(re, im);
-}
-lapack_complex_double lapack_make_complex_double(double re, double im) {
-  return std::complex<double>(re, im);
-}
-}
-
-#include <cblas.h>
-#include <lapacke.h>
-
+#include "lapack_routines.hpp"
 #include "base.hpp"
 
 namespace wheels {
@@ -44,8 +24,7 @@ auto solve(const tensor_base<tensor_shape<ST1, ST1, ST1>, double, T1> &a,
   assert(a.size(const_index<0>()) == b.size(const_index<0>()));
   auto av = a.eval();
   auto bv = b.eval();
-  // LAPACK_dgelsd(av.rows(), av.cols(), bv.cols(), av.data(), av.rows(),
-  // bv.data(), )
+  //lapack::gelsd
   throw std::runtime_error("not implemented yet");
 }
 }
