@@ -1,5 +1,6 @@
 #pragma once
 
+#include <complex>
 #include "constants.hpp"
 
 namespace wheels {
@@ -185,4 +186,14 @@ template <class T, T... Bs>
 constexpr auto uint_type_of_bytes(const const_ints<T, Bs...> &) {
   return types<typename details::_uint_of<Bs>::type...>();
 }
+
+// is_complex
+template <class T> struct is_complex : no {};
+template <class T> struct is_complex<std::complex<T>> : yes {};
+
+// real_component
+template <class T> struct real_component { using type = T; };
+template <class T> struct real_component<std::complex<T>> { using type = T; };
+
+
 }

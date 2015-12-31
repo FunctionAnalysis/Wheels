@@ -6,6 +6,7 @@
 #include <mat.h>
 #include <mex.h>
 
+#include "../core/types.hpp"
 #include "../core/const_expr.hpp"
 #include "../core/constants.hpp"
 
@@ -37,12 +38,6 @@ WHEELS_BIND_TYPE_WITH_MX_CLASSID(uint8_t, mxUINT8_CLASS)
 WHEELS_BIND_TYPE_WITH_MX_CLASSID(uint16_t, mxUINT16_CLASS)
 WHEELS_BIND_TYPE_WITH_MX_CLASSID(uint32_t, mxUINT32_CLASS)
 WHEELS_BIND_TYPE_WITH_MX_CLASSID(uint64_t, mxUINT64_CLASS)
-
-template <class T> struct is_complex : no {};
-template <class T> struct is_complex<std::complex<T>> : yes {};
-
-template <class T> struct real_component { using type = void; };
-template <class T> struct real_component<std::complex<T>> { using type = T; };
 
 template <class ShapeT, class ET, class T, size_t... Is>
 mxArray *_make_mx_array_seq(const tensor_base<ShapeT, ET, T> &ts,
