@@ -1,3 +1,4 @@
+#pragma once
 #include "./core/macros.hpp"
 #include "./core/utility.hpp"
 #include "./core/constants.hpp"

@@ -23,8 +23,6 @@ file (GLOB 3rd_sources
     "${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.cuh")
 source_group ("3rd" FILES ${3rd_sources})
 
-
-
 set (wheels_sources 
     ${core_sources} 
     ${tensor_sources} 
