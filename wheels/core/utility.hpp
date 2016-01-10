@@ -10,7 +10,7 @@ using std::forward;
 using std::move;
 template <class T> constexpr T copy(const T &t) { return t; }
 
-// if_then_else for enumulating ?:
+// conditional for enumulating ?:
 template <class ThenT, class ElseT>
 constexpr decltype(auto) conditional(bool b, ThenT &&thenv, ElseT &&elsev) {
   return b ? forward<ThenT>(thenv) : forward<ElseT>(elsev);

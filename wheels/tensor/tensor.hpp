@@ -105,9 +105,6 @@ public:
   template <class V> decltype(auto) fields(V &&visitor) {
     return visitor(_data);
   }
-  template <class V> constexpr decltype(auto) fields(V &&visitor) const {
-    return visitor(_data);
-  }
 
 private:
   std::array<value_type, shape_type::static_magnitude> _data;
@@ -171,9 +168,6 @@ public:
   }
 
   template <class V> decltype(auto) fields(V &&visitor) {
-    return visitor(_data);
-  }
-  template <class V> constexpr decltype(auto) fields(V &&visitor) const {
     return visitor(_data);
   }
 
@@ -248,9 +242,6 @@ public:
   }
 
   template <class V> decltype(auto) fields(V &&visitor) {
-    return visitor(_data);
-  }
-  template <class V> constexpr decltype(auto) fields(V &&visitor) const {
     return visitor(_data);
   }
 

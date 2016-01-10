@@ -14,7 +14,6 @@
 namespace wheels {
 
 template <class ShapeT, class EleT, class T> struct category_tensor {};
-//
 
 namespace index_tags {
 constexpr auto first = const_index<0>();
@@ -33,6 +32,10 @@ constexpr auto _eval_index_expr(const T &t, const SizeT &) {
   return t;
 }
 }
+
+// inheritance of tensor class T:
+// tensor_core<T> -> tensor_base<ShapeT, ET, T> [->
+// tensor_op_result_base<ShapeT, ET, OpT, T>] -> T
 
 // tensor_core
 template <class T> struct tensor_core {
