@@ -276,6 +276,18 @@ struct tensor_op_result_base<ShapeT, bool, binary_op_neq, T>
   constexpr operator bool() const { return ::wheels::any_of(derived()); }
 };
 
+// tensor_data_base
+template <class ShapeT, class ET, class T, class OpT, class StepsT>
+struct tensor_data_base : tensor_op_result_base<ShapeT, ET, T, OpT> {};
+
+template <class ShapeT, class ET, class T, class OpT, class StepT,
+          StepT... Steps>
+struct tensor_data_base<ShapeT, ET, T, OpT, const_ints<StepT, Steps...>>
+    : tensor_op_result_base<ShapeT, ET, T, OpT> {
+  constexpr decltype(auto) data() const { return ::wheels::data_of(derived()); }
+  decltype(auto) data() { return ::wheels::data_of(derived()); }
+};
+
 // -- necessary tensor functions
 // Shape shape_of(ts);
 template <class T>
