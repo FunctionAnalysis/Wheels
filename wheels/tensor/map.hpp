@@ -10,7 +10,7 @@ class tensor_map_storage;
 
 template <class ShapeT, class ET, class PtrT, class T>
 class tensor_map_storage<ShapeT, ET, PtrT, T, true>
-    : public tensor_base<ShapeT, ET, T> {
+    : public tensor_continuous_data_base<ShapeT, ET, T> {
 public:
   using shape_type = ShapeT;
   using value_type = ET;
@@ -25,7 +25,7 @@ public:
   tensor_map_storage &operator=(tensor_map_storage &&) = default;
 
   constexpr auto shape() const { return shape_type(); }
-  constexpr PtrT data() const { return _ptr; }
+  constexpr PtrT ptr() const { return _ptr; }
 
 private:
   PtrT _ptr;
@@ -33,7 +33,7 @@ private:
 
 template <class ShapeT, class ET, class PtrT, class T>
 class tensor_map_storage<ShapeT, ET, PtrT, T, false>
-    : public tensor_base<ShapeT, ET, T> {
+    : public tensor_continuous_data_base<ShapeT, ET, T> {
 public:
   using shape_type = ShapeT;
   using value_type = ET;
@@ -49,7 +49,7 @@ public:
   tensor_map_storage &operator=(tensor_map_storage &&) = default;
 
   constexpr const auto &shape() const { return _shape; }
-  constexpr PtrT data() const { return _ptr; }
+  constexpr PtrT ptr() const { return _ptr; }
 
 private:
   shape_type _shape;
@@ -94,6 +94,16 @@ public:
   constexpr const ET &at(size_t ind) const { return ptr()[ind]; }
   ET &at(size_t ind) { return ptr()[ind]; }
 };
+
+// data_of
+template <class ET, class ShapeT, class PtrT>
+constexpr auto data_of(const tensor_map<ShapeT, ET, PtrT> &t) {
+  return t.ptr();
+}
+template <class ET, class ShapeT, class PtrT>
+constexpr auto data_of(tensor_map<ShapeT, ET, PtrT> &t) {
+  return t.ptr();
+}
 
 // shape_of
 template <class ET, class ShapeT, class PtrT>

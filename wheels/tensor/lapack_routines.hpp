@@ -18,10 +18,10 @@ namespace wheels {
 namespace lapack {
 
 // https://software.intel.com/en-us/node/521115
-inline void gelsd(int *m, int *n, int *nrhs, float *a, int *lda, float *b,
-                  int *ldb, float *s, float *rcond, int *rank, float *work,
+inline void gelsd(int m, int n, int nrhs, float *a, int lda, float *b,
+                  int ldb, float *s, float *rcond, int *rank, float *work,
                   int *lwork, int *iwork, int *info) {
-  sgelsd_(m, n, nrhs, a, lda, b, ldb, s, rcond, rank, work, lwork, iwork, info);
+  sgelsd_(&m, &n, &nrhs, a, &lda, b, &ldb, s, rcond, rank, work, lwork, iwork, info);
 }
 inline void gelsd(int *m, int *n, int *nrhs, double *a, int *lda, double *b,
                   int *ldb, double *s, double *rcond, int *rank, double *work,

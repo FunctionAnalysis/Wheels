@@ -42,7 +42,8 @@ void _load_shape(ArcT &ar, tensor_shape<ST, SS...> &s) {
 
 // static tensor
 template <class ShapeT, class ET, class T>
-class tensor_storage<ShapeT, ET, T, true> : public tensor_base<ShapeT, ET, T> {
+class tensor_storage<ShapeT, ET, T, true>
+    : public tensor_continuous_data_base<ShapeT, ET, T> {
 public:
   using shape_type = ShapeT;
   using value_type = ET;
@@ -80,12 +81,13 @@ public:
   tensor_storage &operator=(tensor_storage &&) = default;
 
   constexpr auto shape() const { return shape_type(); }
-  constexpr const auto &data() const { return _data; }
-  auto &data() { return _data; }
+  constexpr const auto &container() const { return _data; }
+  auto &container() { return _data; }
 
 public:
-  constexpr decltype(auto) at(size_t ind) const { return data()[ind]; }
-  decltype(auto) at(size_t ind) { return data()[ind]; }
+  constexpr decltype(auto) at(size_t ind) const { return _data[ind];
+  }
+  decltype(auto) at(size_t ind) { return _data[ind]; }
 
 public:
   template <class ArcT> void save(ArcT &ar) const {
@@ -112,7 +114,8 @@ private:
 
 // dynamic tensor
 template <class ShapeT, class ET, class T>
-class tensor_storage<ShapeT, ET, T, false> : public tensor_base<ShapeT, ET, T> {
+class tensor_storage<ShapeT, ET, T, false>
+    : public tensor_continuous_data_base<ShapeT, ET, T> {
 public:
   using shape_type = ShapeT;
   using value_type = ET;
@@ -146,12 +149,12 @@ public:
     _shape = s;
     _data.resize(_shape.magnitude());
   }
-  const auto &data() const { return _data; }
-  auto &data() { return _data; }
+  const auto &container() const { return _data; }
+  auto &container() { return _data; }
 
 public:
-  constexpr decltype(auto) at(size_t ind) const { return data()[ind]; }
-  decltype(auto) at(size_t ind) { return data()[ind]; }
+  constexpr decltype(auto) at(size_t ind) const { return _data[ind]; }
+  decltype(auto) at(size_t ind) { return _data[ind]; }
 
 public:
   template <class ArcT> void save(ArcT &ar) const {
@@ -179,7 +182,7 @@ private:
 // dynamic boolean tensor
 template <class ShapeT, class T>
 class tensor_storage<ShapeT, bool, T, false>
-    : public tensor_base<ShapeT, bool, T> {
+    : public tensor_continuous_data_base<ShapeT, bool, T> {
 public:
   using shape_type = ShapeT;
   using value_type = bool;
@@ -218,12 +221,12 @@ public:
     _shape = s;
     _data.resize(_shape.magnitude());
   }
-  const auto &data() const { return _data; }
-  auto &data() { return _data; }
+  const auto &container() const { return _data; }
+  auto &container() { return _data; }
 
 public:
-  constexpr bool at(size_t ind) const { return data()[ind]; }
-  stored_value_type &at(size_t ind) { return data()[ind]; }
+  constexpr bool at(size_t ind) const { return _data[ind]; }
+  stored_value_type &at(size_t ind) { return _data[ind]; }
 
 public:
   template <class ArcT> void save(ArcT &ar) const {
@@ -367,6 +370,15 @@ public:
 template <class ET, class ShapeT>
 constexpr auto shape_of(const tensor<ShapeT, ET> &t) {
   return t.shape();
+}
+
+// data_of
+template <class ET, class ShapeT>
+constexpr const ET *data_of(const tensor<ShapeT, ET> &t) {
+  return t.container().data();
+}
+template <class ET, class ShapeT> ET *data_of(tensor<ShapeT, ET> &t) {
+  return t.container().data();
 }
 
 // element_at
