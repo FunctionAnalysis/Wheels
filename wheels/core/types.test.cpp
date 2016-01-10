@@ -29,15 +29,3 @@ template <class T, class BaseT> struct divided<T, BaseT, false, true> {
   using type = T;
 };
 
-template <class T, class BaseT>
-using divided_t = typename divided<T, BaseT>::type;
-
-struct A {};
-struct B : A {};
-struct C {};
-struct D : C {};
-
-template <class T> int foo(typename identity<T>::type & t) {}
-//template <class T> A foo(divided_t<T, A> a) {}
-//template <class T> C foo(divided_t<T, C> c) {}
-

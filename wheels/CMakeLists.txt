@@ -17,22 +17,6 @@ foreach (M ${modules})
 endforeach()
 
 
-
-# file (GLOB tensor_sources 
-#     "${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.cpp" 
-#     "${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.hpp"
-#     "${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.cu" 
-#     "${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.cuh")
-# source_group ("tensor" FILES ${tensor_sources})
-
-# file (GLOB 3rd_sources 
-#     "${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.cpp" 
-#     "${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.hpp"
-#     "${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.cu" 
-#     "${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.cuh")
-# source_group ("3rd" FILES ${3rd_sources})
-
-
 file (GLOB_RECURSE wheels_test_sources "." *.test.cpp *.test.hpp *.test.cu *.test.cuh)
 # remove test sources from the lib sources
 list (REMOVE_ITEM wheels_sources ${wheels_test_sources})
