@@ -126,17 +126,8 @@ private:
 
 template <class ShapeT, class ET> class tensor;
 
-// tensor_base_<ET, T>
-template <class ET, class T> struct tensor_base_ : tensor_core<T> {
-  using value_type = ET;
-};
-template <class T> struct tensor_base_<bool, T> : tensor_core<T> {
-  using value_type = bool;
-};
-
 // tensor_base<ShapeT, ET, T>
-template <class ShapeT, class ET, class T>
-struct tensor_base : tensor_base_<ET, T> {
+template <class ShapeT, class ET, class T> struct tensor_base : tensor_core<T> {
   using shape_type = ShapeT;
   static constexpr size_t rank = ShapeT::rank;
   using value_type = ET;
@@ -151,7 +142,7 @@ struct tensor_base : tensor_base_<ET, T> {
 
 // 1 dimensional tensor (vector)
 template <class ST, class NT, class ET, class T>
-struct tensor_base<tensor_shape<ST, NT>, ET, T> : tensor_base_<ET, T> {
+struct tensor_base<tensor_shape<ST, NT>, ET, T> : tensor_core<T> {
   using shape_type = tensor_shape<ST, NT>;
   static constexpr size_t rank = 1;
   using value_type = ET;
@@ -215,7 +206,7 @@ struct tensor_base<tensor_shape<ST, NT>, ET, T> : tensor_base_<ET, T> {
 
 // 2 dimensional tensor (matrix)
 template <class ST, class MT, class NT, class ET, class T>
-struct tensor_base<tensor_shape<ST, MT, NT>, ET, T> : tensor_base_<ET, T> {
+struct tensor_base<tensor_shape<ST, MT, NT>, ET, T> : tensor_core<T> {
   using shape_type = tensor_shape<ST, MT, NT>;
   static constexpr size_t rank = 2;
   using value_type = ET;
@@ -238,7 +229,7 @@ struct tensor_base<tensor_shape<ST, MT, NT>, ET, T> : tensor_base_<ET, T> {
 // 3 dimensional (only third dimension is static) tensor (image)
 template <class ST, ST D, class ET, class T>
 struct tensor_base<tensor_shape<ST, ST, ST, const_ints<ST, D>>, ET, T>
-    : tensor_base_<ET, T> {
+    : tensor_core<T> {
   using shape_type = tensor_shape<ST, ST, ST, const_ints<ST, D>>;
   static constexpr size_t rank = 3;
   using value_type = ET;

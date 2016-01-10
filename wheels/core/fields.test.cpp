@@ -51,9 +51,6 @@ struct C {
 };
 
 namespace wheels {
-template <class V> auto fields(const C &c, V &&visitor) {
-  return visitor(c.b1, c.b2);
-}
 template <class V> auto fields(C &c, V &&visitor) {
   return visitor(c.b1, c.b2);
 }
@@ -81,7 +78,6 @@ struct D {
   std::vector<C> cs;
   B<int, long> b;
   template <class V> auto fields(V &&v) & { return v(cs, b); }
-  template <class V> auto fields(V &&v) const & { return v(cs, b); }
 };
 
 TEST(core, fields3) {
@@ -125,7 +121,6 @@ public:
   using convertible<F<T>, F_tag>::operator=;
 
   template <class V> auto fields(V &&v) & { return v(val); }
-  template <class V> auto fields(V &&v) const & { return v(val); }
 };
 
 TEST(core, fields5) {
@@ -144,14 +139,12 @@ struct X {
   int d;
   X() : a(true), b(true), c(false), d(100) {}
   template <class V> auto fields(V &&v) & { return v(a, b, c, d); }
-  template <class V> auto fields(V &&v) const & { return v(a, b, c, d); }
 };
 
 struct Y {
   std::pair<X, char> d;
   Y() : d(X(), 'H') {}
   template <class V> auto fields(V &&v) & { return v(d); }
-  template <class V> auto fields(V &&v) const & { return v(d); }
 };
 
 struct Z {
@@ -159,7 +152,6 @@ struct Z {
   X x;
   Z() {}
   template <class V> auto fields(V &&v) & { return v(ys, x); }
-  template <class V> auto fields(V &&v) const & { return v(ys, x); }
 };
 
 struct KK {
@@ -206,4 +198,27 @@ TEST(core, fields8) {
   randomize_fields(n1, rng);
   const N n2 = n1;
   ASSERT_TRUE(n1 == n2);
+}
+
+struct AA {
+  int a;
+  template <class V> auto fields(V &&v) const { return v(a); }
+};
+struct BB {
+  AA aa;
+  template <class V> auto fields(V &&v) { return v(aa); }
+};
+struct CC {
+  BB bb;
+  template <class V> auto fields(V &&v) const { return v(bb); }
+};
+struct DD {
+  CC cc;
+  template <class V> auto fields(V &&v) { return v(cc); }
+};
+
+TEST(core, fields9) {
+  DD dd;
+  dd.cc.bb.aa.a = 0;
+  ASSERT_TRUE(all_of_fields(dd, [](auto &&e) { return e == 0; }));
 }
