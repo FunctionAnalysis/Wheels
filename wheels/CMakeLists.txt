@@ -1,32 +1,38 @@
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # all files
-file (GLOB core_sources 
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/*.cpp" 
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/*.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/*.cu" 
-    "${CMAKE_CURRENT_SOURCE_DIR}/core/*.cuh"
-)
-source_group ("core" FILES ${core_sources})
+set (modules core tensor unsupported)
 
-file (GLOB tensor_sources 
-    "${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.cpp" 
-    "${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.cu" 
-    "${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.cuh")
-source_group ("tensor" FILES ${tensor_sources})
+set (wheels_sources "")
+foreach (M ${modules})
+    file (GLOB "Src"
+        "${CMAKE_CURRENT_SOURCE_DIR}/${M}/*.cpp" 
+        "${CMAKE_CURRENT_SOURCE_DIR}/${M}/*.hpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/${M}/*.cu" 
+        "${CMAKE_CURRENT_SOURCE_DIR}/${M}/*.cuh"
+    )
+    #set("${M}_sources", ${Src});
+    source_group ("${M}" FILES ${Src})
+    list (APPEND wheels_sources ${Src})
+endforeach()
 
-file (GLOB 3rd_sources 
-    "${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.cpp" 
-    "${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.hpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.cu" 
-    "${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.cuh")
-source_group ("3rd" FILES ${3rd_sources})
 
-set (wheels_sources 
-    ${core_sources} 
-    ${tensor_sources} 
-    ${3rd_sources})
+
+# file (GLOB tensor_sources 
+#     "${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.cpp" 
+#     "${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.hpp"
+#     "${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.cu" 
+#     "${CMAKE_CURRENT_SOURCE_DIR}/tensor/*.cuh")
+# source_group ("tensor" FILES ${tensor_sources})
+
+# file (GLOB 3rd_sources 
+#     "${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.cpp" 
+#     "${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.hpp"
+#     "${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.cu" 
+#     "${CMAKE_CURRENT_SOURCE_DIR}/3rd/*.cuh")
+# source_group ("3rd" FILES ${3rd_sources})
+
+
 file (GLOB_RECURSE wheels_test_sources "." *.test.cpp *.test.hpp *.test.cu *.test.cuh)
 # remove test sources from the lib sources
 list (REMOVE_ITEM wheels_sources ${wheels_test_sources})

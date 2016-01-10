@@ -39,103 +39,143 @@ struct visit_to_serialize {};
 
 template <class T> struct serializable {};
 
+#define WHEELS_PARAMETER_DISTINGUISH(i) const_size<i> = const_size<i>()
+
+// has_member_func_fields<const T &...>
 template <class T, class ArcT, class = std::enable_if_t<has_member_func_fields<
                                    const T &, visit_to_serialize, ArcT>::value>>
-void save(ArcT &arc, const serializable<T> &data) {
+void save(ArcT &arc, const serializable<T> &data,
+          WHEELS_PARAMETER_DISTINGUISH(0)) {
   static_cast<const T &>(data).fields(visit_to_serialize(), arc);
 }
-// template <class T, class ArcT, class = std::enable_if_t<
-//    has_member_func_fields<T &, visit_to_serialize, ArcT>::value >>
-// void save(ArcT & arc, const serializable<T> & data, void * = nullptr) {
-//    const_cast<T &>(data).fields(visit_to_serialize(), arc);
-//}
-template <class T, class ArcT, class = std::enable_if_t<has_member_func_fields<
-                                   T &, visit_to_serialize, ArcT>::value>>
-void load(ArcT &arc, serializable<T> &data) {
-  static_cast<T &>(data).fields(visit_to_serialize(), arc);
-}
-
+// has_member_func_fields<T & ...>
 template <
-    class T, class ArcT, wheels_distinguish_1,
+    class T, class ArcT,
     class = std::enable_if_t<
         !has_member_func_fields<const T &, visit_to_serialize, ArcT>::value &&
+        has_member_func_fields<T &, visit_to_serialize, ArcT>::value>>
+void save(ArcT &arc, const serializable<T> &data,
+          WHEELS_PARAMETER_DISTINGUISH(1)) {
+  const_cast<T &>(data).fields(visit_to_serialize(), arc);
+}
+// has_member_func_fields_simple<const T &...>
+template <
+    class T, class ArcT,
+    class = std::enable_if_t<
+        !has_member_func_fields<const T &, visit_to_serialize, ArcT>::value &&
+        !has_member_func_fields<T &, visit_to_serialize, ArcT>::value &&
         has_member_func_fields_simple<const T &, ArcT>::value>>
-void save(ArcT &arc, const serializable<T> &data) {
+void save(ArcT &arc, const serializable<T> &data,
+          WHEELS_PARAMETER_DISTINGUISH(2)) {
   static_cast<const T &>(data).fields(arc);
 }
-// template <class T, class ArcT, wheels_distinguish_1, class =
-// std::enable_if_t<
-//    !has_member_func_fields<T &, visit_to_serialize, ArcT>::value &&
-//    has_member_func_fields_simple<T &, ArcT>::value >>
-// void save(ArcT & arc, const serializable<T> & data, void * = nullptr) {
-//    const_cast<T &>(data).fields(arc);
-//}
-template <class T, class ArcT, wheels_distinguish_1,
+// has_member_func_fields_simple<T &...>
+template <
+    class T, class ArcT,
+    class = std::enable_if_t<
+        !has_member_func_fields<const T &, visit_to_serialize, ArcT>::value &&
+        !has_member_func_fields<T &, visit_to_serialize, ArcT>::value &&
+        !has_member_func_fields_simple<const T &, ArcT>::value &&
+        has_member_func_fields_simple<T &, ArcT>::value>>
+void save(ArcT &arc, const serializable<T> &data,
+          WHEELS_PARAMETER_DISTINGUISH(3)) {
+  const_cast<T &>(static_cast<const T &>(data)).fields(arc);
+}
+// has_global_func_fields<const T & ...>
+template <
+    class T, class ArcT,
+    class = std::enable_if_t<
+        !has_member_func_fields<const T &, visit_to_serialize, ArcT>::value &&
+        !has_member_func_fields<T &, visit_to_serialize, ArcT>::value &&
+        !has_member_func_fields_simple<const T &, ArcT>::value &&
+        !has_member_func_fields_simple<T &, ArcT>::value &&
+        has_global_func_fields<const T &, visit_to_serialize, ArcT>::value>>
+void save(ArcT &arc, const serializable<T> &data,
+          WHEELS_PARAMETER_DISTINGUISH(4)) {
+  ::wheels::fields(static_cast<const T &>(data), visit_to_serialize(), arc);
+}
+// has_global_func_fields<T & ...>
+template <
+    class T, class ArcT,
+    class = std::enable_if_t<
+        !has_member_func_fields<const T &, visit_to_serialize, ArcT>::value &&
+        !has_member_func_fields<T &, visit_to_serialize, ArcT>::value &&
+        !has_member_func_fields_simple<const T &, ArcT>::value &&
+        !has_member_func_fields_simple<T &, ArcT>::value &&
+        !has_global_func_fields<const T &, visit_to_serialize, ArcT>::value &&
+        has_global_func_fields<T &, visit_to_serialize, ArcT>::value>>
+void save(ArcT &arc, const serializable<T> &data,
+          WHEELS_PARAMETER_DISTINGUISH(5)) {
+  ::wheels::fields(const_cast<T &>(static_cast<const T &>(data)),
+                   visit_to_serialize(), arc);
+}
+// has_global_func_fields_simple<const T & ...>
+template <
+    class T, class ArcT,
+    class = std::enable_if_t<
+        !has_member_func_fields<const T &, visit_to_serialize, ArcT>::value &&
+        !has_member_func_fields<T &, visit_to_serialize, ArcT>::value &&
+        !has_member_func_fields_simple<const T &, ArcT>::value &&
+        !has_member_func_fields_simple<T &, ArcT>::value &&
+        !has_global_func_fields<const T &, visit_to_serialize, ArcT>::value &&
+        !has_global_func_fields<T &, visit_to_serialize, ArcT>::value &&
+        has_global_func_fields_simple<const T &, ArcT>::value>>
+void save(ArcT &arc, const serializable<T> &data,
+          WHEELS_PARAMETER_DISTINGUISH(6)) {
+  ::wheels::fields(static_cast<const T &>(data), arc);
+}
+// has_global_func_fields_simple<T & ...>
+template <
+    class T, class ArcT,
+    class = std::enable_if_t<
+        !has_member_func_fields<const T &, visit_to_serialize, ArcT>::value &&
+        !has_member_func_fields<T &, visit_to_serialize, ArcT>::value &&
+        !has_member_func_fields_simple<const T &, ArcT>::value &&
+        !has_member_func_fields_simple<T &, ArcT>::value &&
+        !has_global_func_fields<const T &, visit_to_serialize, ArcT>::value &&
+        !has_global_func_fields<T &, visit_to_serialize, ArcT>::value &&
+        !has_global_func_fields_simple<const T &, ArcT>::value &&
+        has_global_func_fields_simple<T &, ArcT>::value>>
+void save(ArcT &arc, const serializable<T> &data,
+          WHEELS_PARAMETER_DISTINGUISH(7)) {
+  ::wheels::fields(const_cast<T &>(static_cast<const T &>(data)), arc);
+}
+
+// has_member_func_fields
+template <class T, class ArcT, class = std::enable_if_t<has_member_func_fields<
+                                   T &, visit_to_serialize, ArcT>::value>>
+void load(ArcT &arc, serializable<T> &data, WHEELS_PARAMETER_DISTINGUISH(0)) {
+  static_cast<T &>(data).fields(visit_to_serialize(), arc);
+}
+// has_member_func_fields_simple
+template <class T, class ArcT,
           class = std::enable_if_t<
               !has_member_func_fields<T &, visit_to_serialize, ArcT>::value &&
               has_member_func_fields_simple<T &, ArcT>::value>>
-void load(ArcT &arc, serializable<T> &data) {
+void load(ArcT &arc, serializable<T> &data, WHEELS_PARAMETER_DISTINGUISH(1)) {
   static_cast<T &>(data).fields(arc);
 }
-
-template <
-    class T, class ArcT, wheels_distinguish_2,
-    class = std::enable_if_t<
-        !has_member_func_fields<const T &, visit_to_serialize, ArcT>::value &&
-        !has_member_func_fields_simple<const T &, ArcT>::value &&
-        has_global_func_fields<const T &, visit_to_serialize, ArcT>::value>>
-void save(ArcT &arc, const serializable<T> &data) {
-  ::wheels::fields(static_cast<const T &>(data), visit_to_serialize(), arc);
-}
-// template <class T, class ArcT, wheels_distinguish_2, class =
-// std::enable_if_t<
-//    !has_member_func_fields<T &, visit_to_serialize, ArcT>::value &&
-//    !has_member_func_fields_simple<T &, ArcT>::value &&
-//    has_global_func_fields<T &, visit_to_serialize, ArcT>::value >>
-// void save(ArcT & arc, const serializable<T> & data, void * = nullptr) {
-//    ::wheels::fields(const_cast<T &>(data), visit_to_serialize(), arc);
-//}
-template <class T, class ArcT, wheels_distinguish_2,
+// has_global_func_fields
+template <class T, class ArcT,
           class = std::enable_if_t<
               !has_member_func_fields<T &, visit_to_serialize, ArcT>::value &&
               !has_member_func_fields_simple<T &, ArcT>::value &&
               has_global_func_fields<T &, visit_to_serialize, ArcT>::value>>
-void load(ArcT &arc, serializable<T> &data) {
+void load(ArcT &arc, serializable<T> &data, WHEELS_PARAMETER_DISTINGUISH(2)) {
   ::wheels::fields(static_cast<T &>(data), visit_to_serialize(), arc);
 }
-
-template <
-    class T, class ArcT, wheels_distinguish_3,
-    class = std::enable_if_t<
-        !has_member_func_fields<const T &, visit_to_serialize, ArcT>::value &&
-        !has_member_func_fields_simple<const T &, ArcT>::value &&
-        !has_global_func_fields<const T &, visit_to_serialize, ArcT>::value &&
-        has_global_func_fields_simple<const T &, ArcT>::value>>
-void save(ArcT &arc, const serializable<T> &data) {
-  ::wheels::fields(static_cast<const T &>(data), arc);
-}
-// template <class T, class ArcT, wheels_distinguish_3, class =
-// std::enable_if_t<
-//    !has_member_func_fields<T &, visit_to_serialize, ArcT>::value &&
-//    !has_member_func_fields_simple<T &, ArcT>::value &&
-//    !has_global_func_fields<T &, visit_to_serialize, ArcT>::value &&
-//    has_global_func_fields_simple<T &, ArcT>::value >>
-// void save(ArcT & arc, const serializable<T> & data, void * = nullptr) {
-//    ::wheels::fields(const_cast<T &>(data), arc);
-//}
-template <class T, class ArcT, wheels_distinguish_3,
+// has_global_func_fields_simple
+template <class T, class ArcT,
           class = std::enable_if_t<
               !has_member_func_fields<T &, visit_to_serialize, ArcT>::value &&
               !has_member_func_fields_simple<T &, ArcT>::value &&
               !has_global_func_fields<T &, visit_to_serialize, ArcT>::value &&
               has_global_func_fields_simple<T &, ArcT>::value>>
-void load(ArcT &arc, serializable<T> &data) {
+void load(ArcT &arc, serializable<T> &data, WHEELS_PARAMETER_DISTINGUISH(3)) {
   ::wheels::fields(static_cast<T &>(data), arc);
 }
 
-
-
-
+#undef WHEELS_PARAMETER_DISTINGUISH
 
 using namespace std::experimental;
 
@@ -160,8 +200,7 @@ inline bool write(const filesystem::path &filename, const T &... data) {
 }
 // write_tmp
 template <class ArchiveT = cereal::PortableBinaryOutputArchive, class... T>
-inline bool write_tmp(const filesystem::path &filename,
-                              const T &... data) {
+inline bool write_tmp(const filesystem::path &filename, const T &... data) {
   return write<ArchiveT>(filesystem::temp_directory_path() / filename, data...);
 }
 
@@ -188,7 +227,6 @@ inline bool read(const filesystem::path &filename, T &... data) {
 // read_tmp
 template <class ArchiveT = cereal::PortableBinaryInputArchive, class... T>
 inline bool read_tmp(const filesystem::path &filename, T &... data) {
-  return read<ArchiveT>(filesystem::temp_directory_path() / filename,
-              data...);
+  return read<ArchiveT>(filesystem::temp_directory_path() / filename, data...);
 }
 }

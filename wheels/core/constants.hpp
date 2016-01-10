@@ -219,6 +219,8 @@ WHEELS_CONST_INT_OVERLOAD_UNARY_OP(!)
 WHEELS_CONST_INT_OVERLOAD_UNARY_OP(-)
 WHEELS_CONST_INT_OVERLOAD_UNARY_OP(~)
 
+#undef WHEELS_CONST_INT_OVERLOAD_UNARY_OP
+
 #define WHEELS_CONST_INT_OVERLOAD_BINARY_OP(op)                                \
   template <class T1, T1 Val1, class T2, T2 Val2>                              \
   constexpr auto operator op(const const_ints<T1, Val1> &,                     \
@@ -270,6 +272,8 @@ WHEELS_CONST_INT_OVERLOAD_BINARY_OP(-)
 WHEELS_CONST_INT_OVERLOAD_BINARY_OP(*)
 WHEELS_CONST_INT_OVERLOAD_BINARY_OP(/)
 WHEELS_CONST_INT_OVERLOAD_BINARY_OP(%)
+
+#undef WHEELS_CONST_INT_OVERLOAD_BINARY_OP
 
 // cat
 template <class T, T... Vals>
@@ -346,7 +350,7 @@ struct _repeat<T, S, const_ints<size_t, Is...>> {
 }
 template <class T, T Val, class K, K Times>
 constexpr auto repeat(const const_ints<T, Val> &v,
-                     const const_ints<K, Times> &times) {
+                      const const_ints<K, Times> &times) {
   return typename details::_repeat<
       T, Val, typename details::_make_seq<size_t, Times == 0,
                                           (size_t)Times>::type>::type();

@@ -113,8 +113,8 @@ struct overloaded<Op, category_const_expr, category_const_expr> {
   constexpr overloaded() {}
   template <class TT1, class TT2>
   constexpr decltype(auto) operator()(TT1 &&v1, TT2 &&v2) const {
-    return const_binary_op<Op, TT1, TT2>(Op(), forward<TT1>(v1),
-                                         forward<TT2>(v2));
+    return const_binary_op<Op, std::decay_t<TT1>, std::decay_t<TT2>>(
+        Op(), forward<TT1>(v1), forward<TT2>(v2));
   }
 };
 
@@ -122,7 +122,8 @@ template <class Op> struct overloaded<Op, category_const_expr, void> {
   constexpr overloaded() {}
   template <class TT1, class TT2>
   constexpr decltype(auto) operator()(TT1 &&v1, TT2 &&v2) const {
-    return const_binary_op<Op, TT1, const_coeff<std::decay_t<TT2>>>(
+    return const_binary_op<Op, std::decay_t<TT1>,
+                           const_coeff<std::decay_t<TT2>>>(
         Op(), forward<TT1>(v1), as_const_coeff(forward<TT2>(v2)));
   }
 };
@@ -131,7 +132,8 @@ template <class Op> struct overloaded<Op, void, category_const_expr> {
   constexpr overloaded() {}
   template <class TT1, class TT2>
   constexpr decltype(auto) operator()(TT1 &&v1, TT2 &&v2) const {
-    return const_binary_op<Op, const_coeff<std::decay_t<TT1>>, TT2>(
+    return const_binary_op<Op, const_coeff<std::decay_t<TT1>>,
+                           std::decay_t<TT2>>(
         Op(), as_const_coeff(forward<TT1>(v1)), forward<TT2>(v2));
   }
 };

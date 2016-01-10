@@ -188,3 +188,22 @@ TEST(core, fields7) {
   randomize_fields(data, rng);
   ASSERT_TRUE(tuplize(data) == tuplize(data));
 }
+
+struct M {
+  int a, b;
+  template <class V> auto fields(V &&v) { return v(a, b); }
+};
+
+struct N : comparable<N> {
+  double c;
+  M m1, m2;
+  template <class V> auto fields(V &&v) { return v(c, m1, m2); }
+};
+
+TEST(core, fields8) {
+  N n1;
+  std::default_random_engine rng;
+  randomize_fields(n1, rng);
+  const N n2 = n1;
+  ASSERT_TRUE(n1 == n2);
+}

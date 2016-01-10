@@ -38,6 +38,7 @@ WHEELS_BIND_TYPE_WITH_MX_CLASSID(uint8_t, mxUINT8_CLASS)
 WHEELS_BIND_TYPE_WITH_MX_CLASSID(uint16_t, mxUINT16_CLASS)
 WHEELS_BIND_TYPE_WITH_MX_CLASSID(uint32_t, mxUINT32_CLASS)
 WHEELS_BIND_TYPE_WITH_MX_CLASSID(uint64_t, mxUINT64_CLASS)
+#undef WHEELS_BIND_TYPE_WITH_MX_CLASSID
 
 template <class ShapeT, class ET, class T, size_t... Is>
 mxArray *_make_mx_array_seq(const tensor_base<ShapeT, ET, T> &ts,

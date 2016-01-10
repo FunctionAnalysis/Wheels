@@ -9,7 +9,6 @@ struct A : serializable<A> {
   A() : val(0) {}
   A(int v) : val(v) {}
   template <class V> auto fields(V &&v) { return v(val); }
-  template <class V> auto fields(V &&v) const { return v(val); }
 };
 struct B {};
 struct E : serializable<E>, comparable<E> {
@@ -18,7 +17,6 @@ struct E : serializable<E>, comparable<E> {
   E() {}
   E(const std::vector<A> &as) : as(as), bs(as.size()) {}
   template <class V> auto fields(V &&v) { return v(as, bs); }
-  template <class V> auto fields(V &&v) const { return v(as, bs); }
 };
 
 TEST(core, serialize) {

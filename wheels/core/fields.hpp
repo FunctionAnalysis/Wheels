@@ -81,7 +81,7 @@ constexpr auto category_for_overloading(const std::tuple<Ts...> &,
   return fields_category_tuple_like();
 }
 
-// raw array -> tuple
+// static raw array -> tuple
 namespace details {
 template <class T, size_t N, class V, size_t... Is>
 auto _fields_of_raw_array_seq(T (&arr)[N], V &&visitor,
@@ -184,7 +184,7 @@ template <class T> struct is_container_proxy : no {};
 template <class T, class V>
 struct is_container_proxy<container_proxy<T, V>> : yes {};
 template <class ContT, class VisitorT>
-constexpr decltype(auto) as_container(ContT &&c, VisitorT &&v) {
+constexpr auto as_container(ContT &&c, VisitorT &&v) {
   return container_proxy<ContT, std::decay_t<VisitorT>>(forward<ContT>(c),
                                                         forward<VisitorT>(v));
 }
@@ -301,45 +301,48 @@ public:
       : _pack(forward<PP>(p)), _process(forward<RR>(r)),
         _usage(forward<UU>(u)) {}
 
-  // visit single member
+// visit single member
+#define WHEELS_PARAMETER_DISTINGUISH(i) const_size<i> = const_size<i>()
+  // has_member_func_fields
   template <class T, class = std::enable_if_t<
                          has_member_func_fields<T, UsageT, this_t>::value>>
-  constexpr decltype(auto) visit(T &&v) const {
+  constexpr decltype(auto) visit(T &&v, WHEELS_PARAMETER_DISTINGUISH(0)) const {
     return forward<T>(v).fields(_usage, *this);
   }
-  template <class T, wheels_distinguish_1,
-            class = std::enable_if_t<
-                !has_member_func_fields<T, UsageT, this_t>::value &&
-                has_member_func_fields_simple<T, this_t>::value>>
-  constexpr decltype(auto) visit(T &&v) const {
+  // has_member_func_fields_simple
+  template <class T, class = std::enable_if_t<
+                         !has_member_func_fields<T, UsageT, this_t>::value &&
+                         has_member_func_fields_simple<T, this_t>::value>>
+  constexpr decltype(auto) visit(T &&v, WHEELS_PARAMETER_DISTINGUISH(1)) const {
     return forward<T>(v).fields(*this);
   }
-  template <class T, wheels_distinguish_2,
-            class = std::enable_if_t<
-                !has_member_func_fields<T, UsageT, this_t>::value &&
-                !has_member_func_fields_simple<T, this_t>::value &&
-                has_global_func_fields<T, UsageT, this_t>::value>>
-  constexpr decltype(auto) visit(T &&v) const {
+  // has_global_func_fields
+  template <class T, class = std::enable_if_t<
+                         !has_member_func_fields<T, UsageT, this_t>::value &&
+                         !has_member_func_fields_simple<T, this_t>::value &&
+                         has_global_func_fields<T, UsageT, this_t>::value>>
+  constexpr decltype(auto) visit(T &&v, WHEELS_PARAMETER_DISTINGUISH(2)) const {
     return ::wheels::fields(forward<T>(v), _usage, *this);
   }
-  template <class T, wheels_distinguish_3,
-            class = std::enable_if_t<
-                !has_member_func_fields<T, UsageT, this_t>::value &&
-                !has_member_func_fields_simple<T, this_t>::value &&
-                !has_global_func_fields<T, UsageT, this_t>::value &&
-                has_global_func_fields_simple<T, this_t>::value>>
-  constexpr decltype(auto) visit(T &&v) const {
+  // has_global_func_fields_simple
+  template <class T, class = std::enable_if_t<
+                         !has_member_func_fields<T, UsageT, this_t>::value &&
+                         !has_member_func_fields_simple<T, this_t>::value &&
+                         !has_global_func_fields<T, UsageT, this_t>::value &&
+                         has_global_func_fields_simple<T, this_t>::value>>
+  constexpr decltype(auto) visit(T &&v, WHEELS_PARAMETER_DISTINGUISH(3)) const {
     return ::wheels::fields(forward<T>(v), *this);
   }
-  template <class T, wheels_distinguish_4,
-            class = std::enable_if_t<
-                !has_member_func_fields<T, UsageT, this_t>::value &&
-                !has_member_func_fields_simple<T, this_t>::value &&
-                !has_global_func_fields<T, UsageT, this_t>::value &&
-                !has_global_func_fields_simple<T, this_t>::value>>
-  decltype(auto) visit(T &&v) const {
+  // leaf type or container type
+  template <class T, class = std::enable_if_t<
+                         !has_member_func_fields<T, UsageT, this_t>::value &&
+                         !has_member_func_fields_simple<T, this_t>::value &&
+                         !has_global_func_fields<T, UsageT, this_t>::value &&
+                         !has_global_func_fields_simple<T, this_t>::value>>
+  decltype(auto) visit(T &&v, WHEELS_PARAMETER_DISTINGUISH(4)) const {
     return _process(forward<T>(v));
   }
+#undef WHEELS_PARAMETER_DISTINGUISH
 
   // pack all members
   template <class... Ts>
@@ -353,10 +356,150 @@ private:
   UsageT _usage;
 };
 
+// const_field_visitor
+template <class PackT, class ProcessT, class UsageT> class const_field_visitor {
+  using this_t = field_visitor<PackT, ProcessT, UsageT>;
+
+public:
+  template <class PP, class RR, class UU>
+  constexpr const_field_visitor(PP &&p, RR &&r, UU &&u)
+      : _pack(forward<PP>(p)), _process(forward<RR>(r)),
+        _usage(forward<UU>(u)) {}
+
+// visit single member
+#define WHEELS_PARAMETER_DISTINGUISH(i) const_size<i> = const_size<i>()
+  // has_member_func_fields<const T...>
+  template <class T, class = std::enable_if_t<has_member_func_fields<
+                         const T &, UsageT, this_t>::value>>
+  constexpr decltype(auto) visit(const T &v,
+                                 WHEELS_PARAMETER_DISTINGUISH(0)) const {
+    return v.fields(_usage, *this);
+  }
+  // has_member_func_fields<T...>
+  template <class T,
+            class = std::enable_if_t<
+                !has_member_func_fields<const T &, UsageT, this_t>::value &&
+                has_member_func_fields<T &, UsageT, this_t>::value>>
+  constexpr decltype(auto) visit(const T &v,
+                                 WHEELS_PARAMETER_DISTINGUISH(1)) const {
+    return const_cast<T &>(v).fields(_usage, *this);
+  }
+  // has_member_func_fields_simple<const T...>
+  template <class T,
+            class = std::enable_if_t<
+                !has_member_func_fields<const T &, UsageT, this_t>::value &&
+                !has_member_func_fields<T &, UsageT, this_t>::value &&
+                has_member_func_fields_simple<const T &, this_t>::value>>
+  constexpr decltype(auto) visit(const T &v,
+                                 WHEELS_PARAMETER_DISTINGUISH(2)) const {
+    return v.fields(*this);
+  }
+  // has_member_func_fields_simple<T...>
+  template <class T,
+            class = std::enable_if_t<
+                !has_member_func_fields<const T &, UsageT, this_t>::value &&
+                !has_member_func_fields<T &, UsageT, this_t>::value &&
+                !has_member_func_fields_simple<const T &, this_t>::value &&
+                has_member_func_fields_simple<T &, this_t>::value>>
+  constexpr decltype(auto) visit(const T &v,
+                                 WHEELS_PARAMETER_DISTINGUISH(3)) const {
+    return const_cast<T &>(v).fields(*this);
+  }
+  // has_global_func_fields<const T...>
+  template <class T,
+            class = std::enable_if_t<
+                !has_member_func_fields<const T &, UsageT, this_t>::value &&
+                !has_member_func_fields<T &, UsageT, this_t>::value &&
+                !has_member_func_fields_simple<const T &, this_t>::value &&
+                !has_member_func_fields_simple<T &, this_t>::value &&
+                has_global_func_fields<const T &, UsageT, this_t>::value>>
+  constexpr decltype(auto) visit(const T &v,
+                                 WHEELS_PARAMETER_DISTINGUISH(4)) const {
+    return ::wheels::fields(v, _usage, *this);
+  }
+  // has_global_func_fields<T...>
+  template <class T,
+            class = std::enable_if_t<
+                !has_member_func_fields<const T &, UsageT, this_t>::value &&
+                !has_member_func_fields<T &, UsageT, this_t>::value &&
+                !has_member_func_fields_simple<const T &, this_t>::value &&
+                !has_member_func_fields_simple<T &, this_t>::value &&
+                !has_global_func_fields<const T &, UsageT, this_t>::value &&
+                has_global_func_fields<T &, UsageT, this_t>::value>>
+  constexpr decltype(auto) visit(const T &v,
+                                 WHEELS_PARAMETER_DISTINGUISH(5)) const {
+    return ::wheels::fields(const_cast<T &>(v), _usage, *this);
+  }
+  // has_global_func_fields_simple<const T...>
+  template <class T,
+            class = std::enable_if_t<
+                !has_member_func_fields<const T &, UsageT, this_t>::value &&
+                !has_member_func_fields<T &, UsageT, this_t>::value &&
+                !has_member_func_fields_simple<const T &, this_t>::value &&
+                !has_member_func_fields_simple<T &, this_t>::value &&
+                !has_global_func_fields<const T &, UsageT, this_t>::value &&
+                !has_global_func_fields<T &, UsageT, this_t>::value &&
+                has_global_func_fields_simple<const T &, this_t>::value>>
+  constexpr decltype(auto) visit(const T &v,
+                                 WHEELS_PARAMETER_DISTINGUISH(6)) const {
+    return ::wheels::fields(v, *this);
+  }
+  // has_global_func_fields_simple<T...>
+  template <class T,
+            class = std::enable_if_t<
+                !has_member_func_fields<const T &, UsageT, this_t>::value &&
+                !has_member_func_fields<T &, UsageT, this_t>::value &&
+                !has_member_func_fields_simple<const T &, this_t>::value &&
+                !has_member_func_fields_simple<T &, this_t>::value &&
+                !has_global_func_fields<const T &, UsageT, this_t>::value &&
+                !has_global_func_fields<T &, UsageT, this_t>::value &&
+                !has_global_func_fields_simple<const T &, this_t>::value &&
+                has_global_func_fields_simple<T &, this_t>::value>>
+  constexpr decltype(auto) visit(const T &v,
+                                 WHEELS_PARAMETER_DISTINGUISH(7)) const {
+    return ::wheels::fields(const_cast<T &>(v), *this);
+  }
+  // no fields func defined, this is a leaf type or a container type
+  template <class T,
+            class = std::enable_if_t<
+                !has_member_func_fields<const T &, UsageT, this_t>::value &&
+                !has_member_func_fields<T &, UsageT, this_t>::value &&
+                !has_member_func_fields_simple<const T &, this_t>::value &&
+                !has_member_func_fields_simple<T &, this_t>::value &&
+                !has_global_func_fields<const T &, UsageT, this_t>::value &&
+                !has_global_func_fields<T &, UsageT, this_t>::value &&
+                !has_global_func_fields_simple<const T &, this_t>::value &&
+                !has_global_func_fields_simple<T &, this_t>::value>>
+  constexpr decltype(auto) visit(const T &v,
+                                 WHEELS_PARAMETER_DISTINGUISH(8)) const {
+    return _process(v);
+  }
+#undef WHEELS_PARAMETER_DISTINGUISH
+
+  // pack all members
+  template <class... Ts>
+  constexpr decltype(auto) operator()(const Ts &... vs) const {
+    return _pack(visit(vs)...);
+  }
+
+private:
+  PackT _pack;
+  ProcessT _process;
+  UsageT _usage;
+};
+
 // make_field_visitor
 template <class PP, class RR, class UU>
 constexpr auto make_field_visitor(PP &&pack, RR &&proc, UU &&usage) {
   return field_visitor<std::decay_t<PP>, std::decay_t<RR>, std::decay_t<UU>>(
+      forward<PP>(pack), forward<RR>(proc), forward<UU>(usage));
+}
+
+// make_const_field_visitor
+template <class PP, class RR, class UU>
+constexpr auto make_const_field_visitor(PP &&pack, RR &&proc, UU &&usage) {
+  return const_field_visitor<std::decay_t<PP>, std::decay_t<RR>,
+                             std::decay_t<UU>>(
       forward<PP>(pack), forward<RR>(proc), forward<UU>(usage));
 }
 
@@ -383,8 +526,12 @@ template <class T> constexpr auto tuplize(T &&data) {
                             visit_to_tuplize())
       .visit(forward<T>(data));
 }
-using tuplizer =
-    field_visitor<pack_as_tuple, process_direct_pass, visit_to_tuplize>;
+// const_tuplize
+template <class T> constexpr auto const_tuplize(const T &data) {
+  return make_const_field_visitor(pack_as_tuple(), process_direct_pass(),
+                                  visit_to_tuplize())
+      .visit(data);
+}
 
 // traverse_fields
 struct visit_to_traverse {};
@@ -427,6 +574,12 @@ constexpr void traverse_fields(T &&data, FunT fun) {
   make_field_visitor(pack_nothing(), process_by_traverse<FunT>(fun),
                      visit_to_traverse())
       .visit(forward<T>(data));
+}
+template <class T, class FunT>
+constexpr void traverse_const_fields(const T &data, FunT fun) {
+  make_const_field_visitor(pack_nothing(), process_by_traverse<FunT>(fun),
+                           visit_to_traverse())
+      .visit(data);
 }
 
 // randomize_fields
@@ -489,23 +642,23 @@ template <class CheckFunT> struct process_by_any {
 
 // any_of_fields
 template <class T, class CheckFunT>
-constexpr bool any_of_fields(T &&data, CheckFunT checker) {
-  return make_field_visitor(pack_by_any(), process_by_any<CheckFunT>{checker},
-                            visit_to_traverse())
-      .visit(forward<T>(data));
+constexpr bool any_of_fields(const T &data, CheckFunT checker) {
+  return make_const_field_visitor(pack_by_any(),
+                                  process_by_any<CheckFunT>{checker},
+                                  visit_to_traverse())
+      .visit(data);
 }
 
 // none_of_fields
 template <class T, class CheckFunT>
-constexpr bool none_of_fields(T &&data, CheckFunT checker) {
-  return !any_of_fields(forward<T>(data), checker);
+constexpr bool none_of_fields(const T &data, CheckFunT checker) {
+  return !any_of_fields(data, checker);
 }
 
-// all_of_fields
 struct pack_by_all {
   template <class... ArgTs>
-  constexpr decltype(auto) operator()(ArgTs &&... args) const {
-    return all(forward<ArgTs>(args)...);
+  constexpr decltype(auto) operator()(const ArgTs &... args) const {
+    return all(args...);
   }
 };
 
@@ -522,30 +675,19 @@ template <class CheckFunT> struct process_by_all {
 
 // all_of_fields
 template <class T, class CheckFunT>
-constexpr bool all_of_fields(T &&data, CheckFunT checker) {
-  return make_field_visitor(pack_by_all(), process_by_all<CheckFunT>{checker},
-                            visit_to_traverse())
-      .visit(forward<T>(data));
-}
-
-namespace details {
-template <class T> struct _has_func_fields_to_tuplize {
-  static constexpr bool value =
-      has_member_func_fields<T, visit_to_tuplize, tuplizer>::value ||
-      has_member_func_fields_simple<T, tuplizer>::value ||
-      has_global_func_fields<T, visit_to_tuplize, tuplizer>::value ||
-      has_global_func_fields_simple<T, tuplizer>::value;
-};
+constexpr bool all_of_fields(const T &data, CheckFunT checker) {
+  return make_const_field_visitor(pack_by_all(),
+                                  process_by_all<CheckFunT>{checker},
+                                  visit_to_traverse())
+      .visit(data);
 }
 
 // comparable
 template <class T, class Kind = void> struct comparable {
   constexpr decltype(auto) as_tuple() const {
-    static_assert(details::_has_func_fields_to_tuplize<const T &>::value,
-                  "definition of fields(...) for const T & is required");
-    using result_t = decltype(tuplize(static_cast<const T &>(*this)));
+    using result_t = decltype(const_tuplize(static_cast<const T &>(*this)));
     static_assert(!std::is_same<T, result_t>::value, "tuplization failed");
-    return tuplize(static_cast<const T &>(*this));
+    return const_tuplize(static_cast<const T &>(*this));
   }
 };
 
@@ -584,7 +726,8 @@ constexpr bool operator>=(const comparable<A, Kind> &a,
 template <class T, class Kind = void> struct convertible {
   template <class K> T &operator=(const convertible<K, Kind> &c) {
     if (this != reinterpret_cast<const convertible<T, Kind> *>(&c)) {
-      tuplize(static_cast<T &>(*this)) = tuplize(static_cast<const K &>(c));
+      tuplize(static_cast<T &>(*this)) =
+          const_tuplize(static_cast<const K &>(c));
     }
     return static_cast<T &>(*this);
   }

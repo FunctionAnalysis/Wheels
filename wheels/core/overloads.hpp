@@ -71,6 +71,7 @@ template <class OpT> struct common_func {
   const OpT &derived() const { return static_cast<const OpT &>(*this); }
 };
 
+// WHEELS_OVERLOAD_UNARY_OP
 #define WHEELS_OVERLOAD_UNARY_OP(op, name)                                     \
   struct unary_op_##name : common_func<unary_op_##name> {                      \
     constexpr unary_op_##name() {}                                             \
@@ -98,7 +99,9 @@ template <class OpT> struct common_func {
 WHEELS_OVERLOAD_UNARY_OP(-, minus)
 WHEELS_OVERLOAD_UNARY_OP(!, not)
 WHEELS_OVERLOAD_UNARY_OP(~, bitwise_not)
+#undef WHEELS_OVERLOAD_UNARY_OP
 
+// WHEELS_OVERLOAD_BINARY_OP
 #define WHEELS_OVERLOAD_BINARY_OP(op, name)                                    \
   struct binary_op_##name : common_func<binary_op_##name> {                    \
     constexpr binary_op_##name() {}                                            \
@@ -146,7 +149,10 @@ WHEELS_OVERLOAD_BINARY_OP(||, or)
 WHEELS_OVERLOAD_BINARY_OP(&, bitwise_and)
 WHEELS_OVERLOAD_BINARY_OP(|, bitwise_or)
 WHEELS_OVERLOAD_BINARY_OP (^, bitwise_xor)
+#undef WHEELS_OVERLOAD_BINARY_OP
 
+// WHEELS_OVERLOAD_STD_UNARY_FUNC
+// WHEELS_OVERLOAD_STD_BINARY_FUNC
 #define WHEELS_OVERLOAD_STD_UNARY_FUNC(name)                                   \
   struct func_##name : common_func<func_##name> {                              \
     constexpr func_##name() {}                                                 \
@@ -236,6 +242,10 @@ WHEELS_OVERLOAD_STD_BINARY_FUNC(pow)
 WHEELS_OVERLOAD_STD_BINARY_FUNC(min)
 WHEELS_OVERLOAD_STD_BINARY_FUNC(max)
 
+#undef WHEELS_OVERLOAD_STD_UNARY_FUNC
+#undef WHEELS_OVERLOAD_STD_BINARY_FUNC
+#undef WHEELS_OVERLOAD_STD_FUNC
+
 // object_overloading
 template <class DerivedT, class OpT> struct object_overloading {};
 template <class DerivedT, class... OpTs>
@@ -288,11 +298,14 @@ template <class OpT> struct member_func {
 #define WHEELS_SYMBOL_RIGHT_BRACKET ]
 WHEELS_OVERLOAD_MEMBER_UNARY_OP(, WHEELS_SYMBOL_LEFT_BRACKET,
                                 WHEELS_SYMBOL_RIGHT_BRACKET, [], bracket)
+#undef WHEELS_SYMBOL_LEFT_BRACKET
+#undef WHEELS_SYMBOL_RIGHT_BRACKET
 WHEELS_OVERLOAD_MEMBER_UNARY_OP(, +=, , +=, plus_equal)
 WHEELS_OVERLOAD_MEMBER_UNARY_OP(, -=, , -=, minus_equal)
 WHEELS_OVERLOAD_MEMBER_UNARY_OP(, *=, , *=, mul_equal)
 WHEELS_OVERLOAD_MEMBER_UNARY_OP(, /=, , /=, div_equal)
 WHEELS_OVERLOAD_MEMBER_UNARY_OP(, =, , =, assign)
+#undef WHEELS_OVERLOAD_MEMBER_UNARY_OP
 
 #define WHEELS_OVERLOAD_MEMBER_VARARG_OP(op1, op2, op3, opsymbol, name)        \
   struct member_op_##name : member_func<member_op_##name> {                    \
@@ -339,4 +352,7 @@ WHEELS_OVERLOAD_MEMBER_UNARY_OP(, =, , =, assign)
 #define WHEELS_SYMBOL_RIGHT_PAREN )
 WHEELS_OVERLOAD_MEMBER_VARARG_OP(, WHEELS_SYMBOL_LEFT_PAREN,
                                  WHEELS_SYMBOL_RIGHT_PAREN, (), paren)
+#undef WHEELS_SYMBOL_LEFT_PAREN
+#undef WHEELS_SYMBOL_RIGHT_PAREN
+#undef WHEELS_OVERLOAD_MEMBER_VARARG_OP
 }

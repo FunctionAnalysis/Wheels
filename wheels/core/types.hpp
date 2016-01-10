@@ -1,7 +1,7 @@
 #pragma once
 
-#include <complex>
 #include "constants.hpp"
+#include <complex>
 
 namespace wheels {
 
@@ -128,6 +128,7 @@ template <class... Ts> constexpr auto type_of(Ts &&... t) {
   return types<Ts &&...>();
 }
 
+// type_t
 #define type_t(t) decltype(t)::type
 
 template <class... Ts>
@@ -195,5 +196,8 @@ template <class T> struct is_complex<std::complex<T>> : yes {};
 template <class T> struct real_component { using type = T; };
 template <class T> struct real_component<std::complex<T>> { using type = T; };
 
-
+// is_initializer_list
+template <class T> struct is_initializer_list : no {};
+template <class T>
+struct is_initializer_list<std::initializer_list<T>> : yes {};
 }

@@ -142,20 +142,21 @@ constexpr T right_open_wrapped(const T &v, const T &lb, const T &ub) {
 }
 
 // always
+// - const value
 template <class T, T Val, class... ArgTs> struct always {
   static constexpr T value = Val;
 };
-
+// - type by size_t's
 template <class T, size_t... ArgIs> struct _always_t { using type = T; };
 template <class T, size_t... ArgIs>
 using always_t = typename _always_t<T, ArgIs...>::type;
-
+// - type by types
 template <class T, class... ArgTs> struct _always2_t { using type = T; };
 template <class T, class ... ArgTs>
 using always2_t = typename _always2_t<T, ArgTs...>::type;
-
-template <class T> struct always_val {
-  constexpr always_val(const T &v) : val(v) {}
+// - functor returning const value
+template <class T> struct always_f {
+  constexpr always_f(const T &v) : val(v) {}
   template <class... ArgTs> constexpr const T &operator()(ArgTs &&...) const {
     return val;
   }

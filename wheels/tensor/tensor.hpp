@@ -18,7 +18,7 @@ class tensor_storage;
 namespace details {
 template <class T, size_t N, size_t... Is>
 constexpr auto _init_std_array_seq(const T &init, const_ints<size_t, Is...>) {
-  return std::array<T, N>{{always_val<T>(init)(const_index<Is>())...}};
+  return std::array<T, N>{{always_f<T>(init)(const_index<Is>())...}};
 }
 template <class T, size_t N> constexpr auto _init_std_array(const T &init) {
   return _init_std_array_seq<T, N>(init, make_const_sequence(const_size<N>()));
@@ -287,24 +287,6 @@ public:
   // tensor()
   constexpr tensor() : storage_t() {}
 
-  // tensor(e1, e2, e3 ...)
-  template <class... EleTs,
-            class = std::enable_if_t<
-                (ShapeT::dynamic_size_num == 0 &&
-                 ::wheels::all(std::is_convertible<EleTs, ET>::value...))>>
-  constexpr tensor(EleTs &&... eles)
-      : storage_t(ShapeT(), with_elements, forward<EleTs>(eles)...) {}
-
-  template <class... EleTs, class = void,
-            class = std::enable_if_t<
-                (ShapeT::dynamic_size_num == 1 &&
-                 ::wheels::all(std::is_convertible<EleTs, ET>::value...))>>
-  constexpr tensor(EleTs &&... eles)
-      : storage_t(details::_make_shape_from_magnitude_seq<ShapeT>(
-                      sizeof...(EleTs),
-                      make_const_sequence(const_size<ShapeT::rank>())),
-                  with_elements, forward<EleTs>(eles)...) {}
-
   // tensor(shape)
   constexpr tensor(const ShapeT &shape) : storage_t(shape) {}
 
@@ -355,6 +337,24 @@ public:
   template <class IterT, class = std::enable_if_t<is_iterator<IterT>::value>>
   constexpr tensor(const ShapeT &shape, IterT begin, IterT end)
       : storage_t(shape, with_iterators, begin, end) {}
+
+  // tensor(e1, e2, e3 ...)
+  template <class... EleTs,
+            bool B = (ShapeT::dynamic_size_num == 0 &&
+                      ::wheels::all(std::is_convertible<EleTs, ET>::value...)),
+            class = std::enable_if_t<B>>
+  constexpr tensor(EleTs &&... eles)
+      : storage_t(ShapeT(), with_elements, forward<EleTs>(eles)...) {}
+
+  template <class... EleTs, class = void,
+            bool B = (ShapeT::dynamic_size_num == 1 &&
+                      ::wheels::all(std::is_convertible<EleTs, ET>::value...)),
+            class = std::enable_if_t<B>>
+  constexpr tensor(EleTs &&... eles)
+      : storage_t(details::_make_shape_from_magnitude_seq<ShapeT>(
+                      sizeof...(EleTs),
+                      make_const_sequence(const_size<ShapeT::rank>())),
+                  with_elements, forward<EleTs>(eles)...) {}
 
   tensor(const tensor &) = default;
   tensor(tensor &&) = default;

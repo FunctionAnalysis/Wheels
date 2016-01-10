@@ -129,8 +129,9 @@ TEST(tensor, methods3) {
   auto e0 = element_at(result2, 0);
   auto e1 = element_at(result2, 1);
   auto e2 = element_at(result2, 2);
-  auto t = result2.eval();
   ASSERT_TRUE(result2 == vec3(4, 4, 5));
+  auto t = result2.eval();
+  ASSERT_TRUE(t == vec3(4, 4, 5));
 }
 
 TEST(tensor, demo) {

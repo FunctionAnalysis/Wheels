@@ -7,6 +7,7 @@
 
 namespace wheels {
 
+// time_cost
 template <class DurationT = std::chrono::milliseconds, class FunT>
 auto time_cost(FunT &&fun) {
   auto start_time = std::chrono::high_resolution_clock::now();
