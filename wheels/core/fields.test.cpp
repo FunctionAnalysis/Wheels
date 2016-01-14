@@ -221,4 +221,5 @@ TEST(core, fields9) {
   DD dd;
   dd.cc.bb.aa.a = 0;
   ASSERT_TRUE(all_of_fields(dd, [](auto &&e) { return e == 0; }));
+  ASSERT_TRUE(!any_of_fields(dd, [](auto &&e) { return e != 0; }));
 }

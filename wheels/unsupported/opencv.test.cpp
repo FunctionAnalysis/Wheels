@@ -17,7 +17,7 @@ TEST(third, opencv) {
     return vec3(x / 2.0 + 300.0, y / 3.0, c / 2.0);
   });
 
-  println(time_cost([&]() { im = nim; }));
+  wheels::println(time_cost([&]() { im = nim; }));
   cv::imshow("remap", im.mat);
   cv::waitKey();
 }

@@ -49,7 +49,7 @@ namespace details {
 // _element_at_remap_result_seq using round_interpolate
 template <class ShapeT, class ET, class T, class MapFunT, size_t... Is,
           class... SubTs>
-ET _element_at_remap_result_seq(
+constexpr ET _element_at_remap_result_seq(
     const remap_result<ShapeT, ET, T, MapFunT, round_interpolate> &r,
     const_ints<size_t, Is...>, const SubTs &... subs) {
   return r.input().at_or(
@@ -57,23 +57,31 @@ ET _element_at_remap_result_seq(
       static_cast<size_t>(std::round(r.float_subs_in_input(subs...)[Is]))...);
 }
 
+
+template <class T1, class T2>
+constexpr auto _linear_interpolate(T1 &&p1, T2 &&p2, double c) {
+  return forward<T1>(p1) * (1.0 - c) + forward<T2>(p2) * c;
+}
+
 // _linear_interpolate
 template <class SamplerFunT, class DistToZeroFunT, class... SubTs>
-constexpr auto _linear_interpolate(const_size<0>, SamplerFunT &samplerfun,
-                                 DistToZeroFunT &dist0fun,
-                                 const SubTs &... subs) {
+constexpr auto _linear_interpolated_sampling(const_size<0>,
+                                             SamplerFunT &samplerfun,
+                                             DistToZeroFunT &dist0fun,
+                                             const SubTs &... subs) {
   return samplerfun(subs...);
 }
-template <size_t Undetermined, class SamplerFunT,
-          class DistToZeroFunT, class... SubTs>
-auto _linear_interpolate(const_size<Undetermined>, SamplerFunT &samplerfun,
-                       DistToZeroFunT &dist0fun, const SubTs &... subs) {
-  double dist0 = dist0fun(const_index<Undetermined - 1>());
-  auto v0 = _linear_interpolate(const_size<Undetermined - 1>(), samplerfun,
-                                  dist0fun, no(), subs...);
-  auto v1 = _linear_interpolate(const_size<Undetermined - 1>(), samplerfun,
-                                  dist0fun, yes(), subs...);
-  return v0 * (1.0 - dist0) + v1 * dist0;
+template <size_t Undetermined, class SamplerFunT, class DistToZeroFunT,
+          class... SubTs>
+constexpr auto
+_linear_interpolated_sampling(const_size<Undetermined>, SamplerFunT &samplerfun,
+                              DistToZeroFunT &dist0fun, const SubTs &... subs) {
+  return details::_linear_interpolate(
+      _linear_interpolated_sampling(const_size<Undetermined - 1>(), samplerfun,
+                                    dist0fun, no(), subs...),
+      _linear_interpolated_sampling(const_size<Undetermined - 1>(), samplerfun,
+                                    dist0fun, yes(), subs...),
+      dist0fun(const_index<Undetermined - 1>()));
 }
 
 // _element_at_ceil_or_floor_helper
@@ -97,12 +105,12 @@ ET _element_at_remap_result_seq(
   static_assert(sizeof...(SubTs) == ShapeT::rank,
                 "invalid number of subscripts");
   decltype(auto) subsInput = r.float_subs_in_input(subs...);
-  static constexpr size_t input_rank =
+  constexpr size_t input_rank =
       std::decay_t<decltype(std::declval<T>().shape())>::rank;
   // the size of subsInput should be same with input_rank
-  return (ET)_linear_interpolate(
+  return (ET)_linear_interpolated_sampling(
       const_size<input_rank>(),
-      [&r, &subsInput](auto &... noyeses) {
+      [&r, &subsInput](auto &&... noyeses) {
         return _element_at_ceil_or_floor_helper(
             r.input(), r.outlier_value(), subsInput,
             std::forward_as_tuple(noyeses...),
