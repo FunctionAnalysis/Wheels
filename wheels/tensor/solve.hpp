@@ -24,7 +24,7 @@ auto solve(const tensor_base<tensor_shape<ST1, ST1, ST1>, double, T1> &a,
   assert(a.size(const_index<0>()) == b.size(const_index<0>()));
   auto av = a.eval();
   auto bv = b.eval();
-  //lapack::gelsd
+  //lapack_tuned::gelsd()
   throw std::runtime_error("not implemented yet");
 }
 }

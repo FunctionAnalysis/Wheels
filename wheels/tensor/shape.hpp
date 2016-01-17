@@ -1,12 +1,11 @@
 #pragma once
 
 #include "../core/constants.hpp"
+#include "../core/combination.hpp"
 
 namespace wheels {
 
 template <class T, class... SizeTs> class tensor_shape;
-
-using ignore_t = decltype(std::ignore);
 
 // tensor_shape
 template <class T> class tensor_shape<T> {
@@ -275,6 +274,29 @@ template <class T, class SizeT, class... SizeTs, class K, class... Ks>
 constexpr T sub2ind(const tensor_shape<T, SizeT, SizeTs...> &shape, K sub,
                     Ks... subs) {
   return (T)(sub * shape.rest().magnitude() + sub2ind(shape.rest(), subs...));
+}
+
+// sub2ind (with customized steps)
+template <class T>
+constexpr T sub2ind(const tensor_shape<T> &, const combination<> &steps) {
+  return 0;
+}
+template <class T, class SizeT, class... SizeTs, class StepT, class... StepTs>
+constexpr T sub2ind(const tensor_shape<T, SizeT, SizeTs...> &,
+                    const combination<StepT, StepTs...> &steps) {
+  static_assert(sizeof...(SizeTs) == sizeof...(StepTs),
+                "the number of steps mismatch with the rank of shape");
+  return 0;
+}
+template <class T, class StepsT, class SizeT, class... SizeTs, class StepT,
+          class... StepTs, class K, class... Ks>
+constexpr T sub2ind(const tensor_shape<T, SizeT, SizeTs...> &shape,
+                    const combination<StepT, StepTs...> &steps, K sub,
+                    Ks... subs) {
+  static_assert(sizeof...(SizeTs) == sizeof...(StepTs),
+                "the number of steps mismatch with the rank of shape");
+  return (T)(sub * steps.value() +
+             sub2ind(shape.rest(), steps.rest(), subs...));
 }
 
 // ind2sub

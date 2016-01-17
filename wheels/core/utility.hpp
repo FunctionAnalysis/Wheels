@@ -10,6 +10,8 @@ using std::forward;
 using std::move;
 template <class T> constexpr T copy(const T &t) { return t; }
 
+using ignore_t = decltype(std::ignore);
+
 // conditional for enumulating ?:
 template <class ThenT, class ElseT>
 constexpr decltype(auto) conditional(bool b, ThenT &&thenv, ElseT &&elsev) {

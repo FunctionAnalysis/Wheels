@@ -1,5 +1,5 @@
 # Wheels
-A C++ Toolkit for Geometry, Graphics and Vision.
+A C++ Toolkit for Tensor Manipulations.
 
 ## Features
 ### generic tensors
