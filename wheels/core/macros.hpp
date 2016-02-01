@@ -35,12 +35,5 @@
   bool _B = (B), class = std::enable_if_t<_B>, class = void
 #endif
 
-//#define wheels_distinguish_1 class = void
-//#define wheels_distinguish_2 wheels_distinguish_1, wheels_distinguish_1
-//#define wheels_distinguish_3 wheels_distinguish_2, wheels_distinguish_1
-//#define wheels_distinguish_4 wheels_distinguish_2, wheels_distinguish_2
-//#define wheels_distinguish_5 wheels_distinguish_4, wheels_distinguish_1
-//#define wheels_distinguish_6 wheels_distinguish_3, wheels_distinguish_3
-
 #define wheels_macro_cat_impl(a, b) a##b
 #define wheels_macro_cat(a, b) wheels_macro_cat_impl(a, b)

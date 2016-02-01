@@ -1,5 +1,6 @@
 #pragma once
 
+#include "aligned_data.hpp"
 #include "base.hpp"
 
 namespace wheels {
@@ -85,8 +86,7 @@ public:
   auto &container() { return _data; }
 
 public:
-  constexpr decltype(auto) at(size_t ind) const { return _data[ind];
-  }
+  constexpr decltype(auto) at(size_t ind) const { return _data[ind]; }
   decltype(auto) at(size_t ind) { return _data[ind]; }
 
 public:
@@ -186,7 +186,7 @@ class tensor_storage<ShapeT, bool, T, false>
 public:
   using shape_type = ShapeT;
   using value_type = bool;
-  using stored_value_type = uint8_t;
+  using stored_value_type = typename details::_uint_of<sizeof(bool)>::type;
 
 public:
   constexpr tensor_storage() {}
@@ -226,7 +226,7 @@ public:
 
 public:
   constexpr bool at(size_t ind) const { return _data[ind]; }
-  stored_value_type &at(size_t ind) { return _data[ind]; }
+  bool &at(size_t ind) { return (bool &)(_data[ind]); }
 
 public:
   template <class ArcT> void save(ArcT &ar) const {
@@ -372,13 +372,13 @@ constexpr auto shape_of(const tensor<ShapeT, ET> &t) {
   return t.shape();
 }
 
-// data_of
+// ptr_of
 template <class ET, class ShapeT>
-constexpr const ET *data_of(const tensor<ShapeT, ET> &t) {
-  return t.container().data();
+constexpr const ET *ptr_of(const tensor<ShapeT, ET> &t) {
+  return (const ET *)(t.container().data());
 }
-template <class ET, class ShapeT> ET *data_of(tensor<ShapeT, ET> &t) {
-  return t.container().data();
+template <class ET, class ShapeT> ET *ptr_of(tensor<ShapeT, ET> &t) {
+  return (ET *)(t.container().data());
 }
 
 // element_at

@@ -24,7 +24,6 @@ list (REMOVE_ITEM wheels_sources ${wheels_test_sources})
 
 include_directories (${DEPENDENCY_INCLUDES})
 
-
 # the lib project
 message(STATUS "wheels_sources:")
 foreach(i ${wheels_sources})
