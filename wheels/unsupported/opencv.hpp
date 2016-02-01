@@ -1,7 +1,15 @@
 #pragma once
 
 #include <filesystem>
+
+#include "../core/macros.hpp"
+#if defined(wheels_compiler_msc)
+#pragma warning(push, 0)
+#endif
 #include <opencv2/opencv.hpp>
+#if defined(wheels_compiler_msc)
+#pragma warning(pop)
+#endif
 
 #include "../tensor/methods.hpp"
 #include "../tensor/tensor.hpp"
@@ -311,7 +319,8 @@ decltype(auto) element_at(cv_image<T, Depth> &t, const SubT1 &s1,
 }
 
 template <class FunT, class T, size_t Depth, class... Ts>
-void for_each_element(order_flag<unordered>, FunT &&fun, const cv_image<T, Depth> &t, Ts &&... ts) {
+void for_each_element(order_flag<unordered>, FunT &&fun,
+                      const cv_image<T, Depth> &t, Ts &&... ts) {
   static constexpr int _idetph = static_cast<int>(Depth);
   t.mat.forEach([&](cv::Vec<T, _idetph> &e, const int *position) {
     for (size_t d = 0; d < Depth; d++) {
@@ -320,7 +329,8 @@ void for_each_element(order_flag<unordered>, FunT &&fun, const cv_image<T, Depth
   });
 }
 template <class FunT, class T, size_t Depth, class... Ts>
-void for_each_element(order_flag<unordered>, FunT &&fun, cv_image<T, Depth> &t, Ts &&... ts) {
+void for_each_element(order_flag<unordered>, FunT &&fun, cv_image<T, Depth> &t,
+                      Ts &&... ts) {
   static constexpr int _idetph = static_cast<int>(Depth);
   t.mat.forEach([&](cv::Vec<T, _idetph> &e, const int *position) {
     for (int d = 0; d < _idetph; d++) {
@@ -498,7 +508,8 @@ decltype(auto) element_at(cv_video<T, Depth> &t, const SubT1 &fram,
 
 // for_each_element
 template <class FunT, class T, size_t Depth, class... Ts>
-void for_each_element(order_flag<unordered>, FunT &&fun, const cv_video<T, Depth> &t, Ts &&... ts) {
+void for_each_element(order_flag<unordered>, FunT &&fun,
+                      const cv_video<T, Depth> &t, Ts &&... ts) {
   static constexpr int _idetph = static_cast<int>(Depth);
   for (size_t f = 0; f < t.frames.size(); f++) {
     t.frames[f].mat.forEach([&](cv::Vec<T, _idetph> &e, const int *position) {
@@ -509,7 +520,8 @@ void for_each_element(order_flag<unordered>, FunT &&fun, const cv_video<T, Depth
   }
 }
 template <class FunT, class T, size_t Depth, class... Ts>
-void for_each_element(order_flag<unordered>, FunT &&fun, cv_video<T, Depth> &t, Ts &&... ts) {
+void for_each_element(order_flag<unordered>, FunT &&fun, cv_video<T, Depth> &t,
+                      Ts &&... ts) {
   static constexpr int _idetph = static_cast<int>(Depth);
   for (size_t f = 0; f < t.frames.size(); f++) {
     t.frames[f].mat.forEach([&](cv::Vec<T, _idetph> &e, const int *position) {

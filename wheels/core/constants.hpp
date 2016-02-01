@@ -40,11 +40,12 @@ struct _element<Idx, T, Val, Vals...> {
 // const_ints
 template <class T, T... Vals> struct const_ints {
   using type = T;
-  static constexpr size_t length = sizeof...(Vals);
+  static constexpr size_t length_v = sizeof...(Vals);
+  static constexpr auto length() { return const_ints<size_t, length_v>(); }
 
   constexpr const_ints() {}
 
-  static constexpr auto to_array() { return std::array<T, length>{Vals...}; }
+  static constexpr auto to_array() { return std::array<T, length_v>{Vals...}; }
   static constexpr auto to_tuple() { return std::make_tuple(Vals...); }
 
   static constexpr T sum_v = details::_reduction<T, Vals...>::sum;
@@ -66,12 +67,14 @@ template <class T, T... Vals> struct const_ints {
 // single value
 template <class T, T Val> struct const_ints<T, Val> {
   using type = T;
-  static constexpr size_t length = 1;
+  static constexpr size_t length_v = 1;
+  static constexpr auto length() { return const_ints<size_t, length_v>(); }
+
   static constexpr T value = Val;
 
   constexpr const_ints() {}
 
-  static constexpr auto to_array() { return std::array<T, length>{Val}; }
+  static constexpr auto to_array() { return std::array<T, length_v>{Val}; }
   static constexpr auto to_tuple() { return std::make_tuple(Val); }
 
   static constexpr T sum_v = Val;
@@ -195,9 +198,44 @@ template <char... Cs> constexpr auto operator"" _indexc() {
   return const_ints<size_t, details::_parse_int<size_t, Cs...>::value>();
 }
 
+// ""_int8c
+template <char... Cs> constexpr auto operator"" _int8c() {
+  return const_ints<int8_t, details::_parse_int<int8_t, Cs...>::value>();
+}
+
+// ""_int16c
+template <char... Cs> constexpr auto operator"" _int16c() {
+  return const_ints<int16_t, details::_parse_int<int16_t, Cs...>::value>();
+}
+
+// ""_int32c
+template <char... Cs> constexpr auto operator"" _int32c() {
+  return const_ints<int32_t, details::_parse_int<int32_t, Cs...>::value>();
+}
+
 // ""_int64c
 template <char... Cs> constexpr auto operator"" _int64c() {
   return const_ints<int64_t, details::_parse_int<int64_t, Cs...>::value>();
+}
+
+// ""_uint8c
+template <char... Cs> constexpr auto operator"" _uint8c() {
+  return const_ints<uint8_t, details::_parse_int<uint8_t, Cs...>::value>();
+}
+
+// ""_uint16c
+template <char... Cs> constexpr auto operator"" _uint16c() {
+  return const_ints<uint16_t, details::_parse_int<uint16_t, Cs...>::value>();
+}
+
+// ""_uint32c
+template <char... Cs> constexpr auto operator"" _uint32c() {
+  return const_ints<uint32_t, details::_parse_int<uint32_t, Cs...>::value>();
+}
+
+// ""_uint64c
+template <char... Cs> constexpr auto operator"" _uint64c() {
+  return const_ints<uint64_t, details::_parse_int<uint64_t, Cs...>::value>();
 }
 
 constexpr yes true_c;

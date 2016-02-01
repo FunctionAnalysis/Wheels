@@ -16,7 +16,7 @@
 
 using namespace wheels;
 
-template <class T1, class T2> struct B : comparable<B<T1, T2>> {
+template <class T1, class T2> struct B : comparable<B<T1, T2>, void> {
   B() : v1(), v2() {}
   B(const T1 &a, const T2 &b) : v1(a), v2(b) {}
   template <class V> auto fields(V &&v) & { return v(v1, v2); }

@@ -54,15 +54,16 @@ bool _imwrite(const filesystem::path &path, const cv::Mat &mat) {
 }
 
 // _vdread
-std::vector<cv::Mat> _vdread(const filesystem::path &filepath, cv_video_props *vp) {
+std::vector<cv::Mat> _vdread(const filesystem::path &filepath,
+                             cv_video_props *vp) {
   std::vector<cv::Mat> frames;
   cv::VideoCapture cap(filepath.string());
   if (!cap.isOpened()) {
     return frames;
   }
   if (vp) {
-      vp->fps = cap.get(cv::CAP_PROP_FPS);
-      vp->fourCC = cap.get(cv::CAP_PROP_FOURCC);
+    vp->fps = cap.get(cv::CAP_PROP_FPS);
+    vp->fourCC = (int)cap.get(cv::CAP_PROP_FOURCC);
   }
   auto n = static_cast<size_t>(cap.get(cv::CAP_PROP_FRAME_COUNT));
   frames.reserve(n);
@@ -83,7 +84,7 @@ size_t _vdread(const filesystem::path &path,
   }
   if (vp) {
     vp->fps = cap.get(cv::CAP_PROP_FPS);
-    vp->fourCC = cap.get(cv::CAP_PROP_FOURCC);
+    vp->fourCC = (int)cap.get(cv::CAP_PROP_FOURCC);
   }
   size_t count = 0;
   cv::Mat cur_fram;

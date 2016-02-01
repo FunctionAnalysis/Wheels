@@ -4,43 +4,52 @@
 
 namespace wheels {
 
-// tensor_with_aligned_data
-template <class ShapeT, class ET, class StepsT, bool StaticSteps, class T>
-class tensor_with_aligned_data;
-
-template <class ShapeT, class ET, class StepsT, class T>
-class tensor_with_aligned_data<ShapeT, ET, StepsT, true, T>
-    : public tensor_base<ShapeT, ET, T> {
-  static_assert(is_combination<StepsT>::value,
-                "StepsT should be a combination<...>");
-
+// tensor_aligned_data_base
+// - requires: ::wheels::ptr_of, ::wheels::sub_scale_of, ::wheels::sub_offset_of
+template <class ShapeT, class ET, class T>
+class tensor_aligned_data_base : public tensor_base<ShapeT, ET, T> {
 public:
-  explicit tensor_with_aligned_data(const StepsT &) {}
-
-public:
-  constexpr StepsT steps() const { return StepsT(); }
-  constexpr decltype(auto) ptr() const { return ::wheels::ptr_of(derived()); }
-  decltype(auto) ptr() { return ::wheels::ptr_of(derived()); }
+  constexpr const ET *ptr() const { return ::wheels::ptr_of(derived()); }
+  ET *ptr() { return ::wheels::ptr_of(derived()); }
+  template <size_t Idx>
+  constexpr auto sub_scale(const const_index<Idx> &i) const {
+    return ::wheels::sub_scale_of(derived(), i);
+  }
+  template <size_t Idx>
+  constexpr auto sub_offset(const const_index<Idx> &i) const {
+    return ::wheels::sub_offset_of(derived(), i);
+  }
 };
 
-template <class ShapeT, class ET, class StepsT, class T>
-class tensor_with_aligned_data<ShapeT, ET, StepsT, false, T>
-    : public tensor_base<ShapeT, ET, T> {
-  static_assert(is_combination<StepsT>::value,
-                "StepsT should be a combination<...>");
+namespace details {
+template <class ShapeT, class ET, class T, size_t... Is, class... SubTs>
+constexpr auto
+_mem_offset_at_seq(const tensor_aligned_data_base<ShapeT, ET, T> &t,
+                   const const_ints<size_t, Is...> &, const SubTs &... subs) {
+  return sub2ind(t.shape(), subs * t.sub_scale(const_index<Is>()) +
+                                t.sub_offset(const_index<Is>())...);
+}
+}
 
-public:
-  explicit tensor_with_aligned_data(const StepsT &s) : _steps(s) {}
+// element_at
+template <class ShapeT, class ET, class T, class... SubTs>
+constexpr const ET &element_at(const tensor_aligned_data_base<ShapeT, ET, T> &t,
+                               const SubTs &... subs) {
+  return t.ptr()[details::_mem_offset_at_seq(
+      t, make_const_sequence_for<SubTs...>(), subs...)];
+}
+template <class ShapeT, class ET, class T, class... SubTs>
+inline ET &element_at(tensor_aligned_data_base<ShapeT, ET, T> &t,
+                      const SubTs &... subs) {
+  return t.ptr()[details::_mem_offset_at_seq(
+      t, make_const_sequence_for<SubTs...>(), subs...)];
+}
 
-public:
-  constexpr const StepsT &steps() const { return _steps; }
-  constexpr decltype(auto) ptr() const { return ::wheels::ptr_of(derived()); }
-  decltype(auto) ptr() { return ::wheels::ptr_of(derived()); }
+// element_at_index
+template <class ShapeT, class ET, class T, class IndexT>
+constexpr const ET &element_at_index(const tensor_aligned_data_base<ShapeT, ET, T> &t,
+    const IndexT &index) {
 
-private:
-  StepsT _steps;
-};
-
-
+}
 
 }

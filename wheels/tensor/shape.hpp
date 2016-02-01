@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../core/constants.hpp"
 #include "../core/combination.hpp"
+#include "../core/constants.hpp"
 
 namespace wheels {
 
@@ -133,6 +133,18 @@ public:
     resize(const_index<Idx>(), ns);
   }
 
+  // mag_at
+  template <size_t Idx> constexpr auto mag_at(const const_index<Idx> &) const {
+    static_assert(Idx < rank, "Idx too large");
+    return rest().mag_at(const_index<Idx - 1>());
+  }
+  constexpr auto mag_at(const const_index<0> &) const { return magnitude(); }
+  template <class K, K Idx, bool _B = std::is_same<K, size_t>::value,
+            wheels_enable_if(!_B)>
+  constexpr auto mag_at(const const_ints<K, Idx> &) const {
+    return mag_at(const_index<Idx>());
+  }
+
   template <class Archive> void serialize(Archive &ar) {
     T val = value(), mag = magnitude();
     ar(val, mag);
@@ -234,6 +246,18 @@ public:
     resize(const_index<Idx>(), ns);
   }
 
+  // mag_at
+  template <size_t Idx> constexpr auto mag_at(const const_index<Idx> &) const {
+    static_assert(Idx < rank, "Idx too large");
+    return rest().mag_at(const_index<Idx - 1>());
+  }
+  constexpr auto mag_at(const const_index<0> &) const { return magnitude(); }
+  template <class K, K Idx, bool _B = std::is_same<K, size_t>::value,
+            wheels_enable_if(!_B)>
+  constexpr auto mag_at(const const_ints<K, Idx> &) const {
+    return mag_at(const_index<Idx>());
+  }
+
   template <class Archive> void serialize(Archive &ar) {
     ar(_val, _mag);
     ar(rest());
@@ -274,29 +298,6 @@ template <class T, class SizeT, class... SizeTs, class K, class... Ks>
 constexpr T sub2ind(const tensor_shape<T, SizeT, SizeTs...> &shape, K sub,
                     Ks... subs) {
   return (T)(sub * shape.rest().magnitude() + sub2ind(shape.rest(), subs...));
-}
-
-// sub2ind (with customized steps)
-template <class T>
-constexpr T sub2ind(const tensor_shape<T> &, const combination<> &steps) {
-  return 0;
-}
-template <class T, class SizeT, class... SizeTs, class StepT, class... StepTs>
-constexpr T sub2ind(const tensor_shape<T, SizeT, SizeTs...> &,
-                    const combination<StepT, StepTs...> &steps) {
-  static_assert(sizeof...(SizeTs) == sizeof...(StepTs),
-                "the number of steps mismatch with the rank of shape");
-  return 0;
-}
-template <class T, class StepsT, class SizeT, class... SizeTs, class StepT,
-          class... StepTs, class K, class... Ks>
-constexpr T sub2ind(const tensor_shape<T, SizeT, SizeTs...> &shape,
-                    const combination<StepT, StepTs...> &steps, K sub,
-                    Ks... subs) {
-  static_assert(sizeof...(SizeTs) == sizeof...(StepTs),
-                "the number of steps mismatch with the rank of shape");
-  return (T)(sub * steps.value() +
-             sub2ind(shape.rest(), steps.rest(), subs...));
 }
 
 // ind2sub
