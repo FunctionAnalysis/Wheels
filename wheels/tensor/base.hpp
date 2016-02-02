@@ -332,11 +332,20 @@ template <order_flag_enum O> using order_flag = const_ints<order_flag_enum, O>;
 
 // for_each_element
 template <class FunT, class T, class... Ts>
-void for_each_element(order_flag<index_ascending>, FunT &fun, T &t,
+void for_each_element(order_flag<index_ascending>, FunT &fun,
+                      const tensor_core<T> &t, Ts &... ts) {
+  assert(all_same(t.shape(), ts.shape()...));
+  for_each_subscript(t.shape(), [&fun, &t, &ts...](auto &... subs) {
+    fun(element_at(t.derived(), subs...), element_at(ts.derived(), subs...)...);
+  });
+}
+
+template <class FunT, class T, class... Ts>
+void for_each_element(order_flag<index_ascending>, FunT &fun, tensor_core<T> &t,
                       Ts &... ts) {
-  assert(all_same(shape_of(t), shape_of(ts)...));
-  for_each_subscript(shape_of(t), [&fun, &t, &ts...](auto &... subs) {
-    fun(element_at(t, subs...), element_at(ts, subs...)...);
+  assert(all_same(t.shape(), ts.shape()...));
+  for_each_subscript(t.shape(), [&fun, &t, &ts...](auto &... subs) {
+    fun(element_at(t.derived(), subs...), element_at(ts.derived(), subs...)...);
   });
 }
 
@@ -363,57 +372,104 @@ void _for_each_element_unordered_default(no staticShape, FunT &fun, T &t,
 }
 
 template <class FunT, class T, class... Ts>
-void for_each_element(order_flag<unordered>, FunT &fun, T &t, Ts &... ts) {
+void for_each_element(order_flag<unordered>, FunT &fun, const tensor_core<T> &t,
+                      Ts &... ts) {
   details::_for_each_element_unordered_default(
       const_bool<::wheels::any(
           std::decay_t<decltype(t.shape())>::is_static,
           std::decay_t<decltype(ts.shape())>::is_static...)>(),
-      fun, t, ts...);
+      fun, t.derived(), ts.derived()...);
+}
+
+template <class FunT, class T, class... Ts>
+void for_each_element(order_flag<unordered>, FunT &fun, tensor_core<T> &t,
+                      Ts &... ts) {
+  details::_for_each_element_unordered_default(
+      const_bool<::wheels::any(
+          std::decay_t<decltype(t.shape())>::is_static,
+          std::decay_t<decltype(ts.shape())>::is_static...)>(),
+      fun, t.derived(), ts.derived()...);
 }
 
 // for_each_element_with_short_circuit
 template <class FunT, class T, class... Ts>
 bool for_each_element_with_short_circuit(order_flag<index_ascending>, FunT &fun,
-                                         T &t, Ts &... ts) {
-  assert(all_same(shape_of(t), shape_of(ts)...));
-  return for_each_subscript_if(shape_of(t), [&](auto &... subs) {
-    return fun(element_at(t, subs...), element_at(ts, subs...)...);
+                                         const tensor_core<T> &t, Ts &... ts) {
+  assert(all_same(t.shape(), ts.shape()...));
+  return for_each_subscript_if(t.shape(), [&](auto &... subs) {
+    return fun(element_at(t.derived(), subs...),
+               element_at(ts.derived(), subs...)...);
   });
 }
 
 template <class FunT, class T, class... Ts>
-bool for_each_element_with_short_circuit(order_flag<unordered>, FunT &fun, T &t,
-                                         Ts &... ts) {
+bool for_each_element_with_short_circuit(order_flag<index_ascending>, FunT &fun,
+                                         tensor_core<T> &t, Ts &... ts) {
+  assert(all_same(t.shape(), ts.shape()...));
+  return for_each_subscript_if(t.shape(), [&](auto &... subs) {
+    return fun(element_at(t.derived(), subs...),
+               element_at(ts.derived(), subs...)...);
+  });
+}
+
+template <class FunT, class T, class... Ts>
+bool for_each_element_with_short_circuit(order_flag<unordered>, FunT &fun,
+                                         const tensor_core<T> &t, Ts &... ts) {
   return for_each_element_with_short_circuit(order_flag<index_ascending>(), fun,
-                                             t, ts...);
+                                             t.derived(), ts.derived()...);
+}
+
+template <class FunT, class T, class... Ts>
+bool for_each_element_with_short_circuit(order_flag<unordered>, FunT &fun,
+                                         tensor_core<T> &t, Ts &... ts) {
+  return for_each_element_with_short_circuit(order_flag<index_ascending>(), fun,
+                                             t.derived(), ts.derived()...);
 }
 
 // for_each_nonzero_element
 template <class FunT, class T, class... Ts>
-void for_each_nonzero_element(order_flag<index_ascending>, FunT &fun, T &t,
-                              Ts &... ts) {
-  assert(all_same(shape_of(t), shape_of(ts)...));
-  for_each_subscript(shape_of(t), [&](auto &... subs) {
-    decltype(auto) e = element_at(t, subs...);
+void for_each_nonzero_element(order_flag<index_ascending>, FunT &fun,
+                              const tensor_core<T> &t, Ts &... ts) {
+  assert(all_same(t.shape(), ts.shape()...));
+  for_each_subscript(t.shape(), [&](auto &... subs) {
+    decltype(auto) e = element_at(t.derived(), subs...);
     if (e) {
-      fun(e, element_at(ts, subs...)...);
+      fun(e, element_at(ts.derived(), subs...)...);
     }
   });
 }
 
 template <class FunT, class T, class... Ts>
-void for_each_nonzero_element(order_flag<unordered>, FunT &fun, T &t,
-                              Ts &... ts) {
-  for_each_nonzero_element(order_flag<index_ascending>(), fun, t, ts...);
+void for_each_nonzero_element(order_flag<index_ascending>, FunT &fun,
+                              tensor_core<T> &t, Ts &... ts) {
+  assert(all_same(t.shape(), ts.shape()...));
+  for_each_subscript(t.shape(), [&](auto &... subs) {
+    decltype(auto) e = element_at(t.derived(), subs...);
+    if (e) {
+      fun(e, element_at(ts.derived(), subs...)...);
+    }
+  });
+}
+
+template <class FunT, class T, class... Ts>
+void for_each_nonzero_element(order_flag<unordered>, FunT &fun,
+                              const tensor_core<T> &t, Ts &... ts) {
+  for_each_nonzero_element(order_flag<index_ascending>(), fun, t.derived(),
+                           ts.derived()...);
+}
+
+template <class FunT, class T, class... Ts>
+void for_each_nonzero_element(order_flag<unordered>, FunT &fun,
+                              tensor_core<T> &t, Ts &... ts) {
+  for_each_nonzero_element(order_flag<index_ascending>(), fun, t.derived(),
+                           ts.derived()...);
 }
 
 // void assign_elements(to, from);
-template <class ToShapeT, class ToET, class ToT, class FromShapeT, class FromET,
-          class FromT>
-void assign_elements(tensor_base<ToShapeT, ToET, ToT> &to,
-                     const tensor_base<FromShapeT, FromET, FromT> &from) {
-  decltype(auto) s = shape_of(from.derived());
-  if (shape_of(to.derived()) != s) {
+template <class ToT, class FromT>
+void assign_elements(tensor_core<ToT> &to, const tensor_core<FromT> &from) {
+  decltype(auto) s = from.shape();
+  if (to.shape() != s) {
     reserve_shape(to.derived(), s);
   }
   for_each_element(order_flag<unordered>(),
@@ -423,9 +479,10 @@ void assign_elements(tensor_base<ToShapeT, ToET, ToT> &to,
 
 // Scalar reduce_elements(ts, initial, functor);
 template <class T, class E, class ReduceT>
-E reduce_elements(const T &t, E initial, ReduceT &red) {
+E reduce_elements(const tensor_core<T> &t, E initial, ReduceT &red) {
   for_each_element(order_flag<unordered>(),
-                   [&initial, &red](auto &e) { initial = red(initial, e); }, t);
+                   [&initial, &red](auto &e) { initial = red(initial, e); },
+                   t.derived());
   return initial;
 }
 

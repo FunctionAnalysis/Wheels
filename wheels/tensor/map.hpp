@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base.hpp"
+#include "aligned_data.hpp"
 
 namespace wheels {
 
@@ -95,13 +96,13 @@ public:
   ET &at(size_t ind) { return ptr()[ind]; }
 };
 
-// data_of
+// ptr_of
 template <class ET, class ShapeT, class PtrT>
-constexpr auto data_of(const tensor_map<ShapeT, ET, PtrT> &t) {
+constexpr auto ptr_of(const tensor_map<ShapeT, ET, PtrT> &t) {
   return t.ptr();
 }
 template <class ET, class ShapeT, class PtrT>
-constexpr auto data_of(tensor_map<ShapeT, ET, PtrT> &t) {
+constexpr auto ptr_of(tensor_map<ShapeT, ET, PtrT> &t) {
   return t.ptr();
 }
 
@@ -111,52 +112,24 @@ constexpr auto shape_of(const tensor_map<ShapeT, ET, PtrT> &t) {
   return t.shape();
 }
 
-// element_at
-template <class ET, class ShapeT, class PtrT, class... SubTs>
-constexpr decltype(auto) element_at(const tensor_map<ShapeT, ET, PtrT> &t,
-                                    const SubTs &... subs) {
-  return t.at(sub2ind(t.shape(), subs...));
-}
-template <class ET, class ShapeT, class PtrT, class... SubTs>
-decltype(auto) element_at(tensor_map<ShapeT, ET, PtrT> &t,
-                          const SubTs &... subs) {
-  return t.at(sub2ind(t.shape(), subs...));
-}
-
-// auxiliary
-// element_at_index
-template <class ET, class ShapeT, class PtrT, class IndexT>
-constexpr decltype(auto) element_at_index(const tensor_map<ShapeT, ET, PtrT> &t,
-                                          const IndexT &ind) {
-  return t.at(ind);
-}
-template <class ET, class ShapeT, class PtrT, class IndexT>
-decltype(auto) element_at_index(tensor_map<ShapeT, ET, PtrT> &t,
-                                const IndexT &ind) {
-  return t.at(ind);
-}
-
-// for_each_element
-template <class FunT, class ET, class ShapeT, class PtrT, class... Ts>
-void for_each_element(order_flag<index_ascending>, FunT &fun,
-                      const tensor_map<ShapeT, ET, PtrT> &t, Ts &... ts) {
-  assert(all_same(shape_of(t), shape_of(ts)...));
-  for (size_t i = 0; i < t.numel(); i++) {
-    fun(element_at_index(t, i), element_at_index(ts, i)...);
-  }
-}
-template <class FunT, class ET, class ShapeT, class PtrT, class Ts>
-void for_each_element(order_flag<index_ascending>, FunT &fun,
-                      tensor_map<ShapeT, ET, PtrT> &t, Ts &ts) {
-  assert(all_same(shape_of(t), shape_of(ts)));
-  for (size_t i = 0; i < t.numel(); i++) {
-    fun(element_at_index(t, i), element_at_index(ts, i));
-  }
-}
-
 // tensorize
 template <class E, class ST, class... SizeTs>
 constexpr auto map(const tensor_shape<ST, SizeTs...> &shape, E *mem) {
   return tensor_map<tensor_shape<ST, SizeTs...>, E, E *>(shape, mem);
+}
+
+// from raw array
+template <class E, size_t N> constexpr auto map(E (&arr)[N]) {
+  return tensor_map<tensor_shape<size_t, const_size<N>>, E>(arr);
+}
+
+// from raw string
+namespace literals {
+inline auto operator"" _ts(const char *str, size_t s) {
+  return map(make_shape(s), str);
+}
+inline auto operator"" _ts(const wchar_t *str, size_t s) {
+  return map(make_shape(s), str);
+}
 }
 }

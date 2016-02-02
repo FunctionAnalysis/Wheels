@@ -381,29 +381,6 @@ template <class ET, class ShapeT> ET *ptr_of(tensor<ShapeT, ET> &t) {
   return (ET *)(t.container().data());
 }
 
-// element_at
-template <class ET, class ShapeT, class... SubTs>
-constexpr decltype(auto) element_at(const tensor<ShapeT, ET> &t,
-                                    const SubTs &... subs) {
-  return t.at(sub2ind(t.shape(), subs...));
-}
-template <class ET, class ShapeT, class... SubTs>
-decltype(auto) element_at(tensor<ShapeT, ET> &t, const SubTs &... subs) {
-  return t.at(sub2ind(t.shape(), subs...));
-}
-
-// auxiliary
-// element_at_index
-template <class ET, class ShapeT, class IndexT>
-constexpr decltype(auto) element_at_index(const tensor<ShapeT, ET> &t,
-                                          const IndexT &ind) {
-  return t.at(ind);
-}
-template <class ET, class ShapeT, class IndexT>
-decltype(auto) element_at_index(tensor<ShapeT, ET> &t, const IndexT &ind) {
-  return t.at(ind);
-}
-
 // reserve_shape
 template <class ET, class ShapeT, class T, class ST, class... SizeTs>
 void reserve_shape(tensor_storage<ShapeT, ET, T, true> &t,
@@ -414,24 +391,6 @@ template <class ET, class ShapeT, class T, class ST, class... SizeTs>
 void reserve_shape(tensor_storage<ShapeT, ET, T, false> &t,
                    const tensor_shape<ST, SizeTs...> &shape) {
   t.set_shape(shape);
-}
-
-// for_each_element
-template <class FunT, class ET, class ShapeT, class... Ts>
-void for_each_element(order_flag<index_ascending>, FunT &fun,
-                      const tensor<ShapeT, ET> &t, Ts &... ts) {
-  assert(all_same(shape_of(t), shape_of(ts)...));
-  for (size_t i = 0; i < t.numel(); i++) {
-    fun(element_at_index(t, i), element_at_index(ts, i)...);
-  }
-}
-template <class FunT, class ET, class ShapeT, class Ts>
-void for_each_element(order_flag<index_ascending>, FunT &fun,
-                      tensor<ShapeT, ET> &t, Ts &ts) {
-  assert(all_same(shape_of(t), shape_of(ts)));
-  for (size_t i = 0; i < t.numel(); i++) {
-    fun(element_at_index(t, i), element_at_index(ts, i));
-  }
 }
 
 // vec_
