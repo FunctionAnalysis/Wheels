@@ -1,7 +1,7 @@
 #pragma once
 
-#include "base.hpp"
 #include "aligned_data.hpp"
+#include "base.hpp"
 
 namespace wheels {
 
@@ -112,15 +112,28 @@ constexpr auto shape_of(const tensor_map<ShapeT, ET, PtrT> &t) {
   return t.shape();
 }
 
-// tensorize
+// map
 template <class E, class ST, class... SizeTs>
 constexpr auto map(const tensor_shape<ST, SizeTs...> &shape, E *mem) {
   return tensor_map<tensor_shape<ST, SizeTs...>, E, E *>(shape, mem);
 }
 
 // from raw array
+namespace details {
+template <class E> struct _raw_array_info {
+  using ele_t = E;
+  static auto shape() { return tensor_shape<size_t>(); }
+};
+template <class E, size_t N> struct _raw_array_info<E[N]> {
+  using ele_t = typename _raw_array_info<E>::ele_t;
+  static auto shape() {
+    return ::wheels::cat(const_size<N>(), _raw_array_info<E>::shape());
+  }
+};
+}
 template <class E, size_t N> constexpr auto map(E (&arr)[N]) {
-  return tensor_map<tensor_shape<size_t, const_size<N>>, E>(arr);
+  using info_t = details::_raw_array_info<E[N]>;
+  return map(info_t::shape(), (typename info_t::ele_t *)arr);
 }
 
 // from raw string
@@ -129,6 +142,12 @@ inline auto operator"" _ts(const char *str, size_t s) {
   return map(make_shape(s), str);
 }
 inline auto operator"" _ts(const wchar_t *str, size_t s) {
+  return map(make_shape(s), str);
+}
+inline auto operator"" _ts(const char16_t *str, size_t s) {
+  return map(make_shape(s), str);
+}
+inline auto operator"" _ts(const char32_t *str, size_t s) {
   return map(make_shape(s), str);
 }
 }

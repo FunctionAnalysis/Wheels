@@ -90,6 +90,34 @@ template <class T> struct types<T> {
   static const char *raw_name() { return typeid(T).raw_name(); }
 };
 
+// array type
+template <class T, size_t N> struct types<T[N]> {
+  using type = T[N];
+  static constexpr size_t length = 1;
+
+  constexpr types() {}
+
+  template <class K> constexpr auto operator[](const const_ints<K, 0> &) const {
+    return types<T[N]>();
+  }
+
+  template <class K> static constexpr auto is() {
+    return const_bool<std::is_same<T[N], K>::value>();
+  }
+  static constexpr auto is_class() { return no(); }
+  static constexpr auto is_empty() { return no(); }
+  static constexpr auto is_default_constructible() {
+    return const_bool<std::is_default_constructible<T>::value>();
+  }
+
+  static constexpr auto decay() { return types<std::decay_t<T[N]>>(); }
+  static constexpr auto declval() { return std::declval<T[N]>(); }
+
+  static type_info info() { return typeid(T[N]); }
+  static const char *name() { return typeid(T[N]).name(); }
+  static const char *raw_name() { return typeid(T[N]).raw_name(); }
+};
+
 // void
 template <> struct types<void> {
   using type = void;
