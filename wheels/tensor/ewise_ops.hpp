@@ -17,14 +17,6 @@ public:
       : op(o), inputs(forward<InputT>(in), forward<InputTs>(ins)...) {}
 
 public:
-  template <class V> decltype(auto) fields(V &&visitor) {
-    return visitor(op, inputs);
-  }
-  template <class V> decltype(auto) fields(V &&visitor) const {
-    return visitor(op, inputs);
-  }
-
-public:
   OpT op;
   std::tuple<InputT, InputTs...> inputs;
 };
