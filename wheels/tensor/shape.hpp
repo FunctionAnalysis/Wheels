@@ -499,7 +499,7 @@ constexpr auto make_shape(const SizeT &s, const SizeTs &... sizes) {
       details::_to_size_rep<value_t>(sizes)...);
 }
 
-// cat
+// cat2
 namespace details {
 template <class ShapeT1, size_t... I1s, class ShapeT2, size_t... I2s>
 constexpr auto _cat_shape_seq(const ShapeT1 &s1, const ShapeT2 &s2,
@@ -509,30 +509,30 @@ constexpr auto _cat_shape_seq(const ShapeT1 &s1, const ShapeT2 &s2,
 }
 }
 template <class T, class K, class... S1s, class... S2s>
-constexpr auto cat(const tensor_shape<T, S1s...> &t1,
-                   const tensor_shape<K, S2s...> &t2) {
+constexpr auto cat2(const tensor_shape<T, S1s...> &t1,
+                    const tensor_shape<K, S2s...> &t2) {
   return details::_cat_shape_seq(t1, t2,
                                  make_const_sequence(const_size_of<S1s...>()),
                                  make_const_sequence(const_size_of<S2s...>()));
 }
 template <class T, class... Ss, class K, K... Vs>
-constexpr auto cat(const tensor_shape<T, Ss...> &a,
-                   const const_ints<K, Vs...> &b) {
+constexpr auto cat2(const tensor_shape<T, Ss...> &a,
+                    const const_ints<K, Vs...> &b) {
   return cat(a, make_shape(const_ints<K, Vs>()...));
 }
 template <class T, class... Ss, class K, K... Vs>
-constexpr auto cat(const const_ints<K, Vs...> &a,
-                   const tensor_shape<T, Ss...> &b) {
+constexpr auto cat2(const const_ints<K, Vs...> &a,
+                    const tensor_shape<T, Ss...> &b) {
   return cat(make_shape(const_ints<K, Vs>()...), b);
 }
 template <class T, class... Ss, class IntT,
           class = std::enable_if_t<std::is_integral<IntT>::value>>
-constexpr auto cat(const tensor_shape<T, Ss...> &a, const IntT &b) {
+constexpr auto cat2(const tensor_shape<T, Ss...> &a, const IntT &b) {
   return cat(a, make_shape(b));
 }
 template <class T, class... Ss, class IntT,
           class = std::enable_if_t<std::is_integral<IntT>::value>>
-constexpr auto cat(const IntT &a, const tensor_shape<T, Ss...> &b) {
+constexpr auto cat2(const IntT &a, const tensor_shape<T, Ss...> &b) {
   return cat(make_shape(a), b);
 }
 

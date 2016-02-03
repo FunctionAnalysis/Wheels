@@ -11,10 +11,10 @@ class tensor_map_storage;
 
 template <class ShapeT, class ET, class PtrT, class T>
 class tensor_map_storage<ShapeT, ET, PtrT, T, true>
-    : public tensor_continuous_data_base<ShapeT, ET, T> {
+    : public tensor_continuous_data_base<ShapeT, std::decay_t<ET>, T> {
 public:
   using shape_type = ShapeT;
-  using value_type = ET;
+  using value_type = std::decay_t<ET>;
 
 public:
   constexpr tensor_map_storage() : _ptr(nullptr) {}
@@ -34,10 +34,10 @@ private:
 
 template <class ShapeT, class ET, class PtrT, class T>
 class tensor_map_storage<ShapeT, ET, PtrT, T, false>
-    : public tensor_continuous_data_base<ShapeT, ET, T> {
+    : public tensor_continuous_data_base<ShapeT, std::decay_t<ET>, T> {
 public:
   using shape_type = ShapeT;
-  using value_type = ET;
+  using value_type = std::decay_t<ET>;
 
 public:
   constexpr tensor_map_storage() : _ptr(nullptr) {}
@@ -68,7 +68,7 @@ class tensor_map
 
 public:
   using shape_type = ShapeT;
-  using value_type = ET;
+  using value_type = std::decay_t<ET>;
 
 public:
   constexpr tensor_map() : storage_t() {}

@@ -266,14 +266,18 @@ struct tensor_op_result_base : tensor_base<ShapeT, EleT, T> {};
 template <class ShapeT, class T>
 struct tensor_op_result_base<ShapeT, bool, binary_op_eq, T>
     : tensor_base<ShapeT, bool, T> {
-  constexpr operator bool() const { return ::wheels::all_of(derived()); }
+  constexpr operator bool() const {
+    return ::wheels::equals_result_of(derived());
+  }
 };
 
 // t1 != t2
 template <class ShapeT, class T>
 struct tensor_op_result_base<ShapeT, bool, binary_op_neq, T>
     : tensor_base<ShapeT, bool, T> {
-  constexpr operator bool() const { return ::wheels::any_of(derived()); }
+  constexpr operator bool() const {
+    return ::wheels::not_equals_result_of(derived());
+  }
 };
 
 // -- necessary tensor functions
@@ -488,8 +492,8 @@ E reduce_elements(const tensor_core<T> &t, E initial, ReduceT &red) {
 
 // Scalar norm_squared(ts)
 template <class ShapeT, class ET, class T>
-ET norm_squared(const tensor_base<ShapeT, ET, T> &t) {
-  ET result = 0.0;
+std::decay_t<ET> norm_squared(const tensor_base<ShapeT, ET, T> &t) {
+  std::decay_t<ET> result = 0.0;
   for_each_nonzero_element(order_flag<unordered>(),
                            [&result](auto &&e) { result += e * e; },
                            t.derived());
@@ -498,7 +502,7 @@ ET norm_squared(const tensor_base<ShapeT, ET, T> &t) {
 
 // Scalar norm(ts)
 template <class ShapeT, class ET, class T>
-constexpr ET norm(const tensor_base<ShapeT, ET, T> &t) {
+constexpr std::decay_t<ET> norm(const tensor_base<ShapeT, ET, T> &t) {
   return sqrt(norm_squared(t.derived()));
 }
 
@@ -516,10 +520,22 @@ constexpr bool any_of(const tensor_base<ShapeT, ET, T> &t) {
       order_flag<unordered>(), [](auto &&e) { return !e; }, t.derived());
 }
 
+// equals_result_of
+template <class ShapeT, class ET, class T>
+constexpr bool equals_result_of(const tensor_base<ShapeT, ET, T> &t) {
+  return all_of(t);
+}
+
+// not_equals_result_of
+template <class ShapeT, class ET, class T>
+constexpr bool not_equals_result_of(const tensor_base<ShapeT, ET, T> &t) {
+  return any_of(t);
+}
+
 // Scalar sum(s)
 template <class ShapeT, class ET, class T>
-constexpr ET sum_of(const tensor_base<ShapeT, ET, T> &t) {
-  ET s = types<ET>::zero();
+constexpr std::decay_t<ET> sum_of(const tensor_base<ShapeT, ET, T> &t) {
+  std::decay_t<ET> s = types<std::decay_t<ET>>::zero();
   for_each_nonzero_element(order_flag<unordered>(),
                            [&s](const auto &e) { s += e; }, t.derived());
   return s;

@@ -85,6 +85,13 @@ constexpr auto all_different(const T1 &a, const T2 &b, const T2s &... bs) {
   return all(a != b, a != bs...) && all_different(b, bs...);
 }
 
+// cat(...)
+// cat2(a, b) required
+template <class T> constexpr T &&cat(T &&a) { return static_cast<T &&>(a); }
+template <class T, class... Ts> constexpr auto cat(T &&v, Ts &&... vs) {
+  return cat2(forward<T>(v), cat(forward<Ts>(vs)...));
+}
+
 // traverse(fun, ...)
 template <class FunT, class T> constexpr void traverse(const FunT &fun, T &&v) {
   fun(forward<T>(v));

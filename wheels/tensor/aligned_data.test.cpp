@@ -11,17 +11,17 @@ struct C : B {};
 struct D : C {};
 struct E : D {};
 
-void foo(const A &) {std::cout << "A" << std::endl;}
-void foo(const C &) {std::cout << "C" << std::endl;}
+A foo(const A &) {return A();}
+C foo(const C &) {return C();}
 
-TEST(tensor, test) {
-    E d;
-    foo(d);
+TEST(tensor, fun_match_test) {
+  using t = decltype(foo(E()));
+  static_assert(types<t>() == types<C>(), "");
 }
 
 TEST(tensor, aligned_data) {
 
-    vec3 v1;
+    vec3 v1(1, 2, 3);
     v1[0];
     vec_<bool, 5> v2;
     v2.ptr();
@@ -30,4 +30,10 @@ TEST(tensor, aligned_data) {
 
     for_each_element(order_flag<index_ascending>(),
                      [](auto e) { std::cout << e << ' '; }, v1);
+    auto test = [](auto e) {
+        std::cout << e << '\n';
+    };
+    for_each_nonzero_element(order_flag<unordered>(), test, v1);
+
+    vec_<std::string, 5> vstr;
 }

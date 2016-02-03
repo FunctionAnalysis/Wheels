@@ -111,4 +111,62 @@ void for_each_element(order_flag<index_ascending>, FunT &fun,
     fun(element_at_index(t.derived(), i), element_at_index(ts.derived(), i)...);
   }
 }
+
+// for_each_element_with_short_circuit
+template <class FunT, class ET, class ShapeT, class T, class... Ts>
+bool for_each_element_with_short_circuit(
+    order_flag<index_ascending>, FunT &fun,
+    const tensor_continuous_data_base<ShapeT, ET, T> &t, Ts &... ts) {
+  assert(all_same(t.shape(), ts.shape()...));
+  for (size_t i = 0; i < t.numel(); i++) {
+    bool r = fun(element_at_index(t.derived(), i),
+                 element_at_index(ts.derived(), i)...);
+    if (!r) {
+      return false;
+    }
+  }
+  return true;
+}
+
+template <class FunT, class ET, class ShapeT, class T, class... Ts>
+bool for_each_element_with_short_circuit(
+    order_flag<index_ascending>, FunT &fun,
+    tensor_continuous_data_base<ShapeT, ET, T> &t, Ts &... ts) {
+  assert(all_same(t.shape(), ts.shape()...));
+  for (size_t i = 0; i < t.numel(); i++) {
+    bool r = fun(element_at_index(t.derived(), i),
+                 element_at_index(ts.derived(), i)...);
+    if (!r) {
+      return false;
+    }
+  }
+  return true;
+}
+
+// for_each_nonzero_element
+template <class FunT, class ET, class ShapeT, class T, class... Ts>
+void for_each_nonzero_element(
+    order_flag<index_ascending>, FunT &fun,
+    const tensor_continuous_data_base<ShapeT, ET, T> &t, Ts &... ts) {
+  assert(all_same(t.shape(), ts.shape()...));
+  for (size_t i = 0; i < t.numel(); i++) {
+    decltype(auto) e = element_at_index(t.derived(), i);
+    if (e) {
+      fun(e, element_at_index(ts.derived(), i)...);
+    }
+  }
+}
+
+template <class FunT, class ET, class ShapeT, class T, class... Ts>
+void for_each_nonzero_element(order_flag<index_ascending>, FunT &fun,
+                              tensor_continuous_data_base<ShapeT, ET, T> &t,
+                              Ts &... ts) {
+  assert(all_same(t.shape(), ts.shape()...));
+  for (size_t i = 0; i < t.numel(); i++) {
+    decltype(auto) e = element_at_index(t.derived(), i);
+    if (e) {
+      fun(e, element_at_index(ts.derived(), i)...);
+    }
+  }
+}
 }

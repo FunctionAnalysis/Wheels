@@ -55,6 +55,38 @@ element_at(const ewise_op_result<ShapeT, EleT, OpT, InputT, InputTs...> &ts,
       ts, make_const_sequence_for<InputT, InputTs...>(), subs...);
 }
 
+// equals_result_of
+namespace details {
+template <class EwiseOpResultT, size_t... Is>
+constexpr bool
+_equals_result_of_ewise_op_result_seq(const EwiseOpResultT &ts,
+                                      const const_ints<size_t, Is...> &) {
+  return all_same(std::get<Is>(ts.inputs).shape()...) && all_of(ts);
+}
+}
+template <class ShapeT, class EleT, class OpT, class InputT, class... InputTs>
+constexpr bool equals_result_of(
+    const ewise_op_result<ShapeT, EleT, OpT, InputT, InputTs...> &ts) {
+  return details::_equals_result_of_ewise_op_result_seq(
+      ts, make_const_sequence_for<InputT, InputTs...>());
+}
+
+// not_equals_result_of
+namespace details {
+template <class EwiseOpResultT, size_t... Is>
+constexpr bool
+_not_equals_result_of_ewise_op_result_seq(const EwiseOpResultT &ts,
+                                          const const_ints<size_t, Is...> &) {
+  return !all_same(std::get<Is>(ts.inputs).shape()...) || any_of(ts);
+}
+}
+template <class ShapeT, class EleT, class OpT, class InputT, class... InputTs>
+constexpr bool not_equals_result_of(
+    const ewise_op_result<ShapeT, EleT, OpT, InputT, InputTs...> &ts) {
+  return details::_not_equals_result_of_ewise_op_result_seq(
+      ts, make_const_sequence_for<InputT, InputTs...>());
+}
+
 // shortcuts
 namespace details {
 template <class EwiseOpResultT, size_t... Is, class IndexT>
@@ -82,7 +114,9 @@ struct overloaded<OpT, category_tensor<ShapeT, EleT, T>,
                   category_tensor<ShapeTs, EleTs, Ts>...> {
   template <class TT, class... TTs>
   constexpr decltype(auto) operator()(TT &&t, TTs &&... ts) const {
-    assert(all_same(shape_of(t), shape_of(ts)...));
+    assert((std::is_same<OpT, binary_op_eq>::value ||
+            std::is_same<OpT, binary_op_neq>::value ||
+            all_same(shape_of(t), shape_of(ts)...)));
     using ele_t = std::decay_t<decltype(
         OpT()(std::declval<EleT>(), std::declval<EleTs>()...))>;
     return make_ewise_op_result<ShapeT, ele_t>(OpT(), forward<TT>(t),

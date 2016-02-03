@@ -53,11 +53,11 @@ public:
   constexpr tensor_storage()
       : _data(
             details::_init_std_array<value_type, shape_type::static_magnitude>(
-                0)) {}
+                ET())) {}
   constexpr tensor_storage(const shape_type &s)
       : _data(
             details::_init_std_array<value_type, shape_type::static_magnitude>(
-                0)) {
+                ET())) {
     assert(s.magnitude() == _data.size());
   }
   constexpr tensor_storage(const shape_type &s, const value_type &v)
@@ -426,6 +426,15 @@ using cube3 = cube_<double, 3, 3, 3>;
 template <class T>
 using cubex_ = tensor<tensor_shape<size_t, size_t, size_t, size_t>, T>;
 using cubex = matx_<double>;
+
+// tstring
+using tstring = vecx_<char>;
+// wtstring
+using wtstring = vecx_<wchar_t>;
+// u16tstring
+using u16tstring = vecx_<char16_t>;
+// u32tstring
+using u32tstring = vecx_<char32_t>;
 
 // tensor_of_rank
 namespace details {

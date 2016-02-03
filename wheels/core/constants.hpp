@@ -313,25 +313,12 @@ WHEELS_CONST_INT_OVERLOAD_BINARY_OP(%)
 
 #undef WHEELS_CONST_INT_OVERLOAD_BINARY_OP
 
-// cat
-template <class T, T... Vals>
-constexpr auto cat(const const_ints<T, Vals...> &) {
-  return const_ints<T, Vals...>();
-}
-namespace details {
+// cat2
 template <class T, T... Val1s, class K, K... Val2s>
-constexpr auto _cat2_const_ints(const const_ints<T, Val1s...> &,
-                                const const_ints<K, Val2s...> &) {
+constexpr auto cat2(const const_ints<T, Val1s...> &,
+                    const const_ints<K, Val2s...> &) {
   using result_t = std::common_type_t<T, K>;
   return const_ints<result_t, (result_t)Val1s..., (result_t)Val2s...>();
-}
-}
-template <
-    class T, class... Ts,
-    class = std::enable_if_t<const_ints<bool, is_const_ints<T>::value,
-                                        is_const_ints<Ts>::value...>::all_v>>
-constexpr auto cat(const T &first, const Ts &... rest) {
-  return details::_cat2_const_ints(first, cat(rest...));
 }
 
 // conditional

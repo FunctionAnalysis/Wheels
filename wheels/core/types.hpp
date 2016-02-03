@@ -184,9 +184,9 @@ constexpr auto operator!=(const types<T1s...> &a, const types<T2s...> &b) {
   return !(a == b);
 }
 
-// cat
+// cat2
 template <class... T1s, class... T2s>
-constexpr auto cat(const types<T1s...> &a, const types<T2s...> &b) {
+constexpr auto cat2(const types<T1s...> &a, const types<T2s...> &b) {
   return types<T1s..., T2s...>();
 }
 
