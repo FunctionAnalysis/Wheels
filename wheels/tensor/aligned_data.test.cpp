@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "aligned_data.hpp"
+#include "ewise_ops.hpp"
 #include "tensor.hpp"
 
 using namespace wheels;
@@ -36,4 +37,6 @@ TEST(tensor, aligned_data) {
     for_each_nonzero_element(order_flag<unordered>(), test, v1);
 
     vec_<std::string, 5> vstr;
+    vecx_<std::string> vstr2(make_shape(5));
+    ASSERT_TRUE(vstr == vstr2);
 }
