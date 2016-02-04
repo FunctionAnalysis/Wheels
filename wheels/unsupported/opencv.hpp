@@ -319,7 +319,7 @@ decltype(auto) element_at(cv_image<T, Depth> &t, const SubT1 &s1,
 }
 
 template <class FunT, class T, size_t Depth, class... Ts>
-void for_each_element(order_flag<unordered>, FunT &&fun,
+bool for_each_element(behavior_flag<unordered>, FunT &&fun,
                       const cv_image<T, Depth> &t, Ts &&... ts) {
   static constexpr int _idetph = static_cast<int>(Depth);
   t.mat.forEach([&](cv::Vec<T, _idetph> &e, const int *position) {
@@ -327,10 +327,11 @@ void for_each_element(order_flag<unordered>, FunT &&fun,
       fun(e(d), element_at(ts, position[0], position[1], d)...);
     }
   });
+  return true;
 }
 template <class FunT, class T, size_t Depth, class... Ts>
-void for_each_element(order_flag<unordered>, FunT &&fun, cv_image<T, Depth> &t,
-                      Ts &&... ts) {
+bool for_each_element(behavior_flag<unordered>, FunT &&fun,
+                      cv_image<T, Depth> &t, Ts &&... ts) {
   static constexpr int _idetph = static_cast<int>(Depth);
   t.mat.forEach([&](cv::Vec<T, _idetph> &e, const int *position) {
     for (int d = 0; d < _idetph; d++) {
@@ -339,6 +340,7 @@ void for_each_element(order_flag<unordered>, FunT &&fun, cv_image<T, Depth> &t,
                            static_cast<size_t>(d))...);
     }
   });
+  return true;
 }
 
 // imread
@@ -508,7 +510,7 @@ decltype(auto) element_at(cv_video<T, Depth> &t, const SubT1 &fram,
 
 // for_each_element
 template <class FunT, class T, size_t Depth, class... Ts>
-void for_each_element(order_flag<unordered>, FunT &&fun,
+bool for_each_element(behavior_flag<unordered>, FunT &&fun,
                       const cv_video<T, Depth> &t, Ts &&... ts) {
   static constexpr int _idetph = static_cast<int>(Depth);
   for (size_t f = 0; f < t.frames.size(); f++) {
@@ -518,10 +520,11 @@ void for_each_element(order_flag<unordered>, FunT &&fun,
       }
     });
   }
+  return true;
 }
 template <class FunT, class T, size_t Depth, class... Ts>
-void for_each_element(order_flag<unordered>, FunT &&fun, cv_video<T, Depth> &t,
-                      Ts &&... ts) {
+bool for_each_element(behavior_flag<unordered>, FunT &&fun,
+                      cv_video<T, Depth> &t, Ts &&... ts) {
   static constexpr int _idetph = static_cast<int>(Depth);
   for (size_t f = 0; f < t.frames.size(); f++) {
     t.frames[f].mat.forEach([&](cv::Vec<T, _idetph> &e, const int *position) {
@@ -530,5 +533,6 @@ void for_each_element(order_flag<unordered>, FunT &&fun, cv_video<T, Depth> &t,
       }
     });
   }
+  return true;
 }
 }

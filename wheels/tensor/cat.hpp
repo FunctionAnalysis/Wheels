@@ -108,4 +108,30 @@ constexpr ET element_at(const cat_result<ShapeT, ET, Axis, T1, T2> &m,
       m, std::forward_as_tuple(subs...),
       make_rank_sequence(m.input2().shape()));
 }
+
+// unordered
+template <class FunT, class ShapeT, class ET, size_t Axis, class T1, class T2>
+bool for_each_element(behavior_flag<unordered> o, FunT &fun,
+                      const cat_result<ShapeT, ET, Axis, T1, T2> &t) {
+  for_each_element(o, fun, t.input1());
+  for_each_element(o, fun, t.input2());
+  return true;
+}
+
+// break_on_false
+template <class FunT, class ShapeT, class ET, size_t Axis, class T1, class T2>
+bool for_each_element(behavior_flag<break_on_false> o, FunT &fun,
+                      const cat_result<ShapeT, ET, Axis, T1, T2> &t) {
+  return for_each_element(o, fun, t.input1()) &&
+         for_each_element(o, fun, t.input2());
+}
+
+// nonzero_only
+template <class FunT, class ShapeT, class ET, size_t Axis, class T1, class T2>
+bool for_each_element(behavior_flag<nonzero_only> o, FunT &fun,
+                      const cat_result<ShapeT, ET, Axis, T1, T2> &t) {
+  bool r1 = for_each_element(o, fun, t.input1());
+  bool r2 = for_each_element(o, fun, t.input2());
+  return r1 && r2;
+}
 }

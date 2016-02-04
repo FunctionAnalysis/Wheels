@@ -29,12 +29,12 @@ TEST(tensor, aligned_data) {
 
     element_at_index(v1, 0);
 
-    for_each_element(order_flag<index_ascending>(),
+    for_each_element(behavior_flag<index_ascending>(),
                      [](auto e) { std::cout << e << ' '; }, v1);
     auto test = [](auto e) {
         std::cout << e << '\n';
     };
-    for_each_nonzero_element(order_flag<unordered>(), test, v1);
+    for_each_element(behavior_flag<unordered>(), test, v1);
 
     vec_<std::string, 5> vstr;
     vecx_<std::string> vstr2(make_shape(5));

@@ -43,19 +43,20 @@ constexpr const ET &element_at_index(const constant_result<ShapeT, ET, OpT> &t,
   return t.value();
 }
 
-// for_each_element
-template <order_flag_enum O, class FunT, class ShapeT, class ET, class OpT>
-void for_each_element(order_flag<O>, FunT &&fun,
+// index_ascending, unordered
+template <behavior_flag_enum O, class FunT, class ShapeT, class ET, class OpT>
+bool for_each_element(behavior_flag<O>, FunT &&fun,
                       const constant_result<ShapeT, ET, OpT> &t) {
   for (size_t i = 0; i < numel(t); i++) {
     fun(t.value());
   }
+  return true;
 }
 
-// for_each_element_with_short_circuit
-template <order_flag_enum O, class FunT, class ShapeT, class ET, class OpT>
-bool for_each_element_with_short_circuit(
-    order_flag<O>, FunT &&fun, const constant_result<ShapeT, ET, OpT> &t) {
+// break_on_false
+template <class FunT, class ShapeT, class ET, class OpT>
+bool for_each_element(behavior_flag<break_on_false>, FunT &&fun,
+                      const constant_result<ShapeT, ET, OpT> &t) {
   for (size_t i = 0; i < numel(t); i++) {
     if (!fun(t.value())) {
       return false;
@@ -64,16 +65,16 @@ bool for_each_element_with_short_circuit(
   return true;
 }
 
-// for_each_nonzero_element
-template <order_flag_enum O, class FunT, class ShapeT, class ET, class OpT,
-          class... Ts>
-void for_each_nonzero_element(order_flag<O> o, FunT &&fun,
-                              const constant_result<ShapeT, ET, OpT> &t,
-                              Ts &&... ts) {
+// nonzero_only
+template <class FunT, class ShapeT, class ET, class OpT, class... Ts>
+bool for_each_element(behavior_flag<nonzero_only> o, FunT &&fun,
+                      const constant_result<ShapeT, ET, OpT> &t, Ts &&... ts) {
   assert(all_same(shape_of(t), shape_of(ts)...));
   if (t.value()) {
-    for_each_element(o, forward<FunT>(fun), t, forward<Ts>(ts)...);
+    return for_each_element(behavior_flag<unordered>(), forward<FunT>(fun), t,
+                            forward<Ts>(ts)...);
   }
+  return false;
 }
 
 // reduce_elements

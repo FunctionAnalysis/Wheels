@@ -51,26 +51,25 @@ element_at(const permute_result<ShapeT, ET, T, Inds...> &m,
       m, std::forward_as_tuple(subs...), make_const_sequence_for<SubTs...>());
 }
 
-// for_each_element
+// unordered
 template <class FunT, class ShapeT, class ET, class T, size_t... Inds>
-void for_each_element(order_flag<unordered> o, FunT &&fun,
+bool for_each_element(behavior_flag<unordered> o, FunT &&fun,
                       const permute_result<ShapeT, ET, T, Inds...> &m) {
-  for_each_element(o, forward<FunT>(fun), m.input());
+  return for_each_element(o, forward<FunT>(fun), m.input());
 }
 
-// for_each_element_if
+// break_on_false
 template <class FunT, class ShapeT, class ET, class T, size_t... Inds>
-bool for_each_element_with_short_circuit(
-    order_flag<unordered> o, FunT &&fun,
-    const permute_result<ShapeT, ET, T, Inds...> &m) {
-  return for_each_element_with_short_circuit(o, forward<FunT>(fun), m.input());
+bool for_each_element(behavior_flag<break_on_false> o, FunT &&fun,
+                      const permute_result<ShapeT, ET, T, Inds...> &m) {
+  return for_each_element(o, forward<FunT>(fun), m.input());
 }
 
-// for_each_nonzero_element
+// nonzero_only
 template <class FunT, class ShapeT, class ET, class T, size_t... Inds>
-void for_each_nonzero_element(order_flag<unordered> o, FunT &&fun,
-                              const permute_result<ShapeT, ET, T, Inds...> &m) {
-  for_each_nonzero_element(o, forward<FunT>(fun), m.input());
+bool for_each_element(behavior_flag<nonzero_only> o, FunT &&fun,
+                      const permute_result<ShapeT, ET, T, Inds...> &m) {
+  return for_each_element(o, forward<FunT>(fun), m.input());
 }
 
 // reduce_elements
