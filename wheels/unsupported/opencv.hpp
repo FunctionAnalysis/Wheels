@@ -98,107 +98,107 @@ decltype(auto) fields(cv::Mat_<T> &&mat, U &&, V &&visitor) {
   return visitor(as_container(std::move(mat), forward<V>(visitor)));
 }
 
-// cv_vec
-template <class T, size_t N>
-class cv_vec
-    : public tensor_base<tensor_shape<size_t, const_size<N>>, T, cv_vec<T, N>> {
-public:
-  using value_type = T;
-  using shape_type = tensor_shape<size_t, const_size<N>>;
-  cv_vec() {}
-  cv_vec(const cv::Vec<T, N> &v) : v(v) {}
-  operator cv::Vec<T, N>() const { return v; }
-
-  cv_vec(const cv_vec &) = default;
-  cv_vec(cv_vec &&) = default;
-  cv_vec &operator=(const cv_vec &) = default;
-  cv_vec &operator=(cv_vec &&) = default;
-
-  template <class AnotherT>
-  constexpr cv_vec(const tensor_core<AnotherT> &another) {
-    assign_elements(*this, another.derived());
-  }
-  template <class AnotherT>
-  cv_vec &operator=(const tensor_core<AnotherT> &another) {
-    assign_elements(*this, another.derived());
-    return *this;
-  }
-
-public:
-  template <class ArcT> void serialize(ArcT &ar) { ar(v); }
-  template <class V> constexpr decltype(auto) fields(V &&v) const {
-    return v(v);
-  }
-  template <class V> decltype(auto) fields(V &&visitor) { return visitor(v); }
-
-public:
-  cv::Vec<T, N> v;
-};
-
-template <class T, size_t N> constexpr auto shape_of(const cv_vec<T, N> &t) {
-  return tensor_shape<size_t, const_size<N>>();
-}
-template <class T, size_t N, class SubT>
-constexpr decltype(auto) element_at(const cv_vec<T, N> &t, const SubT &s) {
-  return t.v(s);
-}
-template <class T, size_t N, class SubT>
-decltype(auto) element_at(cv_vec<T, N> &t, const SubT &s) {
-  return t.v(s);
-}
-
-// cv_matx
-template <class T, size_t M, size_t N>
-class cv_matx
-    : public tensor_base<tensor_shape<size_t, const_size<M>, const_size<N>>, T,
-                         cv_matx<T, M, N>> {
-public:
-  using value_type = T;
-  using shape_type = tensor_shape<size_t, const_size<M>, const_size<N>>;
-  cv_matx() {}
-  cv_matx(const cv::Matx<T, M, N> &m) : mat(m) {}
-  operator cv::Matx<T, M, N>() const { return mat; }
-
-  cv_matx(const cv_matx &) = default;
-  cv_matx(cv_matx &&) = default;
-  cv_matx &operator=(const cv_matx &) = default;
-  cv_matx &operator=(cv_matx &&) = default;
-
-  template <class AnotherT>
-  constexpr cv_matx(const tensor_core<AnotherT> &another) {
-    assign_elements(*this, another.derived());
-  }
-  template <class AnotherT>
-  cv_matx &operator=(const tensor_core<AnotherT> &another) {
-    assign_elements(*this, another.derived());
-    return *this;
-  }
-
-public:
-  template <class ArcT> void serialize(ArcT &ar) { ar(mat); }
-  template <class V> constexpr decltype(auto) fields(V &&v) const {
-    return v(mat);
-  }
-  template <class V> decltype(auto) fields(V &&v) { return v(mat); }
-
-public:
-  cv::Matx<T, M, N> mat;
-};
-
-template <class T, size_t M, size_t N>
-constexpr auto shape_of(const cv_matx<T, M, N> &t) {
-  return tensor_shape<size_t, const_size<M>, const_size<N>>();
-}
-template <class T, size_t M, size_t N, class SubT1, class SubT2>
-constexpr decltype(auto) element_at(const cv_matx<T, M, N> &t, const SubT1 &s1,
-                                    const SubT2 &s2) {
-  return t.mat(s1, s2);
-}
-template <class T, size_t M, size_t N, class SubT1, class SubT2>
-decltype(auto) element_at(cv_matx<T, M, N> &t, const SubT1 &s1,
-                          const SubT2 &s2) {
-  return t.mat(s1, s2);
-}
+//// cv_vec
+//template <class T, size_t N>
+//class cv_vec
+//    : public tensor_base<tensor_shape<size_t, const_size<N>>, T, cv_vec<T, N>> {
+//public:
+//  using value_type = T;
+//  using shape_type = tensor_shape<size_t, const_size<N>>;
+//  cv_vec() {}
+//  cv_vec(const cv::Vec<T, N> &v) : v(v) {}
+//  operator cv::Vec<T, N>() const { return v; }
+//
+//  cv_vec(const cv_vec &) = default;
+//  cv_vec(cv_vec &&) = default;
+//  cv_vec &operator=(const cv_vec &) = default;
+//  cv_vec &operator=(cv_vec &&) = default;
+//
+//  template <class AnotherT>
+//  constexpr cv_vec(const tensor_core<AnotherT> &another) {
+//    assign_elements(*this, another.derived());
+//  }
+//  template <class AnotherT>
+//  cv_vec &operator=(const tensor_core<AnotherT> &another) {
+//    assign_elements(*this, another.derived());
+//    return *this;
+//  }
+//
+//public:
+//  template <class ArcT> void serialize(ArcT &ar) { ar(v); }
+//  template <class V> constexpr decltype(auto) fields(V &&v) const {
+//    return v(v);
+//  }
+//  template <class V> decltype(auto) fields(V &&visitor) { return visitor(v); }
+//
+//public:
+//  cv::Vec<T, N> v;
+//};
+//
+//template <class T, size_t N> constexpr auto shape_of(const cv_vec<T, N> &t) {
+//  return tensor_shape<size_t, const_size<N>>();
+//}
+//template <class T, size_t N, class SubT>
+//constexpr decltype(auto) element_at(const cv_vec<T, N> &t, const SubT &s) {
+//  return t.v(s);
+//}
+//template <class T, size_t N, class SubT>
+//decltype(auto) element_at(cv_vec<T, N> &t, const SubT &s) {
+//  return t.v(s);
+//}
+//
+//// cv_matx
+//template <class T, size_t M, size_t N>
+//class cv_matx
+//    : public tensor_base<tensor_shape<size_t, const_size<M>, const_size<N>>, T,
+//                         cv_matx<T, M, N>> {
+//public:
+//  using value_type = T;
+//  using shape_type = tensor_shape<size_t, const_size<M>, const_size<N>>;
+//  cv_matx() {}
+//  cv_matx(const cv::Matx<T, M, N> &m) : mat(m) {}
+//  operator cv::Matx<T, M, N>() const { return mat; }
+//
+//  cv_matx(const cv_matx &) = default;
+//  cv_matx(cv_matx &&) = default;
+//  cv_matx &operator=(const cv_matx &) = default;
+//  cv_matx &operator=(cv_matx &&) = default;
+//
+//  template <class AnotherT>
+//  constexpr cv_matx(const tensor_core<AnotherT> &another) {
+//    assign_elements(*this, another.derived());
+//  }
+//  template <class AnotherT>
+//  cv_matx &operator=(const tensor_core<AnotherT> &another) {
+//    assign_elements(*this, another.derived());
+//    return *this;
+//  }
+//
+//public:
+//  template <class ArcT> void serialize(ArcT &ar) { ar(mat); }
+//  template <class V> constexpr decltype(auto) fields(V &&v) const {
+//    return v(mat);
+//  }
+//  template <class V> decltype(auto) fields(V &&v) { return v(mat); }
+//
+//public:
+//  cv::Matx<T, M, N> mat;
+//};
+//
+//template <class T, size_t M, size_t N>
+//constexpr auto shape_of(const cv_matx<T, M, N> &t) {
+//  return tensor_shape<size_t, const_size<M>, const_size<N>>();
+//}
+//template <class T, size_t M, size_t N, class SubT1, class SubT2>
+//constexpr decltype(auto) element_at(const cv_matx<T, M, N> &t, const SubT1 &s1,
+//                                    const SubT2 &s2) {
+//  return t.mat(s1, s2);
+//}
+//template <class T, size_t M, size_t N, class SubT1, class SubT2>
+//decltype(auto) element_at(cv_matx<T, M, N> &t, const SubT1 &s1,
+//                          const SubT2 &s2) {
+//  return t.mat(s1, s2);
+//}
 
 namespace details {
 cv::Mat _imread(const filesystem::path &path);

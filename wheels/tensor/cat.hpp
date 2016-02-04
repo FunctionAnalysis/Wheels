@@ -52,7 +52,7 @@ template <size_t Axis, class ShapeT1, class ET1, class T1, class ShapeT2,
 constexpr auto _cat_tensor_at(const const_index<Axis> &axis,
                               const tensor_base<ShapeT1, ET1, T1> &,
                               const tensor_base<ShapeT2, ET2, T2> &, TT1 &&in1,
-                              TT2 &in2) {
+                              TT2 &&in2) {
   using shape_t = decltype(details::_make_cat_shape_seq(
       in1.shape(), in2.shape(), const_index<Axis>(),
       make_rank_sequence(in1.shape())));
