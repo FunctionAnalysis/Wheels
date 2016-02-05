@@ -1,6 +1,8 @@
 #pragma once
 
-#ifdef _MSC_VER
+#include "../core/macros.hpp"
+
+#if defined(wheels_compiler_msc)
 #include <complex.h>
 #define lapack_complex_float _C_float_complex
 #define lapack_complex_double _C_double_complex
@@ -12,6 +14,7 @@
 #include <lapacke.h>
 #endif
 
+#include "../core/types.hpp"
 #include <complex>
 
 #define wheels_lapack(fun) fun##_

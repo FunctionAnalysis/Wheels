@@ -1,6 +1,8 @@
-#include "constants.hpp"
-#include "utility.hpp"
+
 #include <gtest/gtest.h>
+
+#include "const_ints.hpp"
+#include "utility.hpp"
 
 using namespace wheels;
 

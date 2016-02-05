@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../core/combination.hpp"
-#include "../core/constants.hpp"
+#include "../core/combine.hpp"
+#include "../core/const_ints.hpp"
 
 namespace wheels {
 

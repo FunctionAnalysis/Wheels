@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../core/const_ints.hpp"
 #include "tensor.hpp"
 
 namespace wheels {

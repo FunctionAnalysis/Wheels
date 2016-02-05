@@ -59,20 +59,67 @@ element_at(extend_result<ShapeT, ET, InputT, ExtShapeT, ExtFunT> &r,
       make_rank_sequence(r.ext_shape));
 }
 
-// extend_result_op_identity
-struct extend_result_op_identity {
+namespace extend_result_ops {
+// as_repeated
+struct as_repeated {
   template <class ET, class... SubTs>
   constexpr ET &&operator()(ET &&e, const SubTs &...) const {
     return static_cast<ET &&>(e);
   }
 };
 
-// extend_result_op_subtensor
-struct extend_result_op_subtensor {
+// as_subtensor
+struct as_subtensor {
   template <class SubTensorT, class... SubTs>
   constexpr decltype(auto) operator()(SubTensorT &&e,
                                       const SubTs &... subs) const {
     return element_at(forward<SubTensorT>(e), subs...);
   }
 };
+}
+
+namespace details {
+template <class InputShapeT, class InputET, class InputT, class InputTT,
+          class ExtShapeT, class ExtFunT, size_t... ExtIs>
+constexpr auto
+_extend_tensor_by(const tensor_base<InputShapeT, InputET, InputT> &,
+                  InputTT &&input, const ExtShapeT &extshape, ExtFunT extfun,
+                  const const_ints<size_t, ExtIs...> &) {
+  using ele_t = std::decay_t<decltype(
+      extfun(std::declval<InputET>(),
+             always<size_t, 0, const_index<ExtIs>>::value...))>;
+  using shape_t = std::decay_t<decltype(
+      cat2(std::declval<InputShapeT>(), std::declval<ExtShapeT>()))>;
+  return extend_result<shape_t, ele_t, InputTT, ExtShapeT, ExtFunT>(
+      forward<InputTT>(input), extshape, extfun);
+}
+}
+
+// extend_by
+template <class InputT, class ST, class... SizeTs, class ExtFunT>
+constexpr auto extend_by(InputT &&input, const tensor_shape<ST, SizeTs...> &es,
+                         ExtFunT ef)
+    -> decltype(details::_extend_tensor_by(input, forward<InputT>(input), es,
+                                           ef, make_rank_sequence(es))) {
+  return details::_extend_tensor_by(input, forward<InputT>(input), es, ef,
+                                    make_rank_sequence(es));
+}
+
+// extend_as_repeated
+template <class InputT, class ST, class... SizeTs>
+constexpr auto extend_as_repeated(InputT &&input,
+                                  const tensor_shape<ST, SizeTs...> &es)
+    -> decltype(extend_by(forward<InputT>(input), es,
+                          extend_result_ops::as_repeated())) {
+  return extend_by(forward<InputT>(input), es,
+                   extend_result_ops::as_repeated());
+}
+
+// extend_as_subtensor
+template <class InputT> inline auto extend_as_subtensor(InputT &&input) {
+  assert(input.numel() > 0);
+  const auto extshape = element_at_index(input, 0).shape();
+  return extend_by(forward<InputT>(input), extshape,
+                   extend_result_ops::as_subtensor());
+}
 }

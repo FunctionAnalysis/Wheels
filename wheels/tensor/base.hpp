@@ -3,7 +3,7 @@
 #include <cassert>
 
 #include "../core/const_expr.hpp"
-#include "../core/constants.hpp"
+#include "../core/const_ints.hpp"
 #include "../core/overloads.hpp"
 #include "../core/parallel.hpp"
 #include "../core/serialize.hpp"

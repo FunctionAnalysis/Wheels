@@ -8,7 +8,7 @@
 
 #include "../core/types.hpp"
 #include "../core/const_expr.hpp"
-#include "../core/constants.hpp"
+#include "../core/const_ints.hpp"
 
 #include "../tensor/tensor.hpp"
 

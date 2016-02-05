@@ -1,6 +1,6 @@
 #pragma once
 
-#include "constants.hpp"
+#include "const_ints.hpp"
 #include "types.hpp"
 
 namespace wheels {
