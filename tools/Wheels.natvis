@@ -78,4 +78,6 @@
   <Type Name="wheels::tensor_shape&lt;*,wheels::const_ints&lt;*,*&gt;,*,*&gt;">
     <DisplayString>{$T3} x ...</DisplayString>
   </Type>
+
+  
 </AutoVisualizer>

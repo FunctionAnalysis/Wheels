@@ -177,7 +177,7 @@ public:
   storage(const storage &st) : _shape(st._shape) {
     _capacity = _shape.magnitude();
     _data = new value_type[_capacity];
-    std::copy(st._data, st._data + _capacity, _data);
+    std::copy_n(st._data, _capacity, _data);
   }
   storage(storage &&st)
       : _shape(st._shape), _capacity(st._capacity), _data(st._data) {
@@ -199,7 +199,7 @@ public:
       delete[] _data;
       _data = ndata;
     }
-    std::copy(st._data, st._data + _capacity, _data);
+    std::copy_n(st._data, _capacity, _data);
     return *this;
   }
   storage &operator=(storage &&st) {
