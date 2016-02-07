@@ -30,11 +30,11 @@ public:
   using value_type = ET;
   using shape_type = ShapeT;
 
-  cat_result(T1 &&in1, T2 &&in2)
+  constexpr cat_result(T1 &&in1, T2 &&in2)
       : _input1(forward<T1>(in1)), _input2(forward<T2>(in2)),
-        _shape(details::_make_cat_shape_seq(in1.shape(), in2.shape(),
-                                            const_index<Axis>(),
-                                            make_rank_sequence(in1.shape()))) {}
+        _shape(details::_make_cat_shape_seq(
+            _input1.shape(), _input2.shape(), const_index<Axis>(),
+            make_rank_sequence(_input1.shape()))) {}
   constexpr decltype(auto) input1() const { return _input1; }
   constexpr decltype(auto) input2() const { return _input2; }
   constexpr const ShapeT &shape() const { return _shape; }
@@ -78,7 +78,8 @@ constexpr auto cat2(T1 &&in1, T2 &&in2)
 
 // shape_of
 template <class ShapeT, class ET, size_t Axis, class T1, class T2>
-constexpr auto shape_of(const cat_result<ShapeT, ET, Axis, T1, T2> &m) {
+constexpr decltype(auto)
+shape_of(const cat_result<ShapeT, ET, Axis, T1, T2> &m) {
   return m.shape();
 }
 

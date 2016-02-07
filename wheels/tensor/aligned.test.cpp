@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "aligned_data.hpp"
+#include "aligned.hpp"
 #include "ewise_ops.hpp"
 #include "tensor.hpp"
 

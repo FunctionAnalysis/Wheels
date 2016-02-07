@@ -137,9 +137,10 @@ template <class ShapeT, class ET, class T> struct tensor_base : tensor_core<T> {
 
   const tensor_base &base() const { return *this; }
 
-  constexpr tensor<ShapeT, ET> eval() const {
+  constexpr tensor<ShapeT, ET> eval() const & {
     return tensor<ShapeT, ET>(derived());
   }
+  tensor<ShapeT, ET> eval() && { return tensor<ShapeT, ET>(move(derived())); }
   constexpr operator tensor<ShapeT, ET>() const { return eval(); }
 };
 
@@ -444,8 +445,8 @@ bool for_each_element(behavior_flag<nonzero_only>, FunT &fun,
 }
 
 template <class FunT, class T, class... Ts>
-bool for_each_element(behavior_flag<nonzero_only>, FunT &fun,
-                      tensor_core<T> &t, Ts &... ts) {
+bool for_each_element(behavior_flag<nonzero_only>, FunT &fun, tensor_core<T> &t,
+                      Ts &... ts) {
   assert(all_same(t.shape(), ts.shape()...));
   bool visited_all = true;
   for_each_subscript(t.shape(), [&](auto &... subs) {

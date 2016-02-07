@@ -105,4 +105,23 @@ constexpr auto make_transform_iterator(IterT it, FunT f) {
   using value_t = std::decay_t<decltype(f(*it))>;
   return transform_iterator<value_t, IterT, FunT>(it, f);
 }
+
+// range
+template <class IterT> class range {
+  static_assert(is_iterator<IterT>::value, "IterT must be an iterator");
+
+public:
+  using value_type = typename std::iterator_traits<IterT>::value_type;
+  constexpr range(IterT b, IterT e) : _begin(b), _end(e) {}
+  constexpr IterT begin() const { return _begin; }
+  constexpr IterT end() const { return _end; }
+
+private:
+  IterT _begin, _end;
+};
+
+// make_range
+template <class IterT> constexpr auto make_range(IterT begin, IterT end) {
+  return range<IterT>(begin, end);
+}
 }

@@ -31,7 +31,7 @@ make_ewise_op_result(OpT op, InputT &&input, InputTs &&... inputs) {
 
 // shape_of
 template <class ShapeT, class EleT, class OpT, class InputT, class... InputTs>
-constexpr ShapeT
+constexpr decltype(auto)
 shape_of(const ewise_op_result<ShapeT, EleT, OpT, InputT, InputTs...> &ts) {
   return shape_of(std::get<0>(ts.inputs));
 }

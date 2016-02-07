@@ -1,6 +1,6 @@
 #pragma once
 
-#include "aligned_data.hpp"
+#include "aligned.hpp"
 
 namespace wheels {
 
@@ -107,7 +107,7 @@ constexpr auto ptr_of(tensor_map<ShapeT, ET, PtrT> &t) {
 
 // shape_of
 template <class ET, class ShapeT, class PtrT>
-constexpr auto shape_of(const tensor_map<ShapeT, ET, PtrT> &t) {
+constexpr decltype(auto) shape_of(const tensor_map<ShapeT, ET, PtrT> &t) {
   return t.shape();
 }
 

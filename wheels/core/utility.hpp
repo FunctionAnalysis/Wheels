@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <tuple>
 
 #include "macros.hpp"
 
@@ -218,4 +219,5 @@ template <class SepT, class... Ts>
 inline std::ostream &println_sep(SepT &&sep, const Ts &... args) {
   return print_sep_to(std::cout, sep, args...) << std::endl;
 }
+
 }

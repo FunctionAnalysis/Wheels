@@ -26,7 +26,7 @@ private:
 
 // shape_of
 template <class ShapeT, class ET, class OpT>
-constexpr auto shape_of(const constant_result<ShapeT, ET, OpT> &t) {
+constexpr const ShapeT &shape_of(const constant_result<ShapeT, ET, OpT> &t) {
   return t.shape();
 }
 

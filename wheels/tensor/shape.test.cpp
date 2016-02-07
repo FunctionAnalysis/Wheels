@@ -86,8 +86,3 @@ TEST(tensor, shape) {
   read_tmp("shape2.cereal", outshape2);
   ASSERT_TRUE(inshape2 == outshape2);
 }
-
-TEST(tensor, shape_with_steps) {
-    auto s1 = make_shape(2, 3, 4);
-    //auto st1 = combine()
-}
