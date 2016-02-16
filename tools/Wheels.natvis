@@ -79,5 +79,13 @@
     <DisplayString>{$T3} x ...</DisplayString>
   </Type>
 
-  
+  <Type Name="wheels::storage&lt;*,*,true&gt;">
+    <DisplayString>{{ size={$T2} }}</DisplayString>
+    <Expand>
+      <ArrayItems>
+        <Size>$T2</Size>
+        <ValuePointer>_Elems</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
 </AutoVisualizer>

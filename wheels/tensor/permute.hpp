@@ -82,7 +82,7 @@ E reduce_elements(const permute_result<ShapeT, ET, T, Inds...> &t, E initial,
 
 // norm_squared
 template <class ShapeT, class ET, class T, size_t... Inds>
-ET norm_squared(const permute_result<ShapeT, ET, T, Inds...> &t) {
+auto norm_squared(const permute_result<ShapeT, ET, T, Inds...> &t) {
   return norm_squared(t.input());
 }
 

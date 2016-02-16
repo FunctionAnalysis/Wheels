@@ -228,4 +228,13 @@ template <class T> struct real_component<std::complex<T>> { using type = T; };
 template <class T> struct is_initializer_list : no {};
 template <class T>
 struct is_initializer_list<std::initializer_list<T>> : yes {};
+
+// is_zero
+template <class T>
+std::enable_if_t<std::is_scalar<T>::value, bool> is_zero(const T &v) {
+  return v == 0;
+}
+template <class T> bool is_zero(const std::complex<T> &v) {
+  return is_zero(v.real()) && is_zero(v.imag());
+}
 }

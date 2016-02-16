@@ -1,5 +1,5 @@
 #pragma once
-#include "./tensor/aligned_data.hpp"
+#include "./tensor/aligned.hpp"
 #include "./tensor/auxmath.hpp"
 #include "./tensor/base.hpp"
 #include "./tensor/cat.hpp"

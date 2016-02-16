@@ -1,7 +1,8 @@
 #pragma once
 
-#include "storage.hpp"
 #include "aligned.hpp"
+#include "ewise_ops.hpp"
+#include "storage.hpp"
 
 namespace wheels {
 
@@ -122,6 +123,17 @@ public:
   template <class ArcT> void serialize(ArcT &ar) { ar(_storage); }
   template <class V> decltype(auto) fields(V &&visitor) {
     return visitor(_storage);
+  }
+
+  // +=
+  template <class T> tensor &operator+=(const tensor_core<T> &t) {
+    *this = *this + t.derived();
+    return *this;
+  }
+  // -=
+  template <class T> tensor &operator-=(const tensor_core<T> &t) {
+    *this = *this - t.derived();
+    return *this;
   }
 
 private:

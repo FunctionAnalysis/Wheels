@@ -18,6 +18,9 @@ TEST(tensor, shape) {
   auto test = s1[0_c] == 1_c && s1.at(1_c) == 2_c;
   static_assert(test, "");
 
+  auto p = s1.part(make_const_range(0_c, 2_c));
+  ASSERT_TRUE(p == make_shape(1_c, 2_c));
+
   ASSERT_TRUE(s1.at(2_c) == 4);
   ASSERT_TRUE(s1.magnitude() == 40);
 

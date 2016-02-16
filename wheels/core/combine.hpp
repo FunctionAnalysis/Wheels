@@ -172,4 +172,9 @@ template <size_t Idx, class T, class... RestTs>
 decltype(auto) get(wheels::combination<T, RestTs...> &c) {
   return c.at(wheels::const_index<Idx>());
 }
+
+// tuple_size
+template <class... Ts>
+struct tuple_size<wheels::combination<Ts...>>
+    : integral_constant<size_t, sizeof...(Ts)> {};
 }

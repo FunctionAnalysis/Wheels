@@ -24,6 +24,10 @@ public:
 
   constexpr tensor_shape() {}
   template <class K> constexpr tensor_shape(const tensor_shape<K> &) {}
+
+  template <class K> tensor_shape part(const const_ints<K> &) const {
+    return tensor_shape();
+  }
 };
 
 template <class T, T S, class... SizeTs>
@@ -120,6 +124,12 @@ public:
   template <class K, K Idx>
   constexpr auto operator[](const const_ints<K, Idx> &i) const {
     return at(i);
+  }
+
+  // part
+  template <class K, K I, K... Is>
+  constexpr auto part(const const_ints<K, I, Is...> &is) const {
+    return make_shape(at(const_index<I>()), at(const_index<Is>())...);
   }
 
   // resize
@@ -229,6 +239,12 @@ public:
   template <class K, K Idx>
   constexpr auto operator[](const const_ints<K, Idx> &i) const {
     return at(i);
+  }
+
+  // part
+  template <class K, K I, K... Is>
+  constexpr auto part(const const_ints<K, I, Is...> &is) const {
+    return make_shape(at(const_index<I>()), at(const_index<Is>())...);
   }
 
   // resize
@@ -592,4 +608,9 @@ template <size_t Idx, class T, class... SizeTs>
 constexpr decltype(auto) get(const wheels::tensor_shape<T, SizeTs...> &shape) {
   return shape.at(wheels::const_index<Idx>());
 }
+
+// tuple_size
+template <class T, class... SizeTs>
+struct tuple_size<wheels::tensor_shape<T, SizeTs...>>
+    : integral_constant<size_t, sizeof...(SizeTs)> {};
 }

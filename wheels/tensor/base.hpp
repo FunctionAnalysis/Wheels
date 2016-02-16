@@ -10,11 +10,13 @@
 #include "../core/types.hpp"
 
 #include "shape.hpp"
+#include "traits.hpp"
 
 namespace wheels {
 
 template <class ShapeT, class EleT, class T> struct category_tensor {};
 
+// index_tags
 namespace index_tags {
 constexpr auto first = const_index<0>();
 constexpr auto length = const_symbol<0>();
@@ -102,26 +104,32 @@ template <class T> struct tensor_core {
   }
 
 private:
+  template <class... SubEs, size_t... Is>
+  constexpr bool _valid_subs_seq(const_ints<size_t, Is...> seq,
+                                 const SubEs &... subes) const {
+    return ::wheels::all(::wheels::is_between(
+        details::_eval_index_expr(subes, size(const_size<Is>())), 0,
+        size(const_size<Is>()))...);
+  }
   template <class E, class... SubEs, size_t... Is>
   constexpr decltype(auto) _at_or_seq(E &&otherwise,
                                       const_ints<size_t, Is...> seq,
                                       const SubEs &... subes) const {
-    return ::wheels::all(::wheels::is_between(
-               details::_eval_index_expr(subes, size(const_size<Is>())), 0,
-               size(const_size<Is>()))...)
-               ? _parenthesis_seq(seq, subes...)
-               : forward<E>(otherwise);
+    return _valid_subs_seq(seq, subes...) ? _parenthesis_seq(seq, subes...)
+                                          : forward<E>(otherwise);
   }
 
   template <class... SubEs, size_t... Is>
-  constexpr decltype(auto) _parenthesis_seq(const_ints<size_t, Is...>,
+  constexpr decltype(auto) _parenthesis_seq(const_ints<size_t, Is...> seq,
                                             const SubEs &... subes) const {
+    assert(_valid_subs_seq(seq, subes...));
     return ::wheels::element_at(
         derived(), details::_eval_index_expr(subes, size(const_size<Is>()))...);
   }
   template <class... SubEs, size_t... Is>
-  decltype(auto) _parenthesis_seq(const_ints<size_t, Is...>,
+  decltype(auto) _parenthesis_seq(const_ints<size_t, Is...> seq,
                                   const SubEs &... subes) {
+    assert(_valid_subs_seq(seq, subes...));
     return ::wheels::element_at(
         derived(), details::_eval_index_expr(subes, size(const_size<Is>()))...);
   }
@@ -433,9 +441,9 @@ bool for_each_element(behavior_flag<nonzero_only>, FunT &fun,
                       const tensor_core<T> &t, Ts &... ts) {
   assert(all_same(t.shape(), ts.shape()...));
   bool visited_all = true;
-  for_each_subscript(t.shape(), [&](auto &... subs) {
+  for_each_subscript(t.shape(), [&](auto &&... subs) {
     decltype(auto) e = element_at(t.derived(), subs...);
-    if (e) {
+    if (!is_zero(e)) {
       fun(e, element_at(ts.derived(), subs...)...);
     } else {
       visited_all = false;
@@ -468,8 +476,11 @@ void assign_elements(tensor_core<ToT> &to, const tensor_core<FromT> &from) {
     reserve_shape(to.derived(), s);
   }
   for_each_element(behavior_flag<unordered>(),
-                   [](auto &to_e, auto from_e) { to_e = from_e; }, to.derived(),
-                   from.derived());
+                   [](auto &&to_e, auto &&from_e) {
+                     auto e = from_e;
+                     to_e = e;
+                   },
+                   to.derived(), from.derived());
 }
 
 // Scalar reduce_elements(ts, initial, functor);
@@ -483,8 +494,9 @@ E reduce_elements(const tensor_core<T> &t, E initial, ReduceT &red) {
 
 // Scalar norm_squared(ts)
 template <class ShapeT, class ET, class T>
-ET norm_squared(const tensor_base<ShapeT, ET, T> &t) {
-  ET result = 0.0;
+typename tensor_element_types<ET>::storable
+norm_squared(const tensor_base<ShapeT, ET, T> &t) {
+  auto result = types<typename tensor_element_types<ET>::storable>::zero();
   for_each_element(behavior_flag<nonzero_only>(),
                    [&result](auto &&e) { result += e * e; }, t.derived());
   return result;
@@ -492,7 +504,8 @@ ET norm_squared(const tensor_base<ShapeT, ET, T> &t) {
 
 // Scalar norm(ts)
 template <class ShapeT, class ET, class T>
-constexpr ET norm(const tensor_base<ShapeT, ET, T> &t) {
+constexpr typename tensor_element_types<ET>::storable
+norm(const tensor_base<ShapeT, ET, T> &t) {
   return sqrt(norm_squared(t.derived()));
 }
 
@@ -524,10 +537,71 @@ constexpr bool not_equals_result_of(const tensor_base<ShapeT, ET, T> &t) {
 
 // Scalar sum(s)
 template <class ShapeT, class ET, class T>
-constexpr ET sum_of(const tensor_base<ShapeT, ET, T> &t) {
-  ET s = types<ET>::zero();
+typename tensor_element_types<ET>::storable
+sum_of(const tensor_base<ShapeT, ET, T> &t) {
+  auto s = types<typename tensor_element_types<ET>::storable>::zero();
   for_each_element(behavior_flag<nonzero_only>(),
-                   [&s](const auto &e) { s += e; }, t.derived());
+                   [&s](auto &&e) { s += e; }, t.derived());
   return s;
+}
+
+// ostream
+namespace details {
+template <class ShapeT, class ET, class T>
+inline std::ostream &_stream_impl(std::ostream &os,
+                                  const tensor_base<ShapeT, ET, T> &t,
+                                  const_size<0>) {
+  return os << t();
+}
+template <class ShapeT, class ET, class T>
+inline std::ostream &_stream_impl(std::ostream &os,
+                                  const tensor_base<ShapeT, ET, T> &t,
+                                  const_size<1>) {
+  if (t.numel() == 0) {
+    return os << "[]";
+  }
+  os << '[' << t(0);
+  for (size_t i = 1; i < t.numel(); i++) {
+    auto e = t(i);
+    os << ", " << e;
+  }
+  return os << ']';
+}
+template <class ShapeT, class ET, class T>
+inline std::ostream &_stream_impl(std::ostream &os,
+                                  const tensor_base<ShapeT, ET, T> &t,
+                                  const_size<2>) {
+  for (size_t j = 0; j < t.size(const_index<0>()); j++) {
+    if (t.size(const_index<1>()) == 0) {
+      os << "[]\n";
+    } else {
+      os << '[' << t(j, 0);
+      for (size_t i = 1; i < t.size(const_index<1>()); i++) {
+        os << ", " << t(j, i);
+      }
+      os << ']' << '\n';
+    }
+  }
+  return os;
+}
+template <class ShapeT, class ET, class T, size_t I>
+inline std::ostream &_stream_impl(std::ostream &os,
+                                  const tensor_base<ShapeT, ET, T> &t,
+                                  const_size<I>) {
+  static_assert(always<bool, false, ShapeT>::value, "not implemented yet");
+  return os;
+}
+}
+template <class ShapeT, class ET, class T>
+inline std::ostream &operator<<(std::ostream &os,
+                                const tensor_base<ShapeT, ET, T> &t) {
+  return details::_stream_impl(os, t.derived(), const_size<ShapeT::rank>());
+}
+
+// is_zero
+template <class ShapeT, class ET, class T>
+bool is_zero(const tensor_base<ShapeT, ET, T> &t) {
+  return for_each_element(behavior_flag<break_on_false>(),
+                          [](auto &&e) { return is_zero(e); }, t.derived());
 }
 }

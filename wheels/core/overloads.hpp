@@ -1,5 +1,7 @@
 #pragma once
 
+#include <algorithm>
+
 #include "const_ints.hpp"
 #include "types.hpp"
 
@@ -198,7 +200,7 @@ WHEELS_OVERLOAD_BINARY_OP (^, bitwise_xor)
     template <class... ArgTs>                                                  \
     constexpr decltype(auto) operator()(ArgTs &&... vs) const {                \
       using std::name;                                                         \
-      return name(forward<ArgTs>(vs)...);                                      \
+      return name(forward<ArgTs>(vs)...);                                 \
     }                                                                          \
   };                                                                           \
   template <class FirstT, class... RestTs,                                     \

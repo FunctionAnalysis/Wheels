@@ -15,7 +15,7 @@ using ignore_t = decltype(std::ignore);
 
 // conditional for enumulating ?:
 template <class ThenT, class ElseT>
-constexpr decltype(auto) conditional(bool b, ThenT &&thenv, ElseT &&elsev) {
+constexpr auto conditional(bool b, ThenT &&thenv, ElseT &&elsev) {
   return b ? forward<ThenT>(thenv) : forward<ElseT>(elsev);
 }
 
