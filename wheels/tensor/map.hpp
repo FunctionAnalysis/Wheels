@@ -81,10 +81,6 @@ public:
   tensor_map &operator=(tensor_map &&) = default;
 
   template <class AnotherT>
-  constexpr tensor_map(const tensor_core<AnotherT> &another) {
-    assign_elements(*this, another.derived());
-  }
-  template <class AnotherT>
   tensor_map &operator=(const tensor_core<AnotherT> &another) {
     assign_elements(*this, another.derived());
     return *this;

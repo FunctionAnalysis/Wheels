@@ -515,6 +515,14 @@ void fill_elements_with(tensor_core<T> &t, const E &e) {
                    t.derived());
 }
 
+// size_t nonzero_elements_count(t)
+template <class T> size_t nonzero_elements_count(const tensor_core<T> &t) {
+  size_t nzc = 0;
+  for_each_element(behavior_flag<nonzero_only>(), [&nzc](auto &&e) { nzc++; },
+                   t.derived());
+  return nzc;
+}
+
 // Scalar reduce_elements(ts, initial, functor);
 template <class T, class E, class ReduceT>
 E reduce_elements(const tensor_core<T> &t, E initial, ReduceT &red) {

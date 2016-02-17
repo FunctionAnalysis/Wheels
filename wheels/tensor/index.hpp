@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base.hpp"
+#include "tensor.hpp"
 
 namespace wheels {
 
@@ -17,6 +18,10 @@ public:
   template <class AnotherT>
   index_view &operator=(const tensor_core<AnotherT> &another) {
     assign_elements(*this, another.derived());
+    return *this;
+  }
+  index_view &operator=(const ET &e) {
+    fill_elements_with(*this, e);
     return *this;
   }
 
@@ -72,5 +77,20 @@ constexpr auto at_indices(InputTensorT &&input, IndexTensorT &&index)
                                      forward<IndexTensorT>(index))) {
   return details::_at_indices(input, forward<InputTensorT>(input), index,
                               forward<IndexTensorT>(index));
+}
+
+// where
+template <class ShapeT, class BoolTensorT>
+inline vecx_<size_t>
+where(const tensor_base<ShapeT, bool, BoolTensorT> &flags) {
+  size_t nzc = nonzero_elements_count(flags.derived());
+  vecx_<size_t> inds(make_shape(nzc));
+  size_t c = 0;
+  for (size_t i = 0; i < flags.numel(); i++) {
+    if (element_at_index(flags.derived(), i)) {
+      element_at_index(inds, c++) = i;
+    }
+  }
+  return inds;
 }
 }
