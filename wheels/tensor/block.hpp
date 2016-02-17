@@ -143,6 +143,13 @@ class blockwise_view
 public:
   constexpr explicit blockwise_view(InputT &&in) : input(forward<InputT>(in)) {}
 
+  // operator=
+  template <class AnotherT>
+  blockwise_view &operator=(const tensor_core<AnotherT> &another) {
+    assign_elements(*this, another.derived());
+    return *this;
+  }
+
 public:
   InputT input;
 };
