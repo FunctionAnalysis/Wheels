@@ -35,8 +35,9 @@ public:
         _shape(details::_make_cat_shape_seq(
             _input1.shape(), _input2.shape(), const_index<Axis>(),
             make_rank_sequence(_input1.shape()))) {}
-  constexpr decltype(auto) input1() const { return _input1; }
-  constexpr decltype(auto) input2() const { return _input2; }
+
+  constexpr const T1 & input1() const { return _input1; }
+  constexpr const T2 & input2() const { return _input2; }
   constexpr const ShapeT &shape() const { return _shape; }
 
 private:

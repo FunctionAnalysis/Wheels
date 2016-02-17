@@ -78,13 +78,36 @@ template <class T> struct tensor_core {
   }
 
   // operator[](index)
-  template <class E> constexpr decltype(auto) operator[](const E &e) const {
+  template <class E>
+  constexpr auto operator[](const E &e) const
+      -> decltype(::wheels::element_at_index(
+          derived(), details::_eval_index_expr(e, numel()))) {
     return ::wheels::element_at_index(derived(),
                                       details::_eval_index_expr(e, numel()));
   }
-  template <class E> decltype(auto) operator[](const E &e) {
+  template <class E>
+  auto operator[](const E &e) -> decltype(::wheels::element_at_index(
+      derived(), details::_eval_index_expr(e, numel()))) {
     return ::wheels::element_at_index(derived(),
                                       details::_eval_index_expr(e, numel()));
+  }
+
+  // operator[](index tensor)
+  template <class IndexTensorT>
+  constexpr auto operator[](IndexTensorT &&it) const & -> decltype(
+      ::wheels::at_indices(derived(), forward<IndexTensorT>(it))) {
+    return ::wheels::at_indices(derived(), forward<IndexTensorT>(it));
+  }
+  template <class IndexTensorT>
+  auto operator[](IndexTensorT &&it) & -> decltype(
+      ::wheels::at_indices(derived(), forward<IndexTensorT>(it))) {
+    return ::wheels::at_indices(derived(), forward<IndexTensorT>(it));
+  }
+  template <class IndexTensorT>
+  auto operator[](IndexTensorT &&it) && -> decltype(
+      ::wheels::at_indices(std::move(derived()), forward<IndexTensorT>(it))) {
+    return ::wheels::at_indices(std::move(derived()),
+                                forward<IndexTensorT>(it));
   }
 
   // for_each
@@ -233,7 +256,9 @@ struct tensor_base<tensor_shape<ST, MT, NT>, ET, T> : tensor_core<T> {
   constexpr auto rows() const { return size(const_index<0>()); }
   constexpr auto cols() const { return size(const_index<1>()); }
 
-  constexpr auto t() const & { return ::wheels::transpose(derived()); }
+  constexpr decltype(auto) t() const & {
+    return ::wheels::transpose(derived());
+  }
   auto t() & { return ::wheels::transpose(derived()); }
   auto t() && { return ::wheels::transpose(std::move(derived())); }
 };
@@ -483,6 +508,13 @@ void assign_elements(tensor_core<ToT> &to, const tensor_core<FromT> &from) {
                    to.derived(), from.derived());
 }
 
+// void fill_elements_with(to, scalar)
+template <class T, class E>
+void fill_elements_with(tensor_core<T> &t, const E &e) {
+  for_each_element(behavior_flag<unordered>(), [&e](auto &&te) { te = e; },
+                   t.derived());
+}
+
 // Scalar reduce_elements(ts, initial, functor);
 template <class T, class E, class ReduceT>
 E reduce_elements(const tensor_core<T> &t, E initial, ReduceT &red) {
@@ -540,8 +572,8 @@ template <class ShapeT, class ET, class T>
 typename tensor_element_types<ET>::storable
 sum_of(const tensor_base<ShapeT, ET, T> &t) {
   auto s = types<typename tensor_element_types<ET>::storable>::zero();
-  for_each_element(behavior_flag<nonzero_only>(),
-                   [&s](auto &&e) { s += e; }, t.derived());
+  for_each_element(behavior_flag<nonzero_only>(), [&s](auto &&e) { s += e; },
+                   t.derived());
   return s;
 }
 

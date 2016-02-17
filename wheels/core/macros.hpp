@@ -37,3 +37,9 @@
 
 #define wheels_macro_cat_impl(a, b) a##b
 #define wheels_macro_cat(a, b) wheels_macro_cat_impl(a, b)
+
+#define wheels_allow_move_only(claz)                                           \
+  claz(claz &&) = default;                                                     \
+  claz(const claz &) = delete;                                                 \
+  claz &operator=(claz &&) = default;                                          \
+  claz &operator=(const claz &) = delete;
