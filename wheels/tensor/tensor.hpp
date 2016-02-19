@@ -21,9 +21,9 @@ constexpr ShapeT _make_shape_from_magnitude_seq(size_t magnitude,
 }
 
 // tensor
-template <class ShapeT, class ET>
+template <class ET, class ShapeT>
 class tensor
-    : public tensor_continuous_data_base<ShapeT, ET, tensor<ShapeT, ET>> {
+    : public tensor_continuous_data_base<ET, ShapeT, tensor<ET, ShapeT>> {
 public:
   using value_type = ET;
   using shape_type = ShapeT;
@@ -142,58 +142,58 @@ private:
 
 // shape_of
 template <class ET, class ShapeT>
-constexpr decltype(auto) shape_of(const tensor<ShapeT, ET> &t) {
+constexpr decltype(auto) shape_of(const tensor<ET, ShapeT> &t) {
   return t.shape();
 }
 
 // ptr_of
 template <class ET, class ShapeT>
-constexpr const ET *ptr_of(const tensor<ShapeT, ET> &t) {
+constexpr const ET *ptr_of(const tensor<ET, ShapeT> &t) {
   return t.ptr();
 }
-template <class ET, class ShapeT> ET *ptr_of(tensor<ShapeT, ET> &t) {
+template <class ET, class ShapeT> ET *ptr_of(tensor<ET, ShapeT> &t) {
   return t.ptr();
 }
 
 // reserve_shape
 template <class ET, class ShapeT, class ST, class... SizeTs>
-void reserve_shape(tensor<ShapeT, ET> &t,
+void reserve_shape(tensor<ET, ShapeT> &t,
                    const tensor_shape<ST, SizeTs...> &shape) {
   t.reshape(shape);
 }
 
 // vec_
 template <class T, size_t N>
-using vec_ = tensor<tensor_shape<size_t, const_size<N>>, T>;
+using vec_ = tensor<T, tensor_shape<size_t, const_size<N>>>;
 using vec2 = vec_<double, 2>;
 using vec3 = vec_<double, 3>;
 
 // vecx_
-template <class T> using vecx_ = tensor<tensor_shape<size_t, size_t>, T>;
+template <class T> using vecx_ = tensor<T, tensor_shape<size_t, size_t>>;
 using vecx = vecx_<double>;
 
 // mat_
 template <class T, size_t M, size_t N>
-using mat_ = tensor<tensor_shape<size_t, const_size<M>, const_size<N>>, T>;
+using mat_ = tensor<T, tensor_shape<size_t, const_size<M>, const_size<N>>>;
 using mat2 = mat_<double, 2, 2>;
 using mat3 = mat_<double, 3, 3>;
 
 // matx_
 template <class T>
-using matx_ = tensor<tensor_shape<size_t, size_t, size_t>, T>;
+using matx_ = tensor<T, tensor_shape<size_t, size_t, size_t>>;
 using matx = matx_<double>;
 
 // cube_
 template <class T, size_t M, size_t N, size_t L>
 using cube_ =
-    tensor<tensor_shape<size_t, const_size<M>, const_size<N>, const_size<L>>,
-           T>;
+    tensor<T,
+           tensor_shape<size_t, const_size<M>, const_size<N>, const_size<L>>>;
 using cube2 = cube_<double, 2, 2, 2>;
 using cube3 = cube_<double, 3, 3, 3>;
 
 // cubex_
 template <class T>
-using cubex_ = tensor<tensor_shape<size_t, size_t, size_t, size_t>, T>;
+using cubex_ = tensor<T, tensor_shape<size_t, size_t, size_t, size_t>>;
 using cubex = matx_<double>;
 
 // tstring
@@ -212,7 +212,7 @@ template <class T, class SeqT> struct _make_tensor_of_rank_seq {
 };
 template <class T, size_t... Is>
 struct _make_tensor_of_rank_seq<T, const_ints<size_t, Is...>> {
-  using type = tensor<tensor_shape<size_t, always_t<size_t, Is>...>, T>;
+  using type = tensor<T, tensor_shape<size_t, always_t<size_t, Is>...>>;
 };
 }
 template <class T, size_t Rank>

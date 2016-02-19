@@ -6,10 +6,10 @@
 namespace wheels {
 
 // constant_result
-template <class ShapeT, class ET, class OpT>
+template <class ET, class ShapeT, class OpT>
 class constant_result
-    : public tensor_op_result_base<ShapeT, ET, OpT,
-                                   constant_result<ShapeT, ET, OpT>> {
+    : public tensor_op_result_base<ET, ShapeT, OpT,
+                                   constant_result<ET, ShapeT, OpT>> {
 public:
   using shape_type = ShapeT;
   using value_type = ET;
@@ -25,29 +25,29 @@ private:
 };
 
 // shape_of
-template <class ShapeT, class ET, class OpT>
-constexpr const ShapeT &shape_of(const constant_result<ShapeT, ET, OpT> &t) {
+template <class ET, class ShapeT, class OpT>
+constexpr const ShapeT &shape_of(const constant_result<ET, ShapeT, OpT> &t) {
   return t.shape();
 }
 
 // element_at
-template <class ShapeT, class ET, class OpT, class... SubTs>
-constexpr const ET &element_at(const constant_result<ShapeT, ET, OpT> &t,
+template <class ET, class ShapeT, class OpT, class... SubTs>
+constexpr const ET &element_at(const constant_result<ET, ShapeT, OpT> &t,
                                const SubTs &... subs) {
   return t.value();
 }
 
 // element_at_index
-template <class ShapeT, class ET, class OpT, class IndexT>
-constexpr const ET &element_at_index(const constant_result<ShapeT, ET, OpT> &t,
+template <class ET, class ShapeT, class OpT, class IndexT>
+constexpr const ET &element_at_index(const constant_result<ET, ShapeT, OpT> &t,
                                      const IndexT &ind) {
   return t.value();
 }
 
 // index_ascending, unordered
-template <behavior_flag_enum O, class FunT, class ShapeT, class ET, class OpT>
+template <behavior_flag_enum O, class FunT, class ET, class ShapeT, class OpT>
 bool for_each_element(behavior_flag<O>, FunT &&fun,
-                      const constant_result<ShapeT, ET, OpT> &t) {
+                      const constant_result<ET, ShapeT, OpT> &t) {
   for (size_t i = 0; i < numel(t); i++) {
     fun(t.value());
   }
@@ -55,9 +55,9 @@ bool for_each_element(behavior_flag<O>, FunT &&fun,
 }
 
 // break_on_false
-template <class FunT, class ShapeT, class ET, class OpT>
+template <class FunT, class ET, class ShapeT, class OpT>
 bool for_each_element(behavior_flag<break_on_false>, FunT &&fun,
-                      const constant_result<ShapeT, ET, OpT> &t) {
+                      const constant_result<ET, ShapeT, OpT> &t) {
   for (size_t i = 0; i < numel(t); i++) {
     if (!fun(t.value())) {
       return false;
@@ -67,9 +67,9 @@ bool for_each_element(behavior_flag<break_on_false>, FunT &&fun,
 }
 
 // nonzero_only
-template <class FunT, class ShapeT, class ET, class OpT, class... Ts>
+template <class FunT, class ET, class ShapeT, class OpT, class... Ts>
 bool for_each_element(behavior_flag<nonzero_only> o, FunT &&fun,
-                      const constant_result<ShapeT, ET, OpT> &t, Ts &&... ts) {
+                      const constant_result<ET, ShapeT, OpT> &t, Ts &&... ts) {
   assert(all_same(shape_of(t), shape_of(ts)...));
   if (t.value()) {
     return for_each_element(behavior_flag<unordered>(), forward<FunT>(fun), t,
@@ -79,8 +79,8 @@ bool for_each_element(behavior_flag<nonzero_only> o, FunT &&fun,
 }
 
 // reduce_elements
-template <class ShapeT, class ET, class OpT, class E, class ReduceT>
-E reduce_elements(const constant_result<ShapeT, ET, OpT> &t, E initial,
+template <class ET, class ShapeT, class OpT, class E, class ReduceT>
+E reduce_elements(const constant_result<ET, ShapeT, OpT> &t, E initial,
                   ReduceT &&red) {
   for (size_t i = 0; i < numel(t); i++) {
     initial = red(initial, t.value());
@@ -89,28 +89,28 @@ E reduce_elements(const constant_result<ShapeT, ET, OpT> &t, E initial,
 }
 
 // norm_squared
-template <class ShapeT, class ET, class OpT>
+template <class ET, class ShapeT, class OpT>
 std::enable_if_t<std::is_arithmetic<ET>::value, ET>
-norm_squared(const constant_result<ShapeT, ET, OpT> &t) {
+norm_squared(const constant_result<ET, ShapeT, OpT> &t) {
   return t.value() * t.value() * numel(t);
 }
 
 // all_of
-template <class ShapeT, class ET, class OpT>
-constexpr bool all_of(const constant_result<ShapeT, ET, OpT> &t) {
+template <class ET, class ShapeT, class OpT>
+constexpr bool all_of(const constant_result<ET, ShapeT, OpT> &t) {
   return !!t.value();
 }
 
 // any_of
-template <class ShapeT, class ET, class OpT>
-constexpr bool any_of(const constant_result<ShapeT, ET, OpT> &t) {
+template <class ET, class ShapeT, class OpT>
+constexpr bool any_of(const constant_result<ET, ShapeT, OpT> &t) {
   return !!t.value();
 }
 
 // constants
 template <class ET, class ST, class... SizeTs>
 constexpr auto constants(const tensor_shape<ST, SizeTs...> &shape, ET &&v) {
-  return constant_result<tensor_shape<ST, SizeTs...>, std::decay_t<ET>, void>(
+  return constant_result<std::decay_t<ET>, tensor_shape<ST, SizeTs...>, void>(
       shape, forward<ET>(v));
 }
 
@@ -138,18 +138,18 @@ namespace details {
 template <class ET, class ST, class... SizeTs, class OpT>
 constexpr auto _constants(const tensor_shape<ST, SizeTs...> &shape, ET &&v,
                           OpT &&) {
-  return constant_result<tensor_shape<ST, SizeTs...>, std::decay_t<ET>,
+  return constant_result<std::decay_t<ET>, tensor_shape<ST, SizeTs...>,
                          std::decay_t<OpT>>(shape, forward<ET>(v));
 }
 }
 
 // ewise ops
 // all constants
-template <class OpT, class ShapeT, class EleT, class COpT, class... ShapeTs,
+template <class OpT, class EleT, class ShapeT, class COpT, class... ShapeTs,
           class... OpTs, class... EleTs>
 struct overloaded<
-    OpT, category_tensor<ShapeT, EleT, constant_result<ShapeT, EleT, COpT>>,
-    category_tensor<ShapeTs, EleTs, constant_result<ShapeTs, EleTs, OpTs>>...> {
+    OpT, category_tensor<EleT, ShapeT, constant_result<EleT, ShapeT, COpT>>,
+    category_tensor<EleTs, ShapeTs, constant_result<EleTs, ShapeTs, OpTs>>...> {
   template <class TT, class... TTs>
   constexpr auto operator()(TT &&t, TTs &&... ts) const {
     assert(all_same(shape_of(t), shape_of(ts)...));
@@ -158,12 +158,12 @@ struct overloaded<
   }
 };
 
-template <class ShapeT, class EleT, class OpT, class ShapeT2, class EleT2,
+template <class EleT, class ShapeT, class OpT, class ShapeT2, class EleT2,
           class OpT2>
 struct overloaded<
     binary_op_mul,
-    category_tensor<ShapeT, EleT, constant_result<ShapeT, EleT, OpT>>,
-    category_tensor<ShapeT2, EleT2, constant_result<ShapeT2, EleT2, OpT2>>> {
+    category_tensor<EleT, ShapeT, constant_result<EleT, ShapeT, OpT>>,
+    category_tensor<EleT2, ShapeT2, constant_result<EleT2, ShapeT2, OpT2>>> {
   template <class TT, class TT2>
   constexpr int operator()(TT &&t, TT2 &&t2) const {
     static_assert(always<bool, false, TT, TT2>::value,
@@ -171,12 +171,12 @@ struct overloaded<
                   "product of two tensors");
   }
 };
-template <class ShapeT, class EleT, class OpT, class ShapeT2, class EleT2,
+template <class EleT, class ShapeT, class OpT, class ShapeT2, class EleT2,
           class OpT2>
 struct overloaded<
     ewised<binary_op_mul>,
-    category_tensor<ShapeT, EleT, constant_result<ShapeT, EleT, OpT>>,
-    category_tensor<ShapeT2, EleT2, constant_result<ShapeT2, EleT2, OpT2>>> {
+    category_tensor<EleT, ShapeT, constant_result<EleT, ShapeT, OpT>>,
+    category_tensor<EleT2, ShapeT2, constant_result<EleT2, ShapeT2, OpT2>>> {
   template <class TT, class TT2>
   constexpr auto operator()(TT &&t, TT2 &&t2) const {
     assert(all_same(shape_of(t), shape_of(t2)));
@@ -186,9 +186,9 @@ struct overloaded<
 };
 
 // tensor vs scalar
-template <class OpT, class ShapeT, class EleT, class COpT>
+template <class OpT, class EleT, class ShapeT, class COpT>
 struct overloaded<
-    OpT, category_tensor<ShapeT, EleT, constant_result<ShapeT, EleT, COpT>>,
+    OpT, category_tensor<EleT, ShapeT, constant_result<EleT, ShapeT, COpT>>,
     void> {
   template <class T1, class T2>
   constexpr auto operator()(T1 &&t1, T2 &&t2) const {
@@ -197,10 +197,10 @@ struct overloaded<
   }
 };
 // scalar vs tensor
-template <class OpT, class ShapeT, class EleT, class COpT>
+template <class OpT, class EleT, class ShapeT, class COpT>
 struct overloaded<
     OpT, void,
-    category_tensor<ShapeT, EleT, constant_result<ShapeT, EleT, COpT>>> {
+    category_tensor<EleT, ShapeT, constant_result<EleT, ShapeT, COpT>>> {
   template <class T1, class T2>
   constexpr auto operator()(T1 &&t1, T2 &&t2) const {
     return details::_constants(t2.shape(), OpT()(forward<T1>(t1), t2.value()),

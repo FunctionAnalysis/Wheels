@@ -4,11 +4,11 @@
 
 namespace wheels {
 
-template <class ShapeT, class ET, class InputT, class ExtShapeT, class ExtFunT>
+template <class ET, class ShapeT, class InputT, class ExtShapeT, class ExtFunT>
 class extend_result
     : public tensor_op_result_base<
-          ShapeT, ET, void,
-          extend_result<ShapeT, ET, InputT, ExtShapeT, ExtFunT>> {
+          ET, ShapeT, void,
+          extend_result<ET, ShapeT, InputT, ExtShapeT, ExtFunT>> {
 public:
   extend_result(InputT &&in, const ExtShapeT &es, ExtFunT ef)
       : input(forward<InputT>(in)), ext_shape(es), ext_fun(ef) {}
@@ -20,9 +20,9 @@ public:
 };
 
 // shape_of
-template <class ShapeT, class ET, class InputT, class ExtShapeT, class ExtFunT>
+template <class ET, class ShapeT, class InputT, class ExtShapeT, class ExtFunT>
 constexpr auto
-shape_of(const extend_result<ShapeT, ET, InputT, ExtShapeT, ExtFunT> &r) {
+shape_of(const extend_result<ET, ShapeT, InputT, ExtShapeT, ExtFunT> &r) {
   return cat2(r.input.shape(), r.ext_shape);
 }
 
@@ -39,20 +39,20 @@ _element_at_extend_result_seq(ExtendResultT &&r, SubsTupleT &&subs,
 }
 }
 
-template <class ShapeT, class ET, class InputT, class ExtShapeT, class ExtFunT,
+template <class ET, class ShapeT, class InputT, class ExtShapeT, class ExtFunT,
           class... SubTs>
 constexpr decltype(auto)
-element_at(const extend_result<ShapeT, ET, InputT, ExtShapeT, ExtFunT> &r,
+element_at(const extend_result<ET, ShapeT, InputT, ExtShapeT, ExtFunT> &r,
            const SubTs &... subs) {
   return details::_element_at_extend_result_seq(
       r, std::forward_as_tuple(subs...), make_rank_sequence(r.input.shape()),
       make_rank_sequence(r.ext_shape));
 }
 
-template <class ShapeT, class ET, class InputT, class ExtShapeT, class ExtFunT,
+template <class ET, class ShapeT, class InputT, class ExtShapeT, class ExtFunT,
           class... SubTs>
 decltype(auto)
-element_at(extend_result<ShapeT, ET, InputT, ExtShapeT, ExtFunT> &r,
+element_at(extend_result<ET, ShapeT, InputT, ExtShapeT, ExtFunT> &r,
            const SubTs &... subs) {
   return details::_element_at_extend_result_seq(
       r, std::forward_as_tuple(subs...), make_rank_sequence(r.input.shape()),
@@ -82,7 +82,7 @@ namespace details {
 template <class InputShapeT, class InputET, class InputT, class InputTT,
           class ExtShapeT, class ExtFunT, size_t... ExtIs>
 constexpr auto
-_extend_tensor_by(const tensor_base<InputShapeT, InputET, InputT> &,
+_extend_tensor_by(const tensor_base<InputET, InputShapeT, InputT> &,
                   InputTT &&input, const ExtShapeT &extshape, ExtFunT extfun,
                   const const_ints<size_t, ExtIs...> &) {
   using ele_t = std::decay_t<decltype(
@@ -90,7 +90,7 @@ _extend_tensor_by(const tensor_base<InputShapeT, InputET, InputT> &,
              always<size_t, 0, const_index<ExtIs>>::value...))>;
   using shape_t = std::decay_t<decltype(
       cat2(std::declval<InputShapeT>(), std::declval<ExtShapeT>()))>;
-  return extend_result<shape_t, ele_t, InputTT, ExtShapeT, ExtFunT>(
+  return extend_result<ele_t, shape_t, InputTT, ExtShapeT, ExtFunT>(
       forward<InputTT>(input), extshape, extfun);
 }
 }

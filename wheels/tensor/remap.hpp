@@ -12,11 +12,11 @@ template <interpolate_method_enum IM>
 using interpolate_method = const_ints<interpolate_method_enum, IM>;
 
 // remap_result
-template <class ShapeT, class ET, class T, class MapFunT,
+template <class ET, class ShapeT, class T, class MapFunT,
           interpolate_method_enum IPMethod>
 class remap_result
     : public tensor_op_result_base<
-          ShapeT, ET, void, remap_result<ShapeT, ET, T, MapFunT, IPMethod>> {
+          ET, ShapeT, void, remap_result<ET, ShapeT, T, MapFunT, IPMethod>> {
 public:
   constexpr remap_result(T &&in, const ShapeT &s, MapFunT m, ET o)
       : _input(forward<T>(in)), _output_shape(s), _subs_output2input(m),
@@ -38,25 +38,24 @@ private:
 };
 
 // shape_of
-template <class ShapeT, class ET, class T, class MapFunT,
+template <class ET, class ShapeT, class T, class MapFunT,
           interpolate_method_enum IPMethod>
 constexpr const ShapeT &
-shape_of(const remap_result<ShapeT, ET, T, MapFunT, IPMethod> &r) {
+shape_of(const remap_result<ET, ShapeT, T, MapFunT, IPMethod> &r) {
   return r.shape();
 }
 
 namespace details {
 // _element_at_remap_result_seq using round_interpolate
-template <class ShapeT, class ET, class T, class MapFunT, size_t... Is,
+template <class ET, class ShapeT, class T, class MapFunT, size_t... Is,
           class... SubTs>
 constexpr ET _element_at_remap_result_seq(
-    const remap_result<ShapeT, ET, T, MapFunT, round_interpolate> &r,
+    const remap_result<ET, ShapeT, T, MapFunT, round_interpolate> &r,
     const_ints<size_t, Is...>, const SubTs &... subs) {
   return r.input().at_or(
       r.outlier_value(),
       static_cast<size_t>(std::round(r.float_subs_in_input(subs...)[Is]))...);
 }
-
 
 template <class T1, class T2>
 constexpr auto _linear_interpolate(T1 &&p1, T2 &&p2, double c) {
@@ -97,10 +96,10 @@ _element_at_ceil_or_floor_helper(T &t, E &&otherwise, SubsInputT &subs,
 }
 
 // _element_at_remap_result_seq using linear_interpolate
-template <class ShapeT, class ET, class T, class MapFunT, size_t... Is,
+template <class ET, class ShapeT, class T, class MapFunT, size_t... Is,
           class... SubTs>
 ET _element_at_remap_result_seq(
-    const remap_result<ShapeT, ET, T, MapFunT, linear_interpolate> &r,
+    const remap_result<ET, ShapeT, T, MapFunT, linear_interpolate> &r,
     const_ints<size_t, Is...>, const SubTs &... subs) {
   static_assert(sizeof...(SubTs) == ShapeT::rank,
                 "invalid number of subscripts");
@@ -123,37 +122,37 @@ ET _element_at_remap_result_seq(
 }
 
 // element_at
-template <class ShapeT, class ET, class T, class MapFunT,
+template <class ET, class ShapeT, class T, class MapFunT,
           interpolate_method_enum IPMethod, class... SubTs>
-constexpr ET element_at(const remap_result<ShapeT, ET, T, MapFunT, IPMethod> &r,
+constexpr ET element_at(const remap_result<ET, ShapeT, T, MapFunT, IPMethod> &r,
                         const SubTs &... subs) {
   return details::_element_at_remap_result_seq(
       r, make_const_sequence_for<SubTs...>(), subs...);
 }
 
 // remap
-template <class ToST, class... ToSizeTs, class ShapeT, class ET, class T,
+template <class ToST, class... ToSizeTs, class ET, class ShapeT, class T,
           class MapFunT, class ET2 = ET,
           interpolate_method_enum IPMethod = linear_interpolate>
 constexpr auto
-remap(const tensor_base<ShapeT, ET, T> &t,
+remap(const tensor_base<ET, ShapeT, T> &t,
       const tensor_shape<ToST, ToSizeTs...> &toshape, MapFunT mapfun,
       ET2 &&outlier = types<ET2>::zero(),
       interpolate_method<IPMethod> = interpolate_method<IPMethod>()) {
-  return remap_result<tensor_shape<ToST, ToSizeTs...>, ET, const T &, MapFunT,
+  return remap_result<ET, tensor_shape<ToST, ToSizeTs...>, const T &, MapFunT,
                       IPMethod>(t.derived(), toshape, mapfun,
                                 forward<ET2>(outlier));
 }
 
-template <class ToST, class... ToSizeTs, class ShapeT, class ET, class T,
+template <class ToST, class... ToSizeTs, class ET, class ShapeT, class T,
           class MapFunT, class ET2 = ET,
           interpolate_method_enum IPMethod = linear_interpolate>
 constexpr auto
-remap(tensor_base<ShapeT, ET, T> &&t,
+remap(tensor_base<ET, ShapeT, T> &&t,
       const tensor_shape<ToST, ToSizeTs...> &toshape, MapFunT mapfun,
       ET2 &&outlier = types<ET2>::zero(),
       interpolate_method<IPMethod> = interpolate_method<IPMethod>()) {
-  return remap_result<tensor_shape<ToST, ToSizeTs...>, ET, T, MapFunT,
+  return remap_result<ET, tensor_shape<ToST, ToSizeTs...>, T, MapFunT,
                       IPMethod>(move(t.derived()), toshape, mapfun,
                                 forward<ET2>(outlier));
 }

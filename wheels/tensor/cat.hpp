@@ -22,10 +22,10 @@ constexpr auto _make_cat_shape_seq(const ShapeT1 &s1, const ShapeT2 &s2,
 }
 
 // cat_result
-template <class ShapeT, class ET, size_t Axis, class T1, class T2>
+template <class ET, class ShapeT, size_t Axis, class T1, class T2>
 class cat_result
-    : public tensor_op_result_base<ShapeT, ET, void,
-                                   cat_result<ShapeT, ET, Axis, T1, T2>> {
+    : public tensor_op_result_base<ET, ShapeT, void,
+                                   cat_result<ET, ShapeT, Axis, T1, T2>> {
 public:
   using value_type = ET;
   using shape_type = ShapeT;
@@ -36,8 +36,8 @@ public:
             _input1.shape(), _input2.shape(), const_index<Axis>(),
             make_rank_sequence(_input1.shape()))) {}
 
-  constexpr const T1 & input1() const { return _input1; }
-  constexpr const T2 & input2() const { return _input2; }
+  constexpr const T1 &input1() const { return _input1; }
+  constexpr const T2 &input2() const { return _input2; }
   constexpr const ShapeT &shape() const { return _shape; }
 
 private:
@@ -51,14 +51,14 @@ namespace details {
 template <size_t Axis, class ShapeT1, class ET1, class T1, class ShapeT2,
           class ET2, class T2, class TT1, class TT2>
 constexpr auto _cat_tensor_at(const const_index<Axis> &axis,
-                              const tensor_base<ShapeT1, ET1, T1> &,
-                              const tensor_base<ShapeT2, ET2, T2> &, TT1 &&in1,
+                              const tensor_base<ET1, ShapeT1, T1> &,
+                              const tensor_base<ET2, ShapeT2, T2> &, TT1 &&in1,
                               TT2 &&in2) {
   using shape_t = decltype(details::_make_cat_shape_seq(
       in1.shape(), in2.shape(), const_index<Axis>(),
       make_rank_sequence(in1.shape())));
   using ele_t = std::common_type_t<ET1, ET2>;
-  return cat_result<shape_t, ele_t, Axis, TT1, TT2>(forward<TT1>(in1),
+  return cat_result<ele_t, shape_t, Axis, TT1, TT2>(forward<TT1>(in1),
                                                     forward<TT2>(in2));
 }
 }
@@ -78,18 +78,18 @@ constexpr auto cat2(T1 &&in1, T2 &&in2)
 }
 
 // shape_of
-template <class ShapeT, class ET, size_t Axis, class T1, class T2>
+template <class ET, class ShapeT, size_t Axis, class T1, class T2>
 constexpr decltype(auto)
-shape_of(const cat_result<ShapeT, ET, Axis, T1, T2> &m) {
+shape_of(const cat_result<ET, ShapeT, Axis, T1, T2> &m) {
   return m.shape();
 }
 
 // element_at
 namespace details {
-template <class ShapeT, class ET, size_t Axis, class T1, class T2,
+template <class ET, class ShapeT, size_t Axis, class T1, class T2,
           class SubsTupleT, size_t... Is>
 constexpr ET
-_element_at_cat_result_seq(const cat_result<ShapeT, ET, Axis, T1, T2> &m,
+_element_at_cat_result_seq(const cat_result<ET, ShapeT, Axis, T1, T2> &m,
                            SubsTupleT &subs,
                            const const_ints<size_t, Is...> &) {
   return (ET)conditional(
@@ -102,9 +102,9 @@ _element_at_cat_result_seq(const cat_result<ShapeT, ET, Axis, T1, T2> &m,
                              std::get<Is>(subs))...));
 }
 }
-template <class ShapeT, class ET, size_t Axis, class T1, class T2,
+template <class ET, class ShapeT, size_t Axis, class T1, class T2,
           class... SubTs>
-constexpr ET element_at(const cat_result<ShapeT, ET, Axis, T1, T2> &m,
+constexpr ET element_at(const cat_result<ET, ShapeT, Axis, T1, T2> &m,
                         const SubTs &... subs) {
   return details::_element_at_cat_result_seq(
       m, std::forward_as_tuple(subs...),
@@ -112,26 +112,26 @@ constexpr ET element_at(const cat_result<ShapeT, ET, Axis, T1, T2> &m,
 }
 
 // unordered
-template <class FunT, class ShapeT, class ET, size_t Axis, class T1, class T2>
+template <class FunT, class ET, class ShapeT, size_t Axis, class T1, class T2>
 bool for_each_element(behavior_flag<unordered> o, FunT &fun,
-                      const cat_result<ShapeT, ET, Axis, T1, T2> &t) {
+                      const cat_result<ET, ShapeT, Axis, T1, T2> &t) {
   for_each_element(o, fun, t.input1());
   for_each_element(o, fun, t.input2());
   return true;
 }
 
 // break_on_false
-template <class FunT, class ShapeT, class ET, size_t Axis, class T1, class T2>
+template <class FunT, class ET, class ShapeT, size_t Axis, class T1, class T2>
 bool for_each_element(behavior_flag<break_on_false> o, FunT &fun,
-                      const cat_result<ShapeT, ET, Axis, T1, T2> &t) {
+                      const cat_result<ET, ShapeT, Axis, T1, T2> &t) {
   return for_each_element(o, fun, t.input1()) &&
          for_each_element(o, fun, t.input2());
 }
 
 // nonzero_only
-template <class FunT, class ShapeT, class ET, size_t Axis, class T1, class T2>
+template <class FunT, class ET, class ShapeT, size_t Axis, class T1, class T2>
 bool for_each_element(behavior_flag<nonzero_only> o, FunT &fun,
-                      const cat_result<ShapeT, ET, Axis, T1, T2> &t) {
+                      const cat_result<ET, ShapeT, Axis, T1, T2> &t) {
   bool r1 = for_each_element(o, fun, t.input1());
   bool r2 = for_each_element(o, fun, t.input2());
   return r1 && r2;

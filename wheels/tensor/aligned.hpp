@@ -6,8 +6,8 @@ namespace wheels {
 
 // tensor_aligned_data_base
 // - requires: ::wheels::ptr_of, ::wheels::sub_scale_of, ::wheels::sub_offset_of
-template <class ShapeT, class ET, class T>
-class tensor_aligned_data_base : public tensor_base<ShapeT, ET, T> {
+template <class ET, class ShapeT, class T>
+class tensor_aligned_data_base : public tensor_base<ET, ShapeT, T> {
 public:
   constexpr auto ptr() const { return ::wheels::ptr_of(derived()); }
   auto ptr() { return ::wheels::ptr_of(derived()); }
@@ -22,9 +22,9 @@ public:
 };
 
 namespace details {
-template <class ShapeT, class ET, class T, size_t... Is, class... SubTs>
+template <class ET, class ShapeT, class T, size_t... Is, class... SubTs>
 constexpr auto
-_mem_offset_at_seq(const tensor_aligned_data_base<ShapeT, ET, T> &t,
+_mem_offset_at_seq(const tensor_aligned_data_base<ET, ShapeT, T> &t,
                    const const_ints<size_t, Is...> &, const SubTs &... subs) {
   return sub2ind(t.shape(), subs * t.sub_scale(const_index<Is>()) +
                                 t.sub_offset(const_index<Is>())...);
@@ -32,62 +32,62 @@ _mem_offset_at_seq(const tensor_aligned_data_base<ShapeT, ET, T> &t,
 }
 
 // element_at
-template <class ShapeT, class ET, class T, class... SubTs>
+template <class ET, class ShapeT, class T, class... SubTs>
 constexpr decltype(auto)
-element_at(const tensor_aligned_data_base<ShapeT, ET, T> &t,
+element_at(const tensor_aligned_data_base<ET, ShapeT, T> &t,
            const SubTs &... subs) {
   return t.ptr()[details::_mem_offset_at_seq(
       t, make_const_sequence_for<SubTs...>(), subs...)];
 }
-template <class ShapeT, class ET, class T, class... SubTs>
-inline decltype(auto) element_at(tensor_aligned_data_base<ShapeT, ET, T> &t,
+template <class ET, class ShapeT, class T, class... SubTs>
+inline decltype(auto) element_at(tensor_aligned_data_base<ET, ShapeT, T> &t,
                                  const SubTs &... subs) {
   return t.ptr()[details::_mem_offset_at_seq(
       t, make_const_sequence_for<SubTs...>(), subs...)];
 }
 
 // tensor_continuous_data_base
-template <class ShapeT, class ET, class T>
+template <class ET, class ShapeT, class T>
 class tensor_continuous_data_base
-    : public tensor_aligned_data_base<ShapeT, ET, T> {};
+    : public tensor_aligned_data_base<ET, ShapeT, T> {};
 
 // sub_scale_of
-template <class ShapeT, class ET, class T>
+template <class ET, class ShapeT, class T>
 constexpr auto
-sub_scale_of(const tensor_continuous_data_base<ShapeT, ET, T> &) {
+sub_scale_of(const tensor_continuous_data_base<ET, ShapeT, T> &) {
   return const_size<1>();
 }
 
 // sub_offset_of
-template <class ShapeT, class ET, class T>
+template <class ET, class ShapeT, class T>
 constexpr auto
-sub_offset_of(const tensor_continuous_data_base<ShapeT, ET, T> &) {
+sub_offset_of(const tensor_continuous_data_base<ET, ShapeT, T> &) {
   return const_size<0>();
 }
 
 // element_at
-template <class ShapeT, class ET, class T, class... SubTs>
+template <class ET, class ShapeT, class T, class... SubTs>
 constexpr decltype(auto)
-element_at(const tensor_continuous_data_base<ShapeT, ET, T> &t,
+element_at(const tensor_continuous_data_base<ET, ShapeT, T> &t,
            const SubTs &... subs) {
   return t.ptr()[sub2ind(t.shape(), subs...)];
 }
-template <class ShapeT, class ET, class T, class... SubTs>
-inline decltype(auto) element_at(tensor_continuous_data_base<ShapeT, ET, T> &t,
+template <class ET, class ShapeT, class T, class... SubTs>
+inline decltype(auto) element_at(tensor_continuous_data_base<ET, ShapeT, T> &t,
                                  const SubTs &... subs) {
   return t.ptr()[sub2ind(t.shape(), subs...)];
 }
 
 // element_at_index
-template <class ShapeT, class ET, class T, class IndexT>
+template <class ET, class ShapeT, class T, class IndexT>
 constexpr decltype(auto)
-element_at_index(const tensor_continuous_data_base<ShapeT, ET, T> &t,
+element_at_index(const tensor_continuous_data_base<ET, ShapeT, T> &t,
                  const IndexT &index) {
   return t.ptr()[index];
 }
-template <class ShapeT, class ET, class T, class IndexT>
+template <class ET, class ShapeT, class T, class IndexT>
 inline decltype(auto)
-element_at_index(tensor_continuous_data_base<ShapeT, ET, T> &t,
+element_at_index(tensor_continuous_data_base<ET, ShapeT, T> &t,
                  const IndexT &index) {
   return t.ptr()[index];
 }
@@ -95,7 +95,7 @@ element_at_index(tensor_continuous_data_base<ShapeT, ET, T> &t,
 // for_each_element
 template <class FunT, class ET, class ShapeT, class T, class... Ts>
 bool for_each_element(behavior_flag<index_ascending>, FunT &fun,
-                      const tensor_continuous_data_base<ShapeT, ET, T> &t,
+                      const tensor_continuous_data_base<ET, ShapeT, T> &t,
                       Ts &... ts) {
   assert(all_same(t.shape(), ts.shape()...));
   for (size_t i = 0; i < t.numel(); i++) {
@@ -105,7 +105,7 @@ bool for_each_element(behavior_flag<index_ascending>, FunT &fun,
 }
 template <class FunT, class ET, class ShapeT, class T, class... Ts>
 bool for_each_element(behavior_flag<index_ascending>, FunT &fun,
-                      tensor_continuous_data_base<ShapeT, ET, T> &t,
+                      tensor_continuous_data_base<ET, ShapeT, T> &t,
                       Ts &... ts) {
   assert(all_same(t.shape(), ts.shape()...));
   for (size_t i = 0; i < t.numel(); i++) {
@@ -117,7 +117,7 @@ bool for_each_element(behavior_flag<index_ascending>, FunT &fun,
 // for_each_element_with_short_circuit
 template <class FunT, class ET, class ShapeT, class T, class... Ts>
 bool for_each_element(behavior_flag<break_on_false>, FunT &fun,
-                      const tensor_continuous_data_base<ShapeT, ET, T> &t,
+                      const tensor_continuous_data_base<ET, ShapeT, T> &t,
                       Ts &... ts) {
   assert(all_same(t.shape(), ts.shape()...));
   for (size_t i = 0; i < t.numel(); i++) {
@@ -132,7 +132,7 @@ bool for_each_element(behavior_flag<break_on_false>, FunT &fun,
 
 template <class FunT, class ET, class ShapeT, class T, class... Ts>
 bool for_each_element(behavior_flag<break_on_false>, FunT &fun,
-                      tensor_continuous_data_base<ShapeT, ET, T> &t,
+                      tensor_continuous_data_base<ET, ShapeT, T> &t,
                       Ts &... ts) {
   assert(all_same(t.shape(), ts.shape()...));
   for (size_t i = 0; i < t.numel(); i++) {
@@ -148,7 +148,7 @@ bool for_each_element(behavior_flag<break_on_false>, FunT &fun,
 // nonzero_only
 template <class FunT, class ET, class ShapeT, class T, class... Ts>
 bool for_each_element(behavior_flag<nonzero_only>, FunT &fun,
-                      const tensor_continuous_data_base<ShapeT, ET, T> &t,
+                      const tensor_continuous_data_base<ET, ShapeT, T> &t,
                       Ts &... ts) {
   assert(all_same(t.shape(), ts.shape()...));
   bool visited_all = true;
@@ -165,7 +165,7 @@ bool for_each_element(behavior_flag<nonzero_only>, FunT &fun,
 
 template <class FunT, class ET, class ShapeT, class T, class... Ts>
 bool for_each_element(behavior_flag<nonzero_only>, FunT &fun,
-                      tensor_continuous_data_base<ShapeT, ET, T> &t,
+                      tensor_continuous_data_base<ET, ShapeT, T> &t,
                       Ts &... ts) {
   assert(all_same(t.shape(), ts.shape()...));
   bool visited_all = true;

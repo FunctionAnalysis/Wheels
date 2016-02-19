@@ -14,7 +14,7 @@
 
 namespace wheels {
 
-template <class ShapeT, class EleT, class T> struct category_tensor {};
+template <class EleT, class ShapeT, class T> struct category_tensor {};
 
 // index_tags
 namespace index_tags {
@@ -34,10 +34,6 @@ constexpr auto _eval_index_expr(const T &t, const SizeT &) {
   return t;
 }
 }
-
-// inheritance of tensor class T:
-// tensor_core<T> -> tensor_base<ShapeT, ET, T> [->
-// tensor_op_result_base<ShapeT, ET, OpT, T>] -> T
 
 // tensor_core
 template <class T> struct tensor_core {
@@ -158,36 +154,39 @@ private:
   }
 };
 
-template <class ShapeT, class ET> class tensor;
+template <class ET, class ShapeT> class tensor;
 
-// tensor_base<ShapeT, ET, T>
-template <class ShapeT, class ET, class T> struct tensor_base : tensor_core<T> {
+// tensor_base<ET, ShapeT, T>
+template <class ET, class ShapeT, class T> struct tensor_base : tensor_core<T> {
+  using value_type = ET;
   using shape_type = ShapeT;
   static constexpr size_t rank = ShapeT::rank;
-  using value_type = ET;
+  using tensor_type = tensor<value_type, shape_type>;
+  static_assert(!is_tensor_shape<ET>::value,
+                "value_type should not be a tensor_shape");
 
   const tensor_base &base() const { return *this; }
 
-  constexpr tensor<ShapeT, ET> eval() const & {
-    return tensor<ShapeT, ET>(derived());
-  }
-  tensor<ShapeT, ET> eval() && { return tensor<ShapeT, ET>(move(derived())); }
-  constexpr operator tensor<ShapeT, ET>() const { return eval(); }
+  constexpr tensor_type eval() const & { return tensor_type(derived()); }
+  tensor_type eval() && { return tensor_type(move(derived())); }
+  constexpr operator tensor_type() const { return eval(); }
 };
 
 // 1 dimensional tensor (vector)
 template <class ST, class NT, class ET, class T>
-struct tensor_base<tensor_shape<ST, NT>, ET, T> : tensor_core<T> {
+struct tensor_base<ET, tensor_shape<ST, NT>, T> : tensor_core<T> {
+  using value_type = ET;
   using shape_type = tensor_shape<ST, NT>;
   static constexpr size_t rank = 1;
-  using value_type = ET;
+  using tensor_type = tensor<value_type, shape_type>;
+  static_assert(!is_tensor_shape<ET>::value,
+                "value_type should not be a tensor_shape");
 
   const tensor_base &base() const { return *this; }
 
-  constexpr tensor<shape_type, value_type> eval() const {
-    return tensor<shape_type, value_type>(derived());
-  }
-  constexpr operator tensor<shape_type, value_type>() const { return eval(); }
+  constexpr tensor_type eval() const & { return tensor_type(derived()); }
+  tensor_type eval() && { return tensor_type(move(derived())); }
+  constexpr operator tensor_type() const { return eval(); }
 
   // xyzw
   constexpr decltype(auto) x() const {
@@ -229,29 +228,31 @@ struct tensor_base<tensor_shape<ST, NT>, ET, T> : tensor_core<T> {
 
   template <class ST2, class NT2, class ET2, class T2>
   constexpr decltype(auto)
-  dot(const tensor_base<tensor_shape<ST2, NT2>, ET2, T2> &t) const {
+  dot(const tensor_base<ET2, tensor_shape<ST2, NT2>, T2> &t) const {
     return ::wheels::dot(*this, t);
   }
   template <class ST2, class NT2, class ET2, class T2>
   constexpr decltype(auto)
-  cross(const tensor_base<tensor_shape<ST2, NT2>, ET2, T2> &t) const {
+  cross(const tensor_base<ET2, tensor_shape<ST2, NT2>, T2> &t) const {
     return ::wheels::cross(*this, t);
   }
 };
 
 // 2 dimensional tensor (matrix)
 template <class ST, class MT, class NT, class ET, class T>
-struct tensor_base<tensor_shape<ST, MT, NT>, ET, T> : tensor_core<T> {
+struct tensor_base<ET, tensor_shape<ST, MT, NT>, T> : tensor_core<T> {
+  using value_type = ET;
   using shape_type = tensor_shape<ST, MT, NT>;
   static constexpr size_t rank = 2;
-  using value_type = ET;
+  using tensor_type = tensor<value_type, shape_type>;
+  static_assert(!is_tensor_shape<ET>::value,
+                "value_type should not be a tensor_shape");
 
   const tensor_base &base() const { return *this; }
 
-  constexpr tensor<shape_type, value_type> eval() const {
-    return tensor<shape_type, value_type>(derived());
-  }
-  constexpr operator tensor<shape_type, value_type>() const { return eval(); }
+  constexpr tensor_type eval() const & { return tensor_type(derived()); }
+  tensor_type eval() && { return tensor_type(move(derived())); }
+  constexpr operator tensor_type() const { return eval(); }
 
   constexpr auto rows() const { return size(const_index<0>()); }
   constexpr auto cols() const { return size(const_index<1>()); }
@@ -263,43 +264,22 @@ struct tensor_base<tensor_shape<ST, MT, NT>, ET, T> : tensor_core<T> {
   auto t() && { return ::wheels::transpose(std::move(derived())); }
 };
 
-// 3 dimensional (only third dimension is static) tensor (image)
-template <class ST, ST D, class ET, class T>
-struct tensor_base<tensor_shape<ST, ST, ST, const_ints<ST, D>>, ET, T>
-    : tensor_core<T> {
-  using shape_type = tensor_shape<ST, ST, ST, const_ints<ST, D>>;
-  static constexpr size_t rank = 3;
-  using value_type = ET;
-
-  const tensor_base &base() const { return *this; }
-
-  constexpr tensor<shape_type, value_type> eval() const {
-    return tensor<shape_type, value_type>(derived());
-  }
-  constexpr operator tensor<shape_type, value_type>() const { return eval(); }
-
-  constexpr auto rows() const { return size(const_index<0>()); }
-  constexpr auto cols() const { return size(const_index<1>()); }
-  constexpr auto pixels() const { return rows() * cols(); }
-  static constexpr auto channels() { return const_ints<ST, D>(); }
-};
-
 // category_for_overloading
 // common_func
-template <class ShapeT, class ET, class T, class OpT>
-constexpr auto category_for_overloading(const tensor_base<ShapeT, ET, T> &,
+template <class ET, class ShapeT, class T, class OpT>
+constexpr auto category_for_overloading(const tensor_base<ET, ShapeT, T> &,
                                         const common_func<OpT> &) {
-  return category_tensor<ShapeT, ET, T>();
+  return category_tensor<ET, ShapeT, T>();
 }
 
 // tensor_op_result_base
-template <class ShapeT, class EleT, class OpT, class T>
-struct tensor_op_result_base : tensor_base<ShapeT, EleT, T> {};
+template <class EleT, class ShapeT, class OpT, class T>
+struct tensor_op_result_base : tensor_base<EleT, ShapeT, T> {};
 
 // t1 == t2
 template <class ShapeT, class T>
-struct tensor_op_result_base<ShapeT, bool, binary_op_eq, T>
-    : tensor_base<ShapeT, bool, T> {
+struct tensor_op_result_base<bool, ShapeT, binary_op_eq, T>
+    : tensor_base<bool, ShapeT, T> {
   constexpr operator bool() const {
     return ::wheels::equals_result_of(derived());
   }
@@ -307,8 +287,8 @@ struct tensor_op_result_base<ShapeT, bool, binary_op_eq, T>
 
 // t1 != t2
 template <class ShapeT, class T>
-struct tensor_op_result_base<ShapeT, bool, binary_op_neq, T>
-    : tensor_base<ShapeT, bool, T> {
+struct tensor_op_result_base<bool, ShapeT, binary_op_neq, T>
+    : tensor_base<bool, ShapeT, T> {
   constexpr operator bool() const {
     return ::wheels::not_equals_result_of(derived());
   }
@@ -533,9 +513,9 @@ E reduce_elements(const tensor_core<T> &t, E initial, ReduceT &red) {
 }
 
 // Scalar norm_squared(ts)
-template <class ShapeT, class ET, class T>
+template <class ET, class ShapeT, class T>
 typename tensor_element_types<ET>::storable
-norm_squared(const tensor_base<ShapeT, ET, T> &t) {
+norm_squared(const tensor_base<ET, ShapeT, T> &t) {
   auto result = types<typename tensor_element_types<ET>::storable>::zero();
   for_each_element(behavior_flag<nonzero_only>(),
                    [&result](auto &&e) { result += e * e; }, t.derived());
@@ -543,42 +523,42 @@ norm_squared(const tensor_base<ShapeT, ET, T> &t) {
 }
 
 // Scalar norm(ts)
-template <class ShapeT, class ET, class T>
+template <class ET, class ShapeT, class T>
 constexpr typename tensor_element_types<ET>::storable
-norm(const tensor_base<ShapeT, ET, T> &t) {
+norm(const tensor_base<ET, ShapeT, T> &t) {
   return sqrt(norm_squared(t.derived()));
 }
 
 // bool all(s)
-template <class ShapeT, class ET, class T>
-constexpr bool all_of(const tensor_base<ShapeT, ET, T> &t) {
+template <class ET, class ShapeT, class T>
+constexpr bool all_of(const tensor_base<ET, ShapeT, T> &t) {
   return for_each_element(behavior_flag<break_on_false>(),
                           [](auto &&e) { return !!e; }, t.derived());
 }
 
 // bool any(s)
-template <class ShapeT, class ET, class T>
-constexpr bool any_of(const tensor_base<ShapeT, ET, T> &t) {
+template <class ET, class ShapeT, class T>
+constexpr bool any_of(const tensor_base<ET, ShapeT, T> &t) {
   return !for_each_element(behavior_flag<break_on_false>(),
                            [](auto &&e) { return !e; }, t.derived());
 }
 
 // equals_result_of
-template <class ShapeT, class ET, class T>
-constexpr bool equals_result_of(const tensor_base<ShapeT, ET, T> &t) {
+template <class ET, class ShapeT, class T>
+constexpr bool equals_result_of(const tensor_base<ET, ShapeT, T> &t) {
   return all_of(t);
 }
 
 // not_equals_result_of
-template <class ShapeT, class ET, class T>
-constexpr bool not_equals_result_of(const tensor_base<ShapeT, ET, T> &t) {
+template <class ET, class ShapeT, class T>
+constexpr bool not_equals_result_of(const tensor_base<ET, ShapeT, T> &t) {
   return any_of(t);
 }
 
 // Scalar sum(s)
-template <class ShapeT, class ET, class T>
+template <class ET, class ShapeT, class T>
 typename tensor_element_types<ET>::storable
-sum_of(const tensor_base<ShapeT, ET, T> &t) {
+sum_of(const tensor_base<ET, ShapeT, T> &t) {
   auto s = types<typename tensor_element_types<ET>::storable>::zero();
   for_each_element(behavior_flag<nonzero_only>(), [&s](auto &&e) { s += e; },
                    t.derived());
@@ -587,15 +567,15 @@ sum_of(const tensor_base<ShapeT, ET, T> &t) {
 
 // ostream
 namespace details {
-template <class ShapeT, class ET, class T>
+template <class ET, class ShapeT, class T>
 inline std::ostream &_stream_impl(std::ostream &os,
-                                  const tensor_base<ShapeT, ET, T> &t,
+                                  const tensor_base<ET, ShapeT, T> &t,
                                   const_size<0>) {
   return os << t();
 }
-template <class ShapeT, class ET, class T>
+template <class ET, class ShapeT, class T>
 inline std::ostream &_stream_impl(std::ostream &os,
-                                  const tensor_base<ShapeT, ET, T> &t,
+                                  const tensor_base<ET, ShapeT, T> &t,
                                   const_size<1>) {
   if (t.numel() == 0) {
     return os << "[]";
@@ -607,9 +587,9 @@ inline std::ostream &_stream_impl(std::ostream &os,
   }
   return os << ']';
 }
-template <class ShapeT, class ET, class T>
+template <class ET, class ShapeT, class T>
 inline std::ostream &_stream_impl(std::ostream &os,
-                                  const tensor_base<ShapeT, ET, T> &t,
+                                  const tensor_base<ET, ShapeT, T> &t,
                                   const_size<2>) {
   for (size_t j = 0; j < t.size(const_index<0>()); j++) {
     if (t.size(const_index<1>()) == 0) {
@@ -624,23 +604,23 @@ inline std::ostream &_stream_impl(std::ostream &os,
   }
   return os;
 }
-template <class ShapeT, class ET, class T, size_t I>
+template <class ET, class ShapeT, class T, size_t I>
 inline std::ostream &_stream_impl(std::ostream &os,
-                                  const tensor_base<ShapeT, ET, T> &t,
+                                  const tensor_base<ET, ShapeT, T> &t,
                                   const_size<I>) {
   static_assert(always<bool, false, ShapeT>::value, "not implemented yet");
   return os;
 }
 }
-template <class ShapeT, class ET, class T>
+template <class ET, class ShapeT, class T>
 inline std::ostream &operator<<(std::ostream &os,
-                                const tensor_base<ShapeT, ET, T> &t) {
+                                const tensor_base<ET, ShapeT, T> &t) {
   return details::_stream_impl(os, t.derived(), const_size<ShapeT::rank>());
 }
 
 // is_zero
-template <class ShapeT, class ET, class T>
-bool is_zero(const tensor_base<ShapeT, ET, T> &t) {
+template <class ET, class ShapeT, class T>
+bool is_zero(const tensor_base<ET, ShapeT, T> &t) {
   return for_each_element(behavior_flag<break_on_false>(),
                           [](auto &&e) { return is_zero(e); }, t.derived());
 }

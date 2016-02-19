@@ -40,8 +40,8 @@ WHEELS_BIND_TYPE_WITH_MX_CLASSID(uint32_t, mxUINT32_CLASS)
 WHEELS_BIND_TYPE_WITH_MX_CLASSID(uint64_t, mxUINT64_CLASS)
 #undef WHEELS_BIND_TYPE_WITH_MX_CLASSID
 
-template <class ShapeT, class ET, class T, size_t... Is>
-mxArray *_make_mx_array_seq(const tensor_base<ShapeT, ET, T> &ts,
+template <class ET, class ShapeT, class T, size_t... Is>
+mxArray *_make_mx_array_seq(const tensor_base<ET, ShapeT, T> &ts,
                             const no &cplx, const const_ints<size_t, Is...> &) {
   static_assert(!is_complex<ET>::value, "invalid type");
   static const mxClassId classID = mx_type_to_class_id<ET>::value;
@@ -59,8 +59,8 @@ mxArray *_make_mx_array_seq(const tensor_base<ShapeT, ET, T> &ts,
   return mx;
 }
 
-template <class ShapeT, class ET, class T, size_t... Is>
-mxArray *_make_mx_array_seq(const tensor_base<ShapeT, ET, T> &ts,
+template <class ET, class ShapeT, class T, size_t... Is>
+mxArray *_make_mx_array_seq(const tensor_base<ET, ShapeT, T> &ts,
                             const yes &cplx,
                             const const_ints<size_t, Is...> &) {
   static_assert(is_complex<ET>::value, "invalid type");
@@ -87,8 +87,8 @@ mxArray *_make_mx_array_seq(const tensor_base<ShapeT, ET, T> &ts,
 }
 
 // make_mx_array
-template <class ShapeT, class ET, class T>
-inline mxArray *make_mx_array(const tensor_base<ShapeT, ET, T> &ts) {
+template <class ET, class ShapeT, class T>
+inline mxArray *make_mx_array(const tensor_base<ET, ShapeT, T> &ts) {
   return details::_make_mx_array_seq(
       ts, details::is_complex<ET>(),
       make_rank_sequence(ts.shape()));
@@ -105,8 +105,8 @@ public:
   matlab_mxarray &operator=(const matlab_mxarray &mx);
   matlab_mxarray &operator=(matlab_mxarray &&mx);
 
-  template <class ShapeT, class ET, class T>
-  matlab_mxarray(const tensor_base<ShapeT, ET, T> &ts, bool dos = false)
+  template <class ET, class ShapeT, class T>
+  matlab_mxarray(const tensor_base<ET, ShapeT, T> &ts, bool dos = false)
       : _m(make_mx_array(ts)), _destroy_when_out_of_scope(dos) {}
 
 public:

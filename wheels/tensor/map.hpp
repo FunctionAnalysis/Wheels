@@ -5,12 +5,12 @@
 namespace wheels {
 
 // tensor_map_storage
-template <class ShapeT, class ET, class PtrT, class T, bool StaticShape>
+template <class ET, class ShapeT, class PtrT, class T, bool StaticShape>
 class tensor_map_storage;
 
-template <class ShapeT, class ET, class PtrT, class T>
-class tensor_map_storage<ShapeT, ET, PtrT, T, true>
-    : public tensor_continuous_data_base<ShapeT, std::decay_t<ET>, T> {
+template <class ET, class ShapeT, class PtrT, class T>
+class tensor_map_storage<ET, ShapeT, PtrT, T, true>
+    : public tensor_continuous_data_base<std::decay_t<ET>, ShapeT, T> {
 public:
   using shape_type = ShapeT;
   using value_type = std::decay_t<ET>;
@@ -31,9 +31,9 @@ private:
   PtrT _ptr;
 };
 
-template <class ShapeT, class ET, class PtrT, class T>
-class tensor_map_storage<ShapeT, ET, PtrT, T, false>
-    : public tensor_continuous_data_base<ShapeT, std::decay_t<ET>, T> {
+template <class ET, class ShapeT, class PtrT, class T>
+class tensor_map_storage<ET, ShapeT, PtrT, T, false>
+    : public tensor_continuous_data_base<std::decay_t<ET>, ShapeT, T> {
 public:
   using shape_type = ShapeT;
   using value_type = std::decay_t<ET>;
@@ -57,12 +57,12 @@ private:
 };
 
 // tensor_map
-template <class ShapeT, class ET, class PtrT = ET *>
+template <class ET, class ShapeT, class PtrT = ET *>
 class tensor_map
-    : public tensor_map_storage<ShapeT, ET, PtrT, tensor_map<ShapeT, ET, PtrT>,
+    : public tensor_map_storage<ET, ShapeT, PtrT, tensor_map<ET, ShapeT, PtrT>,
                                 ShapeT::is_static> {
   using storage_t =
-      tensor_map_storage<ShapeT, ET, PtrT, tensor_map<ShapeT, ET, PtrT>,
+      tensor_map_storage<ET, ShapeT, PtrT, tensor_map<ET, ShapeT, PtrT>,
                          ShapeT::is_static>;
 
 public:
@@ -93,24 +93,24 @@ public:
 
 // ptr_of
 template <class ET, class ShapeT, class PtrT>
-constexpr auto ptr_of(const tensor_map<ShapeT, ET, PtrT> &t) {
+constexpr auto ptr_of(const tensor_map<ET, ShapeT, PtrT> &t) {
   return t.ptr();
 }
 template <class ET, class ShapeT, class PtrT>
-constexpr auto ptr_of(tensor_map<ShapeT, ET, PtrT> &t) {
+constexpr auto ptr_of(tensor_map<ET, ShapeT, PtrT> &t) {
   return t.ptr();
 }
 
 // shape_of
 template <class ET, class ShapeT, class PtrT>
-constexpr decltype(auto) shape_of(const tensor_map<ShapeT, ET, PtrT> &t) {
+constexpr decltype(auto) shape_of(const tensor_map<ET, ShapeT, PtrT> &t) {
   return t.shape();
 }
 
 // map
 template <class E, class ST, class... SizeTs>
 constexpr auto map(const tensor_shape<ST, SizeTs...> &shape, E *mem) {
-  return tensor_map<tensor_shape<ST, SizeTs...>, E, E *>(shape, mem);
+  return tensor_map<E, tensor_shape<ST, SizeTs...>, E *>(shape, mem);
 }
 
 // from raw array

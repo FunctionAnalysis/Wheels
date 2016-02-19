@@ -39,8 +39,9 @@ TEST(tensor, tensor) {
   ASSERT_TRUE(vecx(1, 2, 3, 4).numel() == 4);
   ASSERT_TRUE(vecx(1, 2, 3, 4, 5).numel() == 5);
   ASSERT_TRUE(
-      (tensor<tensor_shape<size_t, const_size<2>, size_t, const_size<2>>,
-              double>(1, 2, 3, 4, 5, 6, 7, 8))
+      (tensor<double,
+              tensor_shape<size_t, const_size<2>, size_t, const_size<2>>>(
+           1, 2, 3, 4, 5, 6, 7, 8))
           .numel() == 8);
 
   static_assert(tensor_of_rank<double, 5>::rank == 5, "");

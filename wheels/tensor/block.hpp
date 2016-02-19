@@ -11,10 +11,10 @@ struct _is_same_intrinsic : std::is_same<std::decay_t<T1>, std::decay_t<T2>> {};
 }
 
 // block_view
-template <class BlockShapeT, class ET, class InputT, size_t FixedRank>
-class block_view : public tensor_op_result_base<
-                       BlockShapeT, ET, void,
-                       block_view<BlockShapeT, ET, InputT, FixedRank>> {
+template <class ET, class BlockShapeT, class InputT, size_t FixedRank>
+class block_view
+    : public tensor_base<ET, BlockShapeT,
+                         block_view<ET, BlockShapeT, InputT, FixedRank>> {
 public:
   template <class... SubTs>
   constexpr block_view(InputT &&in, const SubTs &... subs)
@@ -29,7 +29,7 @@ public:
   template <class InputT2, class = std::enable_if_t<details::_is_same_intrinsic<
                                InputT, InputT2>::value>>
   block_view &
-  operator=(const block_view<BlockShapeT, ET, InputT2, FixedRank> &t) {
+  operator=(const block_view<ET, BlockShapeT, InputT2, FixedRank> &t) {
     input = t.input;
     fixed_subs = t.fixed_subs;
     return *this;
@@ -41,8 +41,8 @@ public:
 };
 
 // shape_of
-template <class ShapeT, class ET, class InputT, size_t FixedRank>
-constexpr auto shape_of(const block_view<ShapeT, ET, InputT, FixedRank> &b) {
+template <class ET, class ShapeT, class InputT, size_t FixedRank>
+constexpr auto shape_of(const block_view<ET, ShapeT, InputT, FixedRank> &b) {
   return b.input.shape().part(make_const_range(
       const_index<FixedRank>(), const_index<FixedRank + ShapeT::rank>()));
 }
@@ -57,17 +57,15 @@ _element_at_block_element_seq(BlockElementT &b,
   return element_at(b.input, std::get<Is>(b.fixed_subs)..., subs...);
 }
 }
-template <class ShapeT, class ET, class InputT, size_t FixedRank,
-          class... SubTs>
+template <class ET, class ShapeT, class InputT, size_t FixedRank, class... SubTs>
 constexpr decltype(auto)
-element_at(const block_view<ShapeT, ET, InputT, FixedRank> &b,
+element_at(const block_view<ET, ShapeT, InputT, FixedRank> &b,
            const SubTs &... subs) {
   return details::_element_at_block_element_seq(
       b, make_const_sequence(const_size<FixedRank>()), subs...);
 }
-template <class ShapeT, class ET, class InputT, size_t FixedRank,
-          class... SubTs>
-decltype(auto) element_at(block_view<ShapeT, ET, InputT, FixedRank> &b,
+template <class ET, class ShapeT, class InputT, size_t FixedRank, class... SubTs>
+decltype(auto) element_at(block_view<ET, ShapeT, InputT, FixedRank> &b,
                           const SubTs &... subs) {
   return details::_element_at_block_element_seq(
       b, make_const_sequence(const_size<FixedRank>()), subs...);
@@ -115,12 +113,12 @@ using _head_of_shape_t = typename _split_shape<ShapeT, N>::head;
 template <class ShapeT, size_t N>
 using _tail_of_shape_t = typename _split_shape<ShapeT, N>::tail;
 
-template <class ShapeT, class ET, class T, class TT, class... SubTs>
-constexpr auto _block_at(const tensor_base<ShapeT, ET, T> &, TT &&input,
+template <class ET, class ShapeT, class T, class TT, class... SubTs>
+constexpr auto _block_at(const tensor_base<ET, ShapeT, T> &, TT &&input,
                          const SubTs &... subs) {
   static_assert(sizeof...(SubTs) < ShapeT::rank, "two many subscripts");
   using shape_t = _tail_of_shape_t<ShapeT, sizeof...(SubTs)>;
-  return block_view<shape_t, ET, TT, sizeof...(SubTs)>(forward<TT>(input),
+  return block_view<ET, shape_t, TT, sizeof...(SubTs)>(forward<TT>(input),
                                                        subs...);
 }
 }
@@ -132,12 +130,12 @@ constexpr auto block_at(T &&input, const SubTs &... subs)
 }
 
 // blockwise_view
-template <class ShapeT, class ET, class InputT, size_t FixedRank>
+template <class ET, class ShapeT, class InputT, size_t FixedRank>
 class blockwise_view
     : public tensor_base<
+          tensor<ET, details::_tail_of_shape_t<ShapeT, FixedRank>>,
           details::_head_of_shape_t<ShapeT, FixedRank>,
-          tensor<details::_tail_of_shape_t<ShapeT, FixedRank>, ET>,
-          blockwise_view<ShapeT, ET, InputT, FixedRank>> {
+          blockwise_view<ET, ShapeT, InputT, FixedRank>> {
   static_assert(FixedRank <= ShapeT::rank, "fixed rank overflow");
 
 public:
@@ -155,9 +153,9 @@ public:
 };
 
 // shape_of
-template <class ShapeT, class ET, class InputT, size_t FixedRank>
+template <class ET, class ShapeT, class InputT, size_t FixedRank>
 constexpr auto
-shape_of(const blockwise_view<ShapeT, ET, InputT, FixedRank> &t) {
+shape_of(const blockwise_view<ET, ShapeT, InputT, FixedRank> &t) {
   return t.input.shape().part(
       make_const_range(const_index<0>(), const_index<FixedRank>()));
 }
@@ -172,25 +170,23 @@ constexpr BlockElementT _element_at_block_view_seq(
 }
 }
 
-template <class ShapeT, class ET, class InputT, size_t FixedRank,
-          class... SubTs>
+template <class ET, class ShapeT, class InputT, size_t FixedRank, class... SubTs>
 constexpr auto
-element_at(const blockwise_view<ShapeT, ET, InputT, FixedRank> &t,
+element_at(const blockwise_view<ET, ShapeT, InputT, FixedRank> &t,
            const SubTs &... subs) {
   using const_block_element_view_t =
-      block_view<details::_tail_of_shape_t<ShapeT, FixedRank>, ET,
+      block_view<ET, details::_tail_of_shape_t<ShapeT, FixedRank>,
                  const InputT &, FixedRank>;
   return details::_element_at_block_view_seq<const_block_element_view_t>(
       t, make_const_sequence(const_size<FixedRank>()),
       std::forward_as_tuple(subs...));
 }
 
-template <class ShapeT, class ET, class InputT, size_t FixedRank,
-          class... SubTs>
-auto element_at(blockwise_view<ShapeT, ET, InputT, FixedRank> &t,
+template <class ET, class ShapeT, class InputT, size_t FixedRank, class... SubTs>
+auto element_at(blockwise_view<ET, ShapeT, InputT, FixedRank> &t,
                 const SubTs &... subs) {
   using block_element_view_t =
-      block_view<details::_tail_of_shape_t<ShapeT, FixedRank>, ET, InputT &,
+      block_view<ET, details::_tail_of_shape_t<ShapeT, FixedRank>, InputT &,
                  FixedRank>;
   return details::_element_at_block_view_seq<block_element_view_t>(
       t, make_const_sequence(const_size<FixedRank>()),
@@ -199,10 +195,10 @@ auto element_at(blockwise_view<ShapeT, ET, InputT, FixedRank> &t,
 
 // blockwise
 namespace details {
-template <class ShapeT, class ET, class InputT, class TT, size_t FixedRank>
-constexpr auto _blockwise(const tensor_base<ShapeT, ET, InputT> &, TT &&input,
+template <class ET, class ShapeT, class InputT, class TT, size_t FixedRank>
+constexpr auto _blockwise(const tensor_base<ET, ShapeT, InputT> &, TT &&input,
                           const const_size<FixedRank> &) {
-  return blockwise_view<ShapeT, ET, TT, FixedRank>(forward<TT>(input));
+  return blockwise_view<ET, ShapeT, TT, FixedRank>(forward<TT>(input));
 }
 }
 template <class InputT, class K, K FixedRank>

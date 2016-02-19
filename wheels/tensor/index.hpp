@@ -5,10 +5,10 @@
 
 namespace wheels {
 
-template <class ShapeT, class ET, class IndexTensorT, class InputTensorT>
+template <class ET, class ShapeT, class IndexTensorT, class InputTensorT>
 class index_view : public tensor_op_result_base<
-                       ShapeT, ET, void,
-                       index_view<ShapeT, ET, IndexTensorT, InputTensorT>> {
+                       ET, ShapeT, void,
+                       index_view<ET, ShapeT, IndexTensorT, InputTensorT>> {
 public:
   index_view(IndexTensorT &&indt, InputTensorT &&inpt)
       : index_tensor(forward<IndexTensorT>(indt)),
@@ -31,27 +31,27 @@ public:
 };
 
 // shape_of
-template <class ShapeT, class ET, class IndexTensorT, class InputTensorT>
+template <class ET, class ShapeT, class IndexTensorT, class InputTensorT>
 constexpr decltype(auto)
-shape_of(const index_view<ShapeT, ET, IndexTensorT, InputTensorT> &ir) {
+shape_of(const index_view<ET, ShapeT, IndexTensorT, InputTensorT> &ir) {
   return ir.index_tensor.shape();
 }
 
 // element_at
-template <class ShapeT, class ET, class IndexTensorT, class InputTensorT,
+template <class ET, class ShapeT, class IndexTensorT, class InputTensorT,
           class... SubTs>
 constexpr decltype(auto)
-element_at(const index_view<ShapeT, ET, IndexTensorT, InputTensorT> &ir,
+element_at(const index_view<ET, ShapeT, IndexTensorT, InputTensorT> &ir,
            const SubTs &... subs) {
   return element_at_index(ir.input_tensor,
                           element_at(ir.index_tensor, subs...));
 }
 
 // element_at_index
-template <class ShapeT, class ET, class IndexTensorT, class InputTensorT,
+template <class ET, class ShapeT, class IndexTensorT, class InputTensorT,
           class IndexT>
 constexpr decltype(auto)
-element_at_index(const index_view<ShapeT, ET, IndexTensorT, InputTensorT> &ir,
+element_at_index(const index_view<ET, ShapeT, IndexTensorT, InputTensorT> &ir,
                  const IndexT &ind) {
   return element_at_index(ir.input_tensor,
                           element_at_index(ir.index_tensor, ind));
@@ -63,11 +63,11 @@ template <class InputShapeT, class InputET, class InputTensorT,
           class InputTensorTT, class IndexShapeT, class IndexET,
           class IndexTensorT, class IndexTensorTT>
 constexpr auto
-_at_indices(const tensor_base<InputShapeT, InputET, InputTensorT> &,
+_at_indices(const tensor_base<InputET, InputShapeT, InputTensorT> &,
             InputTensorTT &&input,
-            const tensor_base<IndexShapeT, IndexET, IndexTensorT> &,
+            const tensor_base<IndexET, IndexShapeT, IndexTensorT> &,
             IndexTensorTT &&index) {
-  return index_view<IndexShapeT, InputET, IndexTensorTT, InputTensorTT>(
+  return index_view<InputET, IndexShapeT, IndexTensorTT, InputTensorTT>(
       forward<IndexTensorTT>(index), forward<InputTensorTT>(input));
 }
 }
@@ -82,7 +82,7 @@ constexpr auto at_indices(InputTensorT &&input, IndexTensorT &&index)
 // where
 template <class ShapeT, class BoolTensorT>
 inline vecx_<size_t>
-where(const tensor_base<ShapeT, bool, BoolTensorT> &flags) {
+where(const tensor_base<bool, ShapeT, BoolTensorT> &flags) {
   size_t nzc = nonzero_elements_count(flags.derived());
   vecx_<size_t> inds(make_shape(nzc));
   size_t c = 0;
