@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "methods.hpp"
+#include "../tensor.hpp"
 
 using namespace wheels;
 using namespace wheels::literals;

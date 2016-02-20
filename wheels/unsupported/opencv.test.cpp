@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "../core/time.hpp"
+#include "../tensor.hpp"
 #include "opencv.hpp"
 
 using namespace wheels;

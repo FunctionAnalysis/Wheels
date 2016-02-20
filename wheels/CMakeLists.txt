@@ -1,7 +1,7 @@
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # all files
-set (modules core tensor unsupported)
+set (modules core tensor math unsupported)
 
 set (wheels_sources "")
 foreach (M ${modules})
@@ -11,10 +11,14 @@ foreach (M ${modules})
         "${CMAKE_CURRENT_SOURCE_DIR}/${M}/*.cu" 
         "${CMAKE_CURRENT_SOURCE_DIR}/${M}/*.cuh"
     )
-    #set("${M}_sources", ${Src});
     source_group ("${M}" FILES ${Src})
     list (APPEND wheels_sources ${Src})
 endforeach()
+set (wheels_includes "")
+foreach (M ${modules})
+    list (APPEND wheels_includes "${CMAKE_CURRENT_SOURCE_DIR}/${M}.hpp")
+endforeach()
+source_group ("includes" FILES ${wheels_includes})
 
 
 file (GLOB_RECURSE wheels_test_sources "." *.test.cpp *.test.hpp *.test.cu *.test.cuh)
@@ -29,7 +33,7 @@ message(STATUS "wheels_sources:")
 foreach(i ${wheels_sources})
     message (STATUS ${i})  
 endforeach()
-wheels_add_library(Wheels.Lib ${wheels_sources} ./dummy.cpp)
+wheels_add_library(Wheels.Lib ${wheels_includes} ${wheels_sources} ./dummy.cpp)
 target_link_libraries (Wheels.Lib ${DEPENDENCY_LIBS})
 
 

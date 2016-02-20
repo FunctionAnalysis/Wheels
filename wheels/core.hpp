@@ -1,4 +1,5 @@
 #pragma once
+
 #include "./core/macros.hpp"
 #include "./core/utility.hpp"
 #include "./core/const_ints.hpp"
