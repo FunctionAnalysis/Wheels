@@ -6,6 +6,8 @@ namespace wheels {
 
 struct category_const_expr {};
 
+template <class T> struct is_const_expr : no {};
+
 // const_symbol
 template <size_t Idx> struct const_symbol {
   constexpr const_symbol() {}
@@ -13,6 +15,8 @@ template <size_t Idx> struct const_symbol {
     return std::get<Idx>(std::forward_as_tuple(forward<ArgTs>(args)...));
   }
 };
+
+template <size_t Idx> struct is_const_expr<const_symbol<Idx>> : yes {};
 
 template <size_t Idx, class OpT>
 constexpr auto category_for_overloading(const const_symbol<Idx> &,
@@ -39,6 +43,8 @@ template <class T> struct const_coeff {
     return visitor(val);
   }
 };
+
+template <class T> struct is_const_expr<const_coeff<T>> : yes {};
 
 template <class T, class Op>
 constexpr auto category_for_overloading(const const_coeff<T> &,
@@ -69,6 +75,9 @@ template <class Op, class E> struct const_unary_op {
   }
 };
 
+template <class Op, class E>
+struct is_const_expr<const_unary_op<Op, E>> : yes {};
+
 template <class Op, class E, class OtherOp>
 constexpr auto category_for_overloading(const const_unary_op<Op, E> &,
                                         const common_func<OtherOp> &) {
@@ -93,6 +102,9 @@ template <class Op, class E1, class E2> struct const_binary_op {
     return visitor(op, e1, e2);
   }
 };
+
+template <class Op, class E1, class E2>
+struct is_const_expr<const_binary_op<Op, E1, E2>> : yes {};
 
 template <class Op, class E1, class E2, class OtherOp>
 constexpr auto category_for_overloading(const const_binary_op<Op, E1, E2> &,

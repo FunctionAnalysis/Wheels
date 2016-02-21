@@ -16,6 +16,8 @@ namespace wheels {
 
 template <class EleT, class ShapeT, class T> struct category_tensor {};
 
+template <class T> struct tensor_core;
+
 // index_tags
 namespace index_tags {
 constexpr auto first = const_index<0>();
@@ -24,14 +26,33 @@ constexpr auto last = length - const_index<1>();
 }
 
 namespace details {
-template <class E, class SizeT, class = std::enable_if_t<!is_int<E>::value>>
-constexpr auto _eval_index_expr(const E &e, const SizeT &sz) {
-  return e(sz);
+template <class E, class SizeT,
+          class = std::enable_if_t<is_const_expr<std::decay_t<E>>::value>>
+constexpr auto _eval_index_expr(E &&e, const SizeT &sz) {
+  return forward<E>(e)(sz);
 }
-template <class T, class SizeT, class = std::enable_if_t<is_int<T>::value>,
+template <class T, class SizeT,
+          class = std::enable_if_t<!is_const_expr<std::decay_t<T>>::value>,
           class = void>
-constexpr auto _eval_index_expr(const T &t, const SizeT &) {
-  return t;
+constexpr T &&_eval_index_expr(T &&t, const SizeT &) {
+  return static_cast<T &&>(t);
+}
+
+template <class T, class E, class EE,
+          class = std::enable_if_t<is_int<E>::value>>
+constexpr decltype(auto) _brackets_impl(T &&t, const E &, EE &&ind) {
+  return ::wheels::element_at_index(forward<T>(t), forward<EE>(ind));
+}
+
+template <class T, class TensorT, class TensorTT>
+constexpr auto _brackets_impl(T &&t, const tensor_core<TensorT> &,
+                              TensorTT &&inds) {
+  return ::wheels::at_indices(forward<T>(t), forward<TensorTT>(inds));
+}
+
+template <class T, class TensorTT>
+constexpr decltype(auto) _brackets(T &&t, TensorTT &&inds) {
+  return _brackets_impl(forward<T>(t), inds, forward<TensorTT>(inds));
 }
 }
 
@@ -73,37 +94,18 @@ template <class T> struct tensor_core {
     return _parenthesis_seq(make_const_sequence_for<SubTs...>(), subs...);
   }
 
-  // operator[](index)
-  template <class E>
-  constexpr auto operator[](const E &e) const
-      -> decltype(::wheels::element_at_index(
-          derived(), details::_eval_index_expr(e, numel()))) {
-    return ::wheels::element_at_index(derived(),
-                                      details::_eval_index_expr(e, numel()));
+  // operator[](index/{index tensor})
+  template <class E> constexpr decltype(auto) operator[](E &&e) const & {
+    return details::_brackets(
+        derived(), details::_eval_index_expr(forward<E>(e), numel()));
   }
-  template <class E>
-  auto operator[](const E &e) -> decltype(::wheels::element_at_index(
-      derived(), details::_eval_index_expr(e, numel()))) {
-    return ::wheels::element_at_index(derived(),
-                                      details::_eval_index_expr(e, numel()));
+  template <class E> decltype(auto) operator[](E &&e) & {
+    return details::_brackets(
+        derived(), details::_eval_index_expr(forward<E>(e), numel()));
   }
-
-  // operator[](index tensor)
-  template <class IndexTensorT>
-  constexpr auto operator[](IndexTensorT &&it) const & -> decltype(
-      ::wheels::at_indices(derived(), forward<IndexTensorT>(it))) {
-    return ::wheels::at_indices(derived(), forward<IndexTensorT>(it));
-  }
-  template <class IndexTensorT>
-  auto operator[](IndexTensorT &&it) & -> decltype(
-      ::wheels::at_indices(derived(), forward<IndexTensorT>(it))) {
-    return ::wheels::at_indices(derived(), forward<IndexTensorT>(it));
-  }
-  template <class IndexTensorT>
-  auto operator[](IndexTensorT &&it) && -> decltype(
-      ::wheels::at_indices(std::move(derived()), forward<IndexTensorT>(it))) {
-    return ::wheels::at_indices(std::move(derived()),
-                                forward<IndexTensorT>(it));
+  template <class E> decltype(auto) operator[](E &&e) && {
+    return details::_brackets(
+        move(derived()), details::_eval_index_expr(forward<E>(e), numel()));
   }
 
   // for_each
@@ -464,7 +466,7 @@ bool for_each_element(behavior_flag<nonzero_only>, FunT &fun, tensor_core<T> &t,
   bool visited_all = true;
   for_each_subscript(t.shape(), [&](auto &... subs) {
     decltype(auto) e = element_at(t.derived(), subs...);
-    if (e) {
+    if (!is_zero(e)) {
       fun(e, element_at(ts.derived(), subs...)...);
     } else {
       visited_all = false;

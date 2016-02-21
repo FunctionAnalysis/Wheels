@@ -18,6 +18,7 @@ public:
       : _shape(s), _val(forward<EE>(v)) {}
   const ShapeT &shape() const { return _shape; }
   const ET &value() const { return _val; }
+  ET &value() { return _val; }
 
 private:
   ShapeT _shape;
@@ -76,6 +77,12 @@ bool for_each_element(behavior_flag<nonzero_only> o, FunT &&fun,
                             forward<Ts>(ts)...);
   }
   return false;
+}
+
+// size_t nonzero_elements_count(t)
+template <class ET, class ShapeT, class OpT>
+size_t nonzero_elements_count(const constant_result<ET, ShapeT, OpT> &t) {
+  return is_zero(t.value()) ? 0 : numel(t);
 }
 
 // reduce_elements
