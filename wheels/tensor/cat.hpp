@@ -136,4 +136,12 @@ bool for_each_element(behavior_flag<nonzero_only> o, FunT &fun,
   bool r2 = for_each_element(o, fun, t.input2());
   return r1 && r2;
 }
+
+// size_t nonzero_elements_count(t)
+template <class ET, class ShapeT, size_t Axis, class T1, class T2>
+inline size_t
+nonzero_elements_count(const cat_result<ET, ShapeT, Axis, T1, T2> &t) {
+  return nonzero_elements_count(t.input1()) +
+         nonzero_elements_count(t.input2());
+}
 }

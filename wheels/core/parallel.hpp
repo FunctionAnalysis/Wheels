@@ -7,6 +7,7 @@
 
 namespace wheels {
 
+// parallel_for_each
 template <class FunT>
 void parallel_for_each(
     size_t n, FunT &&fun, size_t batch_num = 1,
@@ -60,6 +61,7 @@ void parallel_for_each(
   }
 }
 
+// parallel_reduce
 template <class IterT, class T, class ReduceT>
 T parallel_reduce(
     IterT begin, IterT end, const T &initial, ReduceT &&redux,

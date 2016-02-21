@@ -7,8 +7,8 @@ using namespace wheels;
 using namespace wheels::literals;
 
 TEST(tensor, map) {
-  tstring s1 = "1234567"_ts;
-  tstring s2 = "abcdefghijk"_ts;
+  auto s1 = "1234567"_ts;
+  auto s2 = "abcdefghijk"_ts;
  
   element_at_index(s1, 5);
 

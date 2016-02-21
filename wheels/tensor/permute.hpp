@@ -69,6 +69,13 @@ bool for_each_element(behavior_flag<nonzero_only> o, FunT &&fun,
   return for_each_element(o, forward<FunT>(fun), m.input);
 }
 
+// size_t nonzero_elements_count(t)
+template <class ET, class ShapeT, class T, size_t... Inds>
+inline size_t
+nonzero_elements_count(const permute_result<ET, ShapeT, T, Inds...> &t) {
+  return nonzero_elements_count(t.input);
+}
+
 // reduce_elements
 template <class ET, class ShapeT, class T, class E, class ReduceT,
           size_t... Inds>

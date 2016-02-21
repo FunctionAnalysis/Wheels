@@ -168,9 +168,23 @@ using vec_ = tensor<T, tensor_shape<size_t, const_size<N>>>;
 using vec2 = vec_<double, 2>;
 using vec3 = vec_<double, 3>;
 
+// gvec_
+template <class E, size_t N, class T>
+using gvec_ = tensor_base<E, tensor_shape<size_t, const_size<N>>, T>;
+template <class T> using gvec2 = gvec_<double, 2, T>;
+template <class T> using gvec3 = gvec_<double, 3, T>;
+
 // vecx_
 template <class T> using vecx_ = tensor<T, tensor_shape<size_t, size_t>>;
 using vecx = vecx_<double>;
+using vecxi = vecx_<int>;
+using vecxb = vecx_<bool>;
+
+// gvecx_
+template <class E, class T>
+using gvecx_ = tensor_base<E, tensor_shape<size_t, size_t>, T>;
+template <class T> using gvecx = gvecx_<double, T>;
+
 
 // mat_
 template <class T, size_t M, size_t N>
@@ -178,10 +192,23 @@ using mat_ = tensor<T, tensor_shape<size_t, const_size<M>, const_size<N>>>;
 using mat2 = mat_<double, 2, 2>;
 using mat3 = mat_<double, 3, 3>;
 
+// gmat_
+template <class E, size_t M, size_t N, class T>
+using gmat_ =
+    tensor_base<E, tensor_shape<size_t, const_size<M>, const_size<N>>, T>;
+template <class T> using gmat2 = gmat_<double, 2, 2, T>;
+template <class T> using gmat3 = gmat_<double, 3, 3, T>;
+
 // matx_
 template <class T>
 using matx_ = tensor<T, tensor_shape<size_t, size_t, size_t>>;
 using matx = matx_<double>;
+
+// gmatx_
+template <class E, class T>
+using gmatx_ = tensor_base<E, tensor_shape<size_t, size_t, size_t>, T>;
+template <class T> using gmatx = gmatx_<double, T>;
+
 
 // cube_
 template <class T, size_t M, size_t N, size_t L>
@@ -196,14 +223,20 @@ template <class T>
 using cubex_ = tensor<T, tensor_shape<size_t, size_t, size_t, size_t>>;
 using cubex = matx_<double>;
 
-// tstring
-using tstring = vecx_<char>;
-// wtstring
-using wtstring = vecx_<wchar_t>;
-// u16tstring
-using u16tstring = vecx_<char16_t>;
-// u32tstring
-using u32tstring = vecx_<char32_t>;
+
+// strings
+using str = vecx_<char>;
+using wstr = vecx_<wchar_t>;
+using u16str = vecx_<char16_t>;
+using u32str = vecx_<char32_t>;
+
+// gstrings
+template <class T> using gstr = gvecx_<char, T>;
+template <class T> using gwstr = gvecx_<wchar_t, T>;
+template <class T> using gu16str = gvecx_<char16_t, T>;
+template <class T> using gu32str = gvecx_<char32_t, T>;
+
+
 
 // tensor_of_rank
 namespace details {

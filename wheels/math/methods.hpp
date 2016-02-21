@@ -1,11 +1,6 @@
 #pragma once
 
-#include "constants.hpp"
-#include "ewise_ops.hpp"
-#include "matrix_mul.hpp"
-#include "permute.hpp"
-#include "remap.hpp"
-#include "tensor.hpp"
+#include "../tensor.hpp"
 
 namespace wheels {
 // distance

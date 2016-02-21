@@ -1,7 +1,10 @@
 #pragma once
 
-#include <filesystem>
 #include <fstream>
+
+#if defined(wheels_with_stdfilesystem)
+#include <filesystem>
+#endif
 
 #include <cereal/types/array.hpp>
 #include <cereal/types/base_class.hpp>
@@ -170,6 +173,8 @@ void load(ArcT &arc, serializable<T> &data, WHEELS_PARAMETER_DISTINGUISH(3)) {
 
 #undef WHEELS_PARAMETER_DISTINGUISH
 
+#if defined(wheels_with_stdfilesystem)
+
 using namespace std::experimental;
 
 // write
@@ -222,4 +227,6 @@ template <class ArchiveT = cereal::PortableBinaryInputArchive, class... T>
 inline bool read_tmp(const filesystem::path &filename, T &... data) {
   return read<ArchiveT>(filesystem::temp_directory_path() / filename, data...);
 }
+
+#endif
 }

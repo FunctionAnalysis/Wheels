@@ -1,7 +1,11 @@
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # all files
-set (modules core tensor math unsupported)
+set (modules core tensor math)
+
+if (${OpenCV_FOUND} AND ${MATLAB_FOUND} AND ${EIGEN3_FOUND})
+    list (APPEND modules unsupported)
+endif()
 
 set (wheels_sources "")
 foreach (M ${modules})

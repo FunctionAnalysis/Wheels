@@ -5,13 +5,17 @@
 #include "tensor.hpp"
 
 using namespace wheels;
+using namespace wheels::index_tags;
 
 TEST(tensor, index) {
   vecx a(1, 2, 3, 4, 5);
-  a[index_tags::last] = 4;
+  a[last] = 4;
   a[vecx_<int>(2, 3, 4)] = 1;
   ASSERT_TRUE(a == vecx(1, 2, 1, 1, 1));
   a[where(a == 1)] = 10;
   ASSERT_TRUE(a == vecx(10, 2, 10, 10, 10));
+  println(a);
+  a[last - vecx_<int>(0, 1)] = 5;
+  ASSERT_TRUE(a == vecx(10, 2, 10, 5, 5));
   println(a);
 }

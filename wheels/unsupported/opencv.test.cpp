@@ -19,6 +19,6 @@ TEST(third, opencv) {
   });
 
   wheels::println(time_cost([&]() { im = nim; }));
-  cv::imshow("remap", im.mat);
-  cv::waitKey();
+  //cv::imshow("remap", im.mat);
+  //cv::waitKey();
 }

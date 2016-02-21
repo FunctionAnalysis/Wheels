@@ -8,8 +8,12 @@ list (APPEND CMAKE_MODULE_PATH
 )
 
 
-if (NOT DEFINED MSVC)
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+if (${CLANG_VERSION_STRING})
+    if(CLANG_VERSION_STRING VERSION_GREATER 3.4)
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+    else()
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y")
+    endif()
 endif ()
 
 
@@ -103,6 +107,11 @@ if (${Cereal_FOUND})
     else ()
         add_definitions ( "-Dwheels_with_cereal" )
     endif ()
+endif()
+
+
+if (${MSVC})
+    add_definitions ("/Dwheels_with_stdfilesystem")
 endif()
 
 
