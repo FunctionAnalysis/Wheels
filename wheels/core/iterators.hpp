@@ -107,21 +107,30 @@ constexpr auto make_transform_iterator(IterT it, FunT f) {
 }
 
 // range
-template <class IterT> class range {
-  static_assert(is_iterator<IterT>::value, "IterT must be an iterator");
-
+template <class FromT, class ToT> class range {
 public:
-  using value_type = typename std::iterator_traits<IterT>::value_type;
-  constexpr range(IterT b, IterT e) : _begin(b), _end(e) {}
-  constexpr IterT begin() const { return _begin; }
-  constexpr IterT end() const { return _end; }
+  constexpr range(const FromT &b, const ToT &e) : _begin(b), _end(e) {}
+  constexpr FromT begin() const { return _begin; }
+  constexpr ToT end() const { return _end; }
+  constexpr auto size() const { return _end - _begin; }
 
 private:
-  IterT _begin, _end;
+  FromT _begin;
+  ToT _end;
 };
 
 // make_range
-template <class IterT> constexpr auto make_range(IterT begin, IterT end) {
-  return range<IterT>(begin, end);
+template <class FromT, class ToT>
+constexpr auto make_range(const FromT &begin, const ToT &end) {
+  return range<FromT, ToT>(begin, end);
 }
+// span
+template <class FromT, class SizeT = const_size<1>>
+constexpr auto span(const FromT &begin, const SizeT &s = SizeT()) {
+  return make_range(begin, begin + s);
+}
+
+// is_range
+template <class T> struct is_range : no {};
+template <class FromT, class ToT> struct is_range<range<FromT, ToT>> : yes {};
 }

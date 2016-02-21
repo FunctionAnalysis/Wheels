@@ -23,6 +23,7 @@ namespace index_tags {
 constexpr auto first = const_index<0>();
 constexpr auto length = const_symbol<0>();
 constexpr auto last = length - const_index<1>();
+constexpr auto everything = make_range(first, length);
 }
 
 namespace details {
@@ -122,6 +123,20 @@ template <class T> struct tensor_core {
   }
   template <class FunT> auto transform(FunT &&fun) && {
     return ::wheels::transform(std::move(derived()), forward<FunT>(fun));
+  }
+
+  // block
+  template <class... RangeOrIndexTs>
+  constexpr auto block(const RangeOrIndexTs &... rois) const & {
+    return ::wheels::block_at(derived(), rois...);
+  }
+  template <class... RangeOrIndexTs>
+  auto block(const RangeOrIndexTs &... rois) & {
+    return ::wheels::block_at(derived(), rois...);
+  }
+  template <class... RangeOrIndexTs>
+  auto block(const RangeOrIndexTs &... rois) && {
+    return ::wheels::block_at(std::move(derived()), rois...);
   }
 
   // begin/end
