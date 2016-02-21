@@ -67,9 +67,7 @@ constexpr auto _reshape(const tensor_base<ET, OldShapeT, T> &, TT &&t,
 template <class ET, class OldShapeT, class T, class TT, class ShapeT>
 constexpr auto _reshape(const reshape_view<ET, OldShapeT, T> &, TT &&t,
                         const ShapeT &s) {
-  return reshape_view<ET, ShapeT, T>(
-      s, forward<TT>(t).input()); // todo: needs investigation on how to
-                                  // perfectly forwarding class members
+  return _reshape(t.input(), forward<TT>(t).input(), s);
 }
 }
 

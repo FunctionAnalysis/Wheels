@@ -10,13 +10,13 @@
 #include "../core/types.hpp"
 
 #include "shape.hpp"
-#include "traits.hpp"
 
 namespace wheels {
 
 template <class EleT, class ShapeT, class T> struct category_tensor {};
 
 template <class T> struct tensor_core;
+template <class T> struct tensor_iterator;
 
 // index_tags
 namespace index_tags {
@@ -124,6 +124,16 @@ template <class T> struct tensor_core {
     return ::wheels::transform(std::move(derived()), forward<FunT>(fun));
   }
 
+  // begin/end
+  constexpr tensor_iterator<const T> begin() const {
+    return tensor_iterator<const T>(derived(), 0);
+  }
+  constexpr tensor_iterator<const T> end() const {
+    return tensor_iterator<const T>(derived(), numel());
+  }
+  tensor_iterator<T> begin() { return tensor_iterator<T>(derived(), 0); }
+  tensor_iterator<T> end() { return tensor_iterator<T>(derived(), numel()); }
+
 private:
   template <class... SubEs, size_t... Is>
   constexpr bool _valid_subs_seq(const_ints<size_t, Is...> seq,
@@ -153,6 +163,36 @@ private:
     assert(_valid_subs_seq(seq, subes...));
     return ::wheels::element_at(
         derived(), details::_eval_index_expr(subes, size(const_size<Is>()))...);
+  }
+};
+
+// tensor_iterator
+template <class T> struct tensor_iterator {
+  T &self;
+  ptrdiff_t ind;
+  constexpr tensor_iterator(T &s, ptrdiff_t i) : self(s), ind(i) {}
+  constexpr decltype(auto) operator*() const {
+    return ::wheels::element_at_index(self, ind);
+  }
+  constexpr decltype(auto) operator-> () const {
+    return ::wheels::element_at_index(self, ind);
+  }
+  tensor_iterator &operator++() {
+    ++ind;
+    return *this;
+  }
+  tensor_iterator operator++(int) {
+    auto i = *this;
+    ++ind;
+    return i;
+  }
+  constexpr bool operator==(const tensor_iterator &i) const {
+    assert(&self == &(i.self));
+    return ind == i.ind;
+  }
+  constexpr bool operator!=(const tensor_iterator &i) const {
+    assert(&self == &(i.self));
+    return ind != i.ind;
   }
 };
 
@@ -262,8 +302,8 @@ struct tensor_base<ET, tensor_shape<ST, MT, NT>, T> : tensor_core<T> {
   constexpr decltype(auto) t() const & {
     return ::wheels::transpose(derived());
   }
-  auto t() & { return ::wheels::transpose(derived()); }
-  auto t() && { return ::wheels::transpose(std::move(derived())); }
+  decltype(auto) t() & { return ::wheels::transpose(derived()); }
+  decltype(auto) t() && { return ::wheels::transpose(std::move(derived())); }
 };
 
 // category_for_overloading
@@ -516,8 +556,7 @@ E reduce_elements(const tensor_core<T> &t, E initial, ReduceT &red) {
 
 // Scalar norm_squared(ts)
 template <class ET, class ShapeT, class T>
-typename tensor_element_types<ET>::storable
-norm_squared(const tensor_base<ET, ShapeT, T> &t) {
+ET norm_squared(const tensor_base<ET, ShapeT, T> &t) {
   auto result = types<typename tensor_element_types<ET>::storable>::zero();
   for_each_element(behavior_flag<nonzero_only>(),
                    [&result](auto &&e) { result += e * e; }, t.derived());
@@ -526,8 +565,7 @@ norm_squared(const tensor_base<ET, ShapeT, T> &t) {
 
 // Scalar norm(ts)
 template <class ET, class ShapeT, class T>
-constexpr typename tensor_element_types<ET>::storable
-norm(const tensor_base<ET, ShapeT, T> &t) {
+constexpr ET norm(const tensor_base<ET, ShapeT, T> &t) {
   return sqrt(norm_squared(t.derived()));
 }
 
@@ -559,9 +597,8 @@ constexpr bool not_equals_result_of(const tensor_base<ET, ShapeT, T> &t) {
 
 // Scalar sum(s)
 template <class ET, class ShapeT, class T>
-typename tensor_element_types<ET>::storable
-sum_of(const tensor_base<ET, ShapeT, T> &t) {
-  auto s = types<typename tensor_element_types<ET>::storable>::zero();
+ET sum_of(const tensor_base<ET, ShapeT, T> &t) {
+  auto s = types<ET>::zero();
   for_each_element(behavior_flag<nonzero_only>(), [&s](auto &&e) { s += e; },
                    t.derived());
   return s;

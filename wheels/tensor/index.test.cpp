@@ -15,7 +15,7 @@ TEST(tensor, index) {
   a[where(a == 1)] = 10;
   ASSERT_TRUE(a == vecx(10, 2, 10, 10, 10));
   println(a);
-  a[last - vecx_<int>(0, 1)] = 5;
+  a[last - vecxi(0, 1)] = 5;
   ASSERT_TRUE(a == vecx(10, 2, 10, 5, 5));
   println(a);
 }

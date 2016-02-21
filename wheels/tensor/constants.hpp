@@ -72,7 +72,7 @@ template <class FunT, class ET, class ShapeT, class OpT, class... Ts>
 bool for_each_element(behavior_flag<nonzero_only> o, FunT &&fun,
                       const constant_result<ET, ShapeT, OpT> &t, Ts &&... ts) {
   assert(all_same(shape_of(t), shape_of(ts)...));
-  if (t.value()) {
+  if (!is_zero(t.value())) {
     return for_each_element(behavior_flag<unordered>(), forward<FunT>(fun), t,
                             forward<Ts>(ts)...);
   }
@@ -97,7 +97,7 @@ E reduce_elements(const constant_result<ET, ShapeT, OpT> &t, E initial,
 
 // norm_squared
 template <class ET, class ShapeT, class OpT>
-std::enable_if_t<std::is_arithmetic<ET>::value, ET>
+std::enable_if_t<std::is_scalar<ET>::value, ET>
 norm_squared(const constant_result<ET, ShapeT, OpT> &t) {
   return t.value() * t.value() * numel(t);
 }
