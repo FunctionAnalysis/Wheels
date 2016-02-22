@@ -200,12 +200,26 @@ auto element_at(tensor_subwise_view<ET, ShapeT, InputT, FixedRank> &t,
       std::forward_as_tuple(subs...));
 }
 
+template <class ET, class ShapeT, class InputT, class ExtShapeT, class TT>
+class extend_result;
+namespace extend_result_ops {
+struct as_subtensor;
+}
+
 // subwise
 namespace details {
 template <class ET, class ShapeT, class InputT, class TT, size_t FixedRank>
 constexpr auto _subwise(const tensor_base<ET, ShapeT, InputT> &, TT &&input,
                         const const_size<FixedRank> &) {
   return tensor_subwise_view<ET, ShapeT, TT, FixedRank>(forward<TT>(input));
+}
+// subwise an extended tensor
+template <class ET, class ShapeT, class InputT, class ExtShapeT, class TT>
+constexpr decltype(auto)
+_subwise(const extend_result<ET, ShapeT, InputT, ExtShapeT,
+                             extend_result_ops::as_subtensor> &,
+         TT &&input, const const_size<ExtShapeT::rank> &) {
+  return forward<TT>(input).input;
 }
 }
 template <class InputT, class K, K FixedRank>
@@ -215,4 +229,6 @@ constexpr auto subwise(InputT &&input, const const_ints<K, FixedRank> &r)
   return details::_subwise(input, forward<InputT>(input),
                            const_size<(size_t)FixedRank>());
 }
+
+
 }

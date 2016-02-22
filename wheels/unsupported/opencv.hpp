@@ -183,7 +183,8 @@ void reserve_shape(cv_image<T, Depth> &t,
 
 // element_at
 template <class T, size_t Depth, class SubT1, class SubT2>
-constexpr tensor_map<const T, tensor_shape<size_t, const_size<Depth>>, const T *>
+constexpr tensor_map<const T, tensor_shape<size_t, const_size<Depth>>,
+                     const T *>
 element_at(const cv_image<T, Depth> &t, const SubT1 &s1, const SubT2 &s2) {
   return map(make_shape(const_size<Depth>()),
              t.mat(static_cast<int>(s1), static_cast<int>(s2)).val);

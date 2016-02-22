@@ -121,18 +121,35 @@ constexpr auto extend_as_repeated(InputT &&input,
   return details::_extend_as_repeated(input, forward<InputT>(input), es);
 }
 
+template <class ET, class ShapeT, class T, size_t FixedRank>
+class subtensor_view;
+template <class ET, class ShapeT, class T, size_t FixedRank>
+class tensor_subwise_view;
+
 // extend_as_subtensor
 namespace details {
-template <class ET, class ShapeT, class T, class InputT>
-constexpr auto _extend_as_subtensor(const tensor_base<ET, ShapeT, T> &et,
-                                    InputT &&input) {
+template <class ET, class ShapeT, class T, class ET2, class ShapeT2, class T2,
+          class InputT>
+constexpr decltype(auto)
+_extend_as_subtensor(const tensor_base<ET, ShapeT, T> &et,
+                     const tensor_base<ET2, ShapeT2, T2> &, InputT &&input) {
   return extend_by<ET>(forward<InputT>(input), et.shape(),
                        extend_result_ops::as_subtensor());
 }
+// extend a subwised tensor
+template <class ET, class ShapeT, class T, class ShapeT2, class T2,
+          size_t FixedRank, class InputT>
+constexpr decltype(auto)
+_extend_as_subtensor(const subtensor_view<ET, ShapeT, T, FixedRank> &et,
+                     const tensor_subwise_view<ET, ShapeT2, T2, FixedRank> &,
+                     InputT &&input) {
+  return forward<InputT>(input).input;
 }
-template <class InputT> inline auto extend_as_subtensor(InputT &&input) {
+}
+template <class InputT>
+inline decltype(auto) extend_as_subtensor(InputT &&input) {
   assert(input.numel() > 0);
-  return details::_extend_as_subtensor(element_at_index(input, 0),
+  return details::_extend_as_subtensor(element_at_index(input, 0), input,
                                        forward<InputT>(input));
 }
 }
