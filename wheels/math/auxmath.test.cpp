@@ -6,7 +6,7 @@
 using namespace wheels;
 
 TEST(math, auxmath) {
-  matx A(make_shape(10, 10)), B(make_shape(10, 1));
+  matx A(make_shape(10, 12)), B(make_shape(10, 1));
   std::default_random_engine rng;
   randomize_fields(A, rng);
   randomize_fields(B, rng);

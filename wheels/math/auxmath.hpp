@@ -20,13 +20,21 @@ bool solve(const tensor_base<ET, tensor_shape<ST1, MT1, NT1>, T1> &A,
   char trans = 'N'; // 'T' if is transposed
   blas_int m = (blas_int)A.rows();
   blas_int n = (blas_int)A.cols();
-  blas_int lda = m;
-  tensor<ET, tensor_shape<ST1, MT1, NT1>> Adata = A;
+  blas_int lda = max(1, m);
+  // Adata: lda x n
+  auto Adata =
+      cat_at(const_index<0>(), A.derived(), zeros(make_shape(lda - m, n)))
+          .eval();
 
+  assert(m == B.rows());
   blas_int nrhs = (blas_int)B.cols();
-  blas_int ldb = (blas_int)B.rows();
-  tensor<ET, tensor_shape<ST2, MT2, NT2>> Bdata = B;
+  blas_int ldb = max(1, m, n);
+  // Bdata: ldb x nrhs
+  auto Bdata =
+      cat_at(const_index<0>(), B.derived(), zeros(make_shape(ldb - m, nrhs)))
+          .eval();
 
+  // work
   blas_int lwork = max(1, min(m, n) + max(min(m, n), nrhs) * 1);
   vecx_<ET> work(make_shape(lwork));
 
@@ -34,12 +42,7 @@ bool solve(const tensor_base<ET, tensor_shape<ST1, MT1, NT1>, T1> &A,
   lapack::gels(&trans, &m, &n, &nrhs, Adata.ptr(), &lda, Bdata.ptr(), &ldb,
                work.ptr(), &lwork, &info);
 
-  if (m >= n) {
-    X.derived() = Bdata.block(make_range(0, n), index_tags::everything);
-  } else {
-    X.derived() =
-        cat_at(const_index<0>(), Bdata, zeros(make_shape(n - m, nrhs)));
-  }
+  X.derived() = Bdata.block(make_range(0, n), index_tags::everything);
 
   return info == 0;
 }
@@ -52,14 +55,20 @@ bool solve(const tensor_base<ET, tensor_shape<ST1, MT1, NT1>, T1> &A,
   char trans = 'N'; // 'T' if is transposed
   blas_int m = (blas_int)A.rows();
   blas_int n = (blas_int)A.cols();
-  blas_int lda = m;
-  tensor<ET, tensor_shape<ST1, MT1, NT1>> Adata = A;
+  blas_int lda = max(1, m);
 
-  blas_int nrhs = 1;
+  // Adata: lda x n
+  auto Adata =
+      cat_at(const_index<0>(), A.derived(), zeros(make_shape(lda - m, n)))
+          .eval();
+
   assert(m == (blas_int)B.numel());
-  blas_int ldb = (blas_int)B.numel();
-  tensor<ET, tensor_shape<ST2, MT2>> Bdata = B;
+  blas_int nrhs = 1;  
+  blas_int ldb = max(1, m, n);
+  // Bdata: ldb
+  auto Bdata = cat(B.derived(), zeros(make_shape(ldb - m))).eval();
 
+  // work
   blas_int lwork = max(1, min(m, n) + max(min(m, n), nrhs) * 2);
   vecx_<ET> work(make_shape(lwork));
 
@@ -67,11 +76,7 @@ bool solve(const tensor_base<ET, tensor_shape<ST1, MT1, NT1>, T1> &A,
   lapack::gels(&trans, &m, &n, &nrhs, Adata.ptr(), &lda, Bdata.ptr(), &ldb,
                work.ptr(), &lwork, &info);
 
-  if (m >= n) {
-    X.derived() = Bdata.block(make_range(0, n));
-  } else {
-    X.derived() = cat(Bdata, zeros(make_shape(n - m)));
-  }
+  X.derived() = Bdata.block(make_range(0, n));
 
   return info == 0;
 }
