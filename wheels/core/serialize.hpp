@@ -2,7 +2,7 @@
 
 #include <fstream>
 
-#if defined(wheels_with_stdfilesystem)
+#if defined(wheels_compiler_msc)
 #include <filesystem>
 #endif
 
@@ -173,7 +173,7 @@ void load(ArcT &arc, serializable<T> &data, WHEELS_PARAMETER_DISTINGUISH(3)) {
 
 #undef WHEELS_PARAMETER_DISTINGUISH
 
-#if defined(wheels_with_stdfilesystem)
+#if defined(wheels_compiler_msc)
 
 using namespace std::experimental;
 
