@@ -434,4 +434,13 @@ constexpr auto find_first_of(const const_ints<T, S, Ss...> &seq,
   return details::_find_first_of(seq, const_ints<T, (T)V>(),
                                  const_index<1 + sizeof...(Ss)>());
 }
+
+// for_each
+template <class T, class FunT>
+inline void for_each(const const_ints<T> &, FunT &fun) {}
+template <class T, T S, T... Ss, class FunT>
+inline void for_each(const const_ints<T, S, Ss...> &, FunT &fun) {
+  fun(const_ints<T, S>());
+  for_each(const_ints<T, Ss...>(), fun);
+}
 }

@@ -48,4 +48,6 @@ TEST(core, constants) {
   static_assert(count(cat(1_c, 2_c, 2_c, 5_c, 5_c), 3_c) == 0_c, "");
   static_assert(count(cat(1_c, 2_c, 2_c, 5_c, 5_c), 4_c) == 0_c, "");
   static_assert(count(cat(1_c, 2_c, 2_c, 5_c, 5_indexc), 5_c) == 2_c, "");
+
+  for_each(make_const_sequence(5_c), [](auto i) { print(i, ' '); });
 }

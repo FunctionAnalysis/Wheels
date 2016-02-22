@@ -121,18 +121,13 @@ _initialize_n_by_move(T *data, size_t n, T *src) {
 }
 
 // initialize_by_elements
-template <class T> inline void _initialize_by_elements(T *data) {}
-template <class T, class EleT, class... EleTs>
-inline std::enable_if_t<std::is_scalar<T>::value>
-_initialize_by_elements(T *data, EleT &&ele, EleTs &&... eles) {
-  *data = (T)ele;
-  _initialize_by_elements(data + 1, std::forward<EleTs>(eles)...);
-}
-template <class T, class EleT, class... EleTs>
-inline std::enable_if_t<!std::is_scalar<T>::value>
-_initialize_by_elements(T *data, EleT &&ele, EleTs &&... eles) {
-  ::new ((void *)data) T(std::forward<EleT>(ele));
-  _initialize_by_elements(data + 1, std::forward<EleTs>(eles)...);
+template <class T, class AllocT>
+inline void _initialize_by_elements(T *data, AllocT &alloc) {}
+template <class T, class AllocT, class EleT, class... EleTs>
+inline void _initialize_by_elements(T *data, AllocT &alloc, EleT &&ele,
+                                    EleTs &&... eles) {
+  alloc.construct(data, forward<EleT>(ele));
+  _initialize_by_elements(data + 1, alloc, std::forward<EleTs>(eles)...);
 }
 }
 
@@ -170,10 +165,10 @@ public:
   storage(const shape_type &s, _with_elements, EleTs &&... eles) : _shape(s) {
     _capacity = _shape.magnitude();
     _data = _alloc.allocate(_capacity);
-    for (size_t i = 0; i < _capacity; i++) {
+    details::_initialize_by_elements(_data, _alloc, forward<EleTs>(eles)...);
+    for (size_t i = sizeof...(EleTs); i < _capacity; i++) {
       _alloc.construct(_data + i);
     }
-    details::_initialize_by_elements(_data, std::forward<EleTs>(eles)...);
   }
   template <class IterT>
   storage(const shape_type &s, _with_iterators, IterT begin, IterT end)

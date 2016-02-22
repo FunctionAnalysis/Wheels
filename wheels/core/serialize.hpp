@@ -2,10 +2,6 @@
 
 #include <fstream>
 
-#if defined(wheels_compiler_msc)
-#include <filesystem>
-#endif
-
 #include <cereal/types/array.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/bitset.hpp>
@@ -34,6 +30,10 @@
 #include <cereal/archives/xml.hpp>
 
 #include "fields.hpp"
+
+#if defined(wheels_compiler_msc)
+#include <filesystem>
+#endif
 
 namespace wheels {
 
