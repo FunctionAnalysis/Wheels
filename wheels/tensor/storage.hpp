@@ -147,36 +147,51 @@ public:
 
   static constexpr size_t _initial_cap = 2;
   storage() : _shape(), _capacity(_initial_cap) {
-    _data = new value_type[_capacity];
-    details::_initialize_n(_data, _capacity);
+    _data = _alloc.allocate(_capacity);
+    for (size_t i = 0; i < _capacity; i++) {
+      _alloc.construct(_data + i);
+    }
   }
   explicit storage(const shape_type &s) : _shape(s) {
     _capacity = _shape.magnitude();
-    _data = new value_type[_capacity];
-    details::_initialize_n(_data, _capacity);
+    _data = _alloc.allocate(_capacity);
+    for (size_t i = 0; i < _capacity; i++) {
+      _alloc.construct(_data + i);
+    }
   }
   storage(const shape_type &s, const value_type &e) : _shape(s) {
     _capacity = _shape.magnitude();
-    _data = new value_type[_capacity];
-    std::fill_n(_data, _capacity, e);
+    _data = _alloc.allocate(_capacity);
+    for (size_t i = 0; i < _capacity; i++) {
+      _alloc.construct(_data + i, e);
+    }
   }
   template <class... EleTs>
   storage(const shape_type &s, _with_elements, EleTs &&... eles) : _shape(s) {
     _capacity = _shape.magnitude();
-    _data = new value_type[_capacity];
+    _data = _alloc.allocate(_capacity);
+    for (size_t i = 0; i < _capacity; i++) {
+      _alloc.construct(_data + i);
+    }
     details::_initialize_by_elements(_data, std::forward<EleTs>(eles)...);
   }
   template <class IterT>
   storage(const shape_type &s, _with_iterators, IterT begin, IterT end)
       : _shape(s) {
     _capacity = _shape.magnitude();
-    _data = new value_type[_capacity];
+    _data = _alloc.allocate(_capacity);
+    for (size_t i = 0; i < _capacity; i++) {
+      _alloc.construct(_data + i);
+    }
     std::copy(begin, end, _data);
   }
 
   storage(const storage &st) : _shape(st._shape) {
     _capacity = _shape.magnitude();
-    _data = new value_type[_capacity];
+    _data = _alloc.allocate(_capacity);
+    for (size_t i = 0; i < _capacity; i++) {
+      _alloc.construct(_data + i);
+    }
     std::copy_n(st._data, _capacity, _data);
   }
   storage(storage &&st)
@@ -186,20 +201,32 @@ public:
   }
 
   ~storage() {
-    delete[] _data;
-    _data = nullptr;
+    if (_data) {
+      for (size_t i = 0; i < _capacity; i++) {
+        _alloc.destroy(_data + i);
+      }
+      _alloc.deallocate(_data, _capacity);
+      _data = nullptr;
+    }
   }
 
   storage &operator=(const storage &st) {
     _shape = st._shape;
     const auto nmag = _shape.magnitude();
     if (_capacity < nmag) {
+      value_type *ndata = _alloc.allocate(nmag);
+      for (size_t i = 0; i < nmag; i++) {
+        _alloc.construct(ndata + i, st._data[i]);
+      }
+      for (size_t i = 0; i < _capacity; i++) {
+        _alloc.destroy(_data + i);
+      }
+      _alloc.deallocate(_data, _capacity);
       _capacity = nmag;
-      value_type *ndata = new value_type[_capacity];
-      delete[] _data;
       _data = ndata;
+    } else {
+      std::copy_n(st._data, _capacity, _data);
     }
-    std::copy_n(st._data, _capacity, _data);
     return *this;
   }
   storage &operator=(storage &&st) {
@@ -222,27 +249,40 @@ public:
     const auto mag = _shape.magnitude();
     const auto nmag = nshape.magnitude();
     if (_capacity < nmag) {
+      value_type *ndata = _alloc.allocate(nmag);
+      for (size_t i = 0; i < _capacity; i++) {
+        _alloc.construct(ndata + i, std::move(_data[i]));
+      }
+      for (size_t i = _capacity; i < nmag; i++) {
+        _alloc.construct(ndata + i);
+      }
+      for (size_t i = 0; i < _capacity; i++) {
+        _alloc.destroy(_data + i);
+      }
+      _alloc.deallocate(_data, _capacity);
       _capacity = nmag;
-      value_type *ndata = new value_type[_capacity];
-      details::_initialize_n_by_move(ndata, mag, _data);
-      delete[] _data;
       _data = ndata;
     }
     if (mag < nmag) {
-      details::_initialize_n(_data + mag, nmag - mag);
+      for (size_t i = mag; i < nmag; i++) {
+        _data[i] = value_type();
+      }
     }
     _shape = nshape;
   }
 
   template <class V> decltype(auto) fields(V &&visitor) {
     return visitor(
-        as_container(make_range(_data, _data + _shape.magnitude()), visitor));
+        as_container(make_range(_alloc.address(_data[0]),
+                                _alloc.address(_data[_shape.magnitude()])),
+                     visitor));
   }
 
 private:
   shape_type _shape;
   size_t _capacity;
   value_type *_data;
+  std::allocator<value_type> _alloc;
 };
 
 // serialize

@@ -42,7 +42,7 @@ constexpr auto meshgrid_at(const tensor_shape<ST, SizeTs...> &s,
 namespace details {
 template <class ET, class ShapeT, size_t... Is>
 constexpr auto _meshgrid(const ShapeT &s, const const_ints<size_t, Is...> &) {
-  return std::forward_as_tuple(meshgrid_result<ET, ShapeT, Is>(s)...);
+  return std::make_tuple(meshgrid_result<ET, ShapeT, Is>(s)...);
 }
 }
 template <class ET = size_t, class ST, class... SizeTs>

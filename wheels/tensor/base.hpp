@@ -531,15 +531,17 @@ bool for_each_element(behavior_flag<nonzero_only>, FunT &fun, tensor_core<T> &t,
 }
 
 // void assign_elements(to, from);
-template <class ToT, class FromT>
-void assign_elements(tensor_core<ToT> &to, const tensor_core<FromT> &from) {
+template <class ToET, class ToShapeT, class ToT, class FromET, class FromShapeT,
+          class FromT>
+void assign_elements(tensor_base<ToET, ToShapeT, ToT> &to,
+                     const tensor_base<FromET, FromShapeT, FromT> &from) {
   decltype(auto) s = from.shape();
   if (to.shape() != s) {
     reserve_shape(to.derived(), s);
   }
   for_each_element(behavior_flag<unordered>(),
                    [](auto &&to_e, auto &&from_e) {
-                     auto e = from_e;
+                     FromET e = from_e;
                      to_e = e;
                    },
                    to.derived(), from.derived());

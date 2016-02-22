@@ -77,8 +77,6 @@ public:
 public:
   tensor_map(const tensor_map &) = default;
   tensor_map(tensor_map &&) = default;
-  tensor_map &operator=(const tensor_map &) = default;
-  tensor_map &operator=(tensor_map &&) = default;
 
   template <class AnotherT>
   tensor_map &operator=(const tensor_core<AnotherT> &another) {
