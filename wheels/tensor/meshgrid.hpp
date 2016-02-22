@@ -31,6 +31,13 @@ constexpr ET element_at(const meshgrid_result<ET, ShapeT, Axis> &t,
   return (ET)std::get<Axis>(std::forward_as_tuple(subs...));
 }
 
+// meshgrid_at
+template <class ET = size_t, class ST, class... SizeTs, class K, K Axis>
+constexpr auto meshgrid_at(const tensor_shape<ST, SizeTs...> &s,
+                           const const_ints<K, Axis> &) {
+  return meshgrid_result<ET, tensor_shape<ST, SizeTs...>, Axis>(s);
+}
+
 // meshgrid
 namespace details {
 template <class ET, class ShapeT, size_t... Is>

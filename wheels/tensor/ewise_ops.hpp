@@ -87,7 +87,7 @@ constexpr bool not_equals_result_of(
       ts, make_const_sequence_for<InputT, InputTs...>());
 }
 
-// shortcuts
+// element_at_index
 namespace details {
 template <class EwiseOpResultT, size_t... Is, class IndexT>
 constexpr decltype(auto)
@@ -105,6 +105,8 @@ constexpr decltype(auto) element_at_index(
   return details::_element_at_index_ewise_op_result_seq(
       ts, make_const_sequence_for<InputT, InputTs...>(), index);
 }
+
+
 
 // other ops are overloaded as ewise operation results defaultly
 // all tensors
