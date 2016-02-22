@@ -25,6 +25,7 @@ using blas_int = int;
 
 // https://software.intel.com/en-us/node/521115
 namespace lapack {
+
 template <typename TT>
 inline void gels(char *trans, blas_int *m, blas_int *n, blas_int *nrhs, TT *a,
                  blas_int *lda, TT *b, blas_int *ldb, TT *work, blas_int *lwork,

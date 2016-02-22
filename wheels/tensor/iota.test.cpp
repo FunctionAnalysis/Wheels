@@ -10,9 +10,9 @@ TEST(tensor, iota) {
     ns += i * i;
     print(i, ' ');
   }
-  auto n = iota(50).norm_squared();
+  auto n = iota(50).norm();
   println(n);
-  ASSERT_EQ(ns, n);
+  ASSERT_EQ(sqrt(ns), n);
 
   // reverse
   vecx data(make_shape(100));

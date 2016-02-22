@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
 #include "constants.hpp"
-#include "subwise.hpp"
 #include "extend.hpp"
+#include "subwise.hpp"
 
 using namespace wheels;
 using namespace wheels::literals;
@@ -20,7 +20,6 @@ TEST(tensor, subwise) {
   ASSERT_TRUE(&original == &m);
 
   auto c = subwise(m, 1_c);
-  auto d = c[0];
   decltype(auto) original2 = extend_as_subtensor(c);
   ASSERT_TRUE(&original2 == &m);
 }

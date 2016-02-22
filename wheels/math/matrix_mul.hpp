@@ -20,7 +20,7 @@ public:
       : _a(forward<A>(aa)), _b(forward<B>(bb)) {}
   constexpr auto shape() const {
     return make_shape(size_at(_a, const_index<0>()),
-                      size_at(b, const_index<1>()));
+                      size_at(_b, const_index<1>()));
   }
   template <class SubT1, class SubT2>
   decltype(auto) at_subs(const SubT1 &s1, const SubT2 &s2) const {

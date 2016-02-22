@@ -574,7 +574,7 @@ E reduce_elements(const tensor_core<T> &t, E initial, ReduceT &red) {
 // Scalar norm_squared(ts)
 template <class ET, class ShapeT, class T>
 ET norm_squared(const tensor_base<ET, ShapeT, T> &t) {
-  auto result = types<typename tensor_element_types<ET>::storable>::zero();
+  auto result = types<ET>::zero();
   for_each_element(behavior_flag<nonzero_only>(),
                    [&result](auto &&e) { result += e * e; }, t.derived());
   return result;
@@ -582,7 +582,7 @@ ET norm_squared(const tensor_base<ET, ShapeT, T> &t) {
 
 // Scalar norm(ts)
 template <class ET, class ShapeT, class T>
-constexpr ET norm(const tensor_base<ET, ShapeT, T> &t) {
+constexpr auto norm(const tensor_base<ET, ShapeT, T> &t) {
   return sqrt(norm_squared(t.derived()));
 }
 
