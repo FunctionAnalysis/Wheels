@@ -23,7 +23,7 @@ TEST(tensor, reformulate) {
   ASSERT_TRUE(c1 == c2);
 }
 
-TEST(tensor, DISABLED_reformulate2) {
+TEST(tensor, reformulate2) {
   std::default_random_engine rng;
   auto a = rand(make_shape(10, 20, 30), rng);
   auto c1 = reformulate(a, make_shape(60, 30), [](auto i, auto j) {

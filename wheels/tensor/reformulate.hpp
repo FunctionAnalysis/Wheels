@@ -76,14 +76,14 @@ namespace details {
 template <class ShapeT, class SubsTupleT, size_t... Is>
 constexpr auto _repeat_subs_seq(const ShapeT &shape, SubsTupleT &subs,
                                 const const_ints<size_t, Is...> &) {
-  return std::forward_as_tuple((std::get<Is>(subs) % std::get<Is>(shape))...);
+  return std::make_tuple((std::get<Is>(subs) % std::get<Is>(shape))...);
 }
 template <class ShapeT> struct _repeat_subs_functor {
   ShapeT shape;
   constexpr explicit _repeat_subs_functor(const ShapeT &s) : shape(s) {}
   template <class... SubTs>
   constexpr auto operator()(const SubTs &... subs) const {
-    return _repeat_subs_seq(shape, std::forward_as_tuple(subs...),
+    return _repeat_subs_seq(shape, std::make_tuple(subs...),
                             make_const_sequence_for<SubTs...>());
   }
 };
