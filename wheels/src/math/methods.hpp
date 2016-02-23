@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../tensor.hpp"
+#include "../tensor/base.hpp"
+#include "../tensor/ewise_ops.hpp"
 
 namespace wheels {
 // distance

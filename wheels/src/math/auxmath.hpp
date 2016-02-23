@@ -1,6 +1,11 @@
 #pragma once
 
-#include "../tensor.hpp"
+#include "../tensor/tensor.hpp"
+#include "../tensor/cat.hpp"
+#include "../tensor/constants.hpp"
+#include "../tensor/block.hpp"
+#include "../tensor/permute.hpp"
+
 #include "lapack.hpp"
 
 namespace wheels {

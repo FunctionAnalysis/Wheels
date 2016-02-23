@@ -1,5 +1,6 @@
-#include "../tensor.hpp"
 #include <gtest/gtest.h>
+
+#include "../../tensor"
 
 using namespace wheels;
 using namespace wheels::index_tags;

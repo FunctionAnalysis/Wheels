@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include "../../tensor"
+
 #include "auxmath.hpp"
 #include "matrix_mul.hpp"
 

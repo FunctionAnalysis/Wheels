@@ -249,15 +249,15 @@ public:
   int fourCC;
 };
 
-namespace details {
-std::vector<cv::Mat> _vdread(const filesystem::path &path,
-                             cv_video_props *vp = nullptr);
-size_t _vdread(const filesystem::path &path,
-               const std::function<bool(const cv::Mat &fram)> &processor,
-               cv_video_props *vp = nullptr);
-bool _vdwrite(const filesystem::path &path, const std::vector<cv::Mat> &frames,
-              const cv_video_props &props);
-}
+//namespace details {
+//std::vector<cv::Mat> _vdread(const filesystem::path &path,
+//                             cv_video_props *vp = nullptr);
+//size_t _vdread(const filesystem::path &path,
+//               const std::function<bool(const cv::Mat &fram)> &processor,
+//               cv_video_props *vp = nullptr);
+//bool _vdwrite(const filesystem::path &path, const std::vector<cv::Mat> &frames,
+//              const cv_video_props &props);
+//}
 
 //// cv_video
 // template <class T, size_t Depth>

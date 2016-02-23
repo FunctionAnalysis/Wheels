@@ -1,26 +1,22 @@
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # all files
-set (modules core tensor math)
-
-if (${OpenCV_FOUND} AND ${MATLAB_FOUND} AND ${EIGEN3_FOUND})
-    list (APPEND modules unsupported)
-endif()
+set (modules core tensor math unsupported)
 
 set (wheels_sources "")
 foreach (M ${modules})
     file (GLOB "Src"
-        "${CMAKE_CURRENT_SOURCE_DIR}/${M}/*.cpp" 
-        "${CMAKE_CURRENT_SOURCE_DIR}/${M}/*.hpp"
-        "${CMAKE_CURRENT_SOURCE_DIR}/${M}/*.cu" 
-        "${CMAKE_CURRENT_SOURCE_DIR}/${M}/*.cuh"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/${M}/*.cpp" 
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/${M}/*.hpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/${M}/*.cu" 
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/${M}/*.cuh"
     )
     source_group ("${M}" FILES ${Src})
     list (APPEND wheels_sources ${Src})
 endforeach()
 set (wheels_includes "")
 foreach (M ${modules})
-    list (APPEND wheels_includes "${CMAKE_CURRENT_SOURCE_DIR}/${M}.hpp")
+    list (APPEND wheels_includes "${CMAKE_CURRENT_SOURCE_DIR}/${M}")
 endforeach()
 source_group ("includes" FILES ${wheels_includes})
 
