@@ -90,44 +90,52 @@ private:
 };
 
 namespace details {
-// initialize_n
-template <class T>
-inline std::enable_if_t<std::is_scalar<T>::value> _initialize_n(T *data,
-                                                                size_t n) {
-  std::fill_n(data, n, T(0));
-}
-template <class T>
-inline std::enable_if_t<!std::is_scalar<T>::value> _initialize_n(T *data,
-                                                                 size_t n) {
+//// initialize_n
+//template <class T>
+//inline std::enable_if_t<std::is_scalar<T>::value> _initialize_n(T *data,
+//                                                                size_t n) {
+//  std::fill_n(data, n, T(0));
+//}
+//template <class T>
+//inline std::enable_if_t<!std::is_scalar<T>::value> _initialize_n(T *data,
+//                                                                 size_t n) {
+//  for (size_t i = 0; i < n; i++) {
+//    void *ptr = (void *)(data + i);
+//    ::new (ptr) T();
+//  }
+//}
+//
+//// initialize_n_by_move
+//template <class T>
+//inline std::enable_if_t<std::is_scalar<T>::value>
+//_initialize_n_by_move(T *data, size_t n, T *src) {
+//  std::copy_n(src, n, data);
+//}
+//template <class T>
+//inline std::enable_if_t<!std::is_scalar<T>::value>
+//_initialize_n_by_move(T *data, size_t n, T *src) {
+//  for (size_t i = 0; i < n; i++) {
+//    void *ptr = (void *)(data + i);
+//    ::new (ptr) T(std::move(src[i]));
+//  }
+//}
+
+// _construct_n
+template <class T, class AllocT, class... ArgTs>
+inline void _construct_n(T *data, AllocT &alloc, size_t n, ArgTs &... args) {
   for (size_t i = 0; i < n; i++) {
-    void *ptr = (void *)(data + i);
-    ::new (ptr) T();
+    alloc.construct(data + i, args...);
   }
 }
 
-// initialize_n_by_move
-template <class T>
-inline std::enable_if_t<std::is_scalar<T>::value>
-_initialize_n_by_move(T *data, size_t n, T *src) {
-  std::copy_n(src, n, data);
-}
-template <class T>
-inline std::enable_if_t<!std::is_scalar<T>::value>
-_initialize_n_by_move(T *data, size_t n, T *src) {
-  for (size_t i = 0; i < n; i++) {
-    void *ptr = (void *)(data + i);
-    ::new (ptr) T(std::move(src[i]));
-  }
-}
-
-// initialize_by_elements
+// _construct_each_by
 template <class T, class AllocT>
-inline void _initialize_by_elements(T *data, AllocT &alloc) {}
+inline void _construct_each_by(T *data, AllocT &alloc) {}
 template <class T, class AllocT, class EleT, class... EleTs>
-inline void _initialize_by_elements(T *data, AllocT &alloc, EleT &&ele,
+inline void _construct_each_by(T *data, AllocT &alloc, EleT &&ele,
                                     EleTs &&... eles) {
   alloc.construct(data, forward<EleT>(ele));
-  _initialize_by_elements(data + 1, alloc, std::forward<EleTs>(eles)...);
+  _construct_each_by(data + 1, alloc, std::forward<EleTs>(eles)...);
 }
 }
 
@@ -140,32 +148,26 @@ public:
   using value_type = T;
   using shape_type = ShapeT;
 
-  static constexpr size_t _initial_cap = 2;
+  static constexpr size_t _initial_cap = 1;
   storage() : _shape(), _capacity(_initial_cap) {
     _data = _alloc.allocate(_capacity);
-    for (size_t i = 0; i < _capacity; i++) {
-      _alloc.construct(_data + i);
-    }
+    details::_construct_n(_data, _alloc, _capacity);
   }
   explicit storage(const shape_type &s) : _shape(s) {
     _capacity = _shape.magnitude();
     _data = _alloc.allocate(_capacity);
-    for (size_t i = 0; i < _capacity; i++) {
-      _alloc.construct(_data + i);
-    }
+    details::_construct_n(_data, _alloc, _capacity);
   }
   storage(const shape_type &s, const value_type &e) : _shape(s) {
     _capacity = _shape.magnitude();
     _data = _alloc.allocate(_capacity);
-    for (size_t i = 0; i < _capacity; i++) {
-      _alloc.construct(_data + i, e);
-    }
+    details::_construct_n(_data, _alloc, _capacity, e);
   }
   template <class... EleTs>
   storage(const shape_type &s, _with_elements, EleTs &&... eles) : _shape(s) {
     _capacity = _shape.magnitude();
     _data = _alloc.allocate(_capacity);
-    details::_initialize_by_elements(_data, _alloc, forward<EleTs>(eles)...);
+    details::_construct_each_by(_data, _alloc, forward<EleTs>(eles)...);
     for (size_t i = sizeof...(EleTs); i < _capacity; i++) {
       _alloc.construct(_data + i);
     }
@@ -175,24 +177,29 @@ public:
       : _shape(s) {
     _capacity = _shape.magnitude();
     _data = _alloc.allocate(_capacity);
-    for (size_t i = 0; i < _capacity; i++) {
+    size_t i = 0;
+    for (; i < _capacity && begin != end; i++) {
+      _alloc.construct(_data + i, *begin);
+      ++begin;
+    }
+    for (; i < _capacity; i++) {
       _alloc.construct(_data + i);
     }
-    std::copy(begin, end, _data);
   }
 
   storage(const storage &st) : _shape(st._shape) {
     _capacity = _shape.magnitude();
     _data = _alloc.allocate(_capacity);
     for (size_t i = 0; i < _capacity; i++) {
-      _alloc.construct(_data + i);
+      _alloc.construct(_data + i, st._data[i]);
     }
-    std::copy_n(st._data, _capacity, _data);
   }
   storage(storage &&st)
-      : _shape(st._shape), _capacity(st._capacity), _data(st._data) {
+      : _shape(st._shape), _capacity(st._capacity), _data(st._data),
+        _alloc(st._alloc) {
     st._shape = shape_type();
     st._data = nullptr;
+    st._capacity = 0;
   }
 
   ~storage() {
@@ -201,6 +208,7 @@ public:
         _alloc.destroy(_data + i);
       }
       _alloc.deallocate(_data, _capacity);
+      _capacity = 0;
       _data = nullptr;
     }
   }
@@ -220,7 +228,9 @@ public:
       _capacity = nmag;
       _data = ndata;
     } else {
-      std::copy_n(st._data, _capacity, _data);
+      for (size_t i = 0; i < nmag; i++) {
+        _data[i] = st._data[i];
+      }
     }
     return *this;
   }
@@ -238,12 +248,13 @@ public:
     std::swap(_shape, st._shape);
     std::swap(_capacity, st._capacity);
     std::swap(_data, st._data);
+    std::swap(_alloc, st._alloc);
   }
 
   void reshape(const shape_type &nshape) {
     const auto mag = _shape.magnitude();
     const auto nmag = nshape.magnitude();
-    if (_capacity < nmag) {
+    if (_capacity < nmag) { // allocate new
       value_type *ndata = _alloc.allocate(nmag);
       for (size_t i = 0; i < _capacity; i++) {
         _alloc.construct(ndata + i, std::move(_data[i]));

@@ -5,6 +5,7 @@
 #include "./tensor/block.hpp"
 #include "./tensor/cat.hpp"
 #include "./tensor/constants.hpp"
+#include "./tensor/diagonal.hpp"
 #include "./tensor/ewise_ops.hpp"
 #include "./tensor/extend.hpp"
 #include "./tensor/index.hpp"

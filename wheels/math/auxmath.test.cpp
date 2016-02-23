@@ -5,7 +5,7 @@
 
 using namespace wheels;
 
-TEST(math, auxmath) {
+TEST(math, solve) {
   std::default_random_engine rng;
   for (size_t i : iota(10)) {
     for (size_t j : iota(10)) {
@@ -27,5 +27,17 @@ TEST(math, auxmath) {
         ASSERT_TRUE(b);
       }
     }
+  }
+}
+
+TEST(DISABLED_math, inverse) {
+  std::default_random_engine rng;
+  for (size_t i : iota(10) + 2) {
+    matx A(make_shape(i, i));
+    randomize_fields(A, rng);
+    bool b = false;
+    auto X = auxmath::inverse(A, &b);
+    ASSERT_TRUE((A * X - eye(i)).norm() < 1e-3);
+    ASSERT_TRUE(b);
   }
 }
