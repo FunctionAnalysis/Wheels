@@ -185,7 +185,6 @@ template <class E, class T>
 using gvecx_ = tensor_base<E, tensor_shape<size_t, size_t>, T>;
 template <class T> using gvecx = gvecx_<double, T>;
 
-
 // mat_
 template <class T, size_t M, size_t N>
 using mat_ = tensor<T, tensor_shape<size_t, const_size<M>, const_size<N>>>;
@@ -209,7 +208,6 @@ template <class E, class T>
 using gmatx_ = tensor_base<E, tensor_shape<size_t, size_t, size_t>, T>;
 template <class T> using gmatx = gmatx_<double, T>;
 
-
 // cube_
 template <class T, size_t M, size_t N, size_t L>
 using cube_ =
@@ -223,7 +221,6 @@ template <class T>
 using cubex_ = tensor<T, tensor_shape<size_t, size_t, size_t, size_t>>;
 using cubex = matx_<double>;
 
-
 // strings
 using str = vecx_<char>;
 using wstr = vecx_<wchar_t>;
@@ -235,8 +232,6 @@ template <class T> using gstr = gvecx_<char, T>;
 template <class T> using gwstr = gvecx_<wchar_t, T>;
 template <class T> using gu16str = gvecx_<char16_t, T>;
 template <class T> using gu32str = gvecx_<char32_t, T>;
-
-
 
 // tensor_of_rank
 namespace details {
@@ -251,4 +246,13 @@ struct _make_tensor_of_rank_seq<T, const_ints<size_t, Is...>> {
 template <class T, size_t Rank>
 using tensor_of_rank = typename details::_make_tensor_of_rank_seq<
     T, decltype(make_const_sequence(const_size<Rank>()))>::type;
+
+// rand
+template <class ET = double, class ST, class... SizeTs, class RNG>
+inline tensor<ET, tensor_shape<ST, SizeTs...>>
+rand(const tensor_shape<ST, SizeTs...> &shape, RNG &rng) {
+  tensor<ET, tensor_shape<ST, SizeTs...>> ts(shape);
+  randomize_fields(ts, rng);
+  return ts;
+}
 }

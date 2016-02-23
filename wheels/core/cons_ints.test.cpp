@@ -31,7 +31,7 @@ TEST(core, constants) {
   static_assert(!std::is_convertible<const_size<2>, const_int<1>>::value, "");
 
   ASSERT_EQ(1_c * 5, 5);
-  
+
   static_assert((repeat(5_c, 3_c) == cat(5_c, 5_c, 5_c)).all(), "");
 
   static_assert(find_first_of(cat(1_c, 2_c, 3_c, 4_c), 0_c) == 4_indexc, "");
@@ -50,4 +50,5 @@ TEST(core, constants) {
   static_assert(count(cat(1_c, 2_c, 2_c, 5_c, 5_indexc), 5_c) == 2_c, "");
 
   for_each(make_const_sequence(5_c), [](auto i) { print(i, ' '); });
+  println();
 }
