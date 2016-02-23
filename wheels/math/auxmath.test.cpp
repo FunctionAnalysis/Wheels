@@ -6,12 +6,26 @@
 using namespace wheels;
 
 TEST(math, auxmath) {
-  matx A(make_shape(10, 12)), B(make_shape(10, 1));
   std::default_random_engine rng;
-  randomize_fields(A, rng);
-  randomize_fields(B, rng);
-  matx X;
-  bool b = auxmath::solve(A, B, X);
-  ASSERT_TRUE(b);
-  println((A * X - B).norm());
+  for (size_t i : iota(10)) {
+    for (size_t j : iota(10)) {
+      for (size_t k : iota(10)) {
+        matx A(make_shape(i + 1, i + 1 + j)), B(make_shape(i + 1, k + 1));
+        randomize_fields(A, rng);
+        randomize_fields(B, rng);
+        bool b = false;
+        ASSERT_TRUE((A * auxmath::solve(A, B, &b) - B).norm() < 1e-3);
+        ASSERT_TRUE(b);
+      }
+      {
+        matx A(make_shape(i + 1, i + 1 + j));
+        vecx B(make_shape(i + 1));
+        randomize_fields(A, rng);
+        randomize_fields(B, rng);
+        bool b = false;
+        ASSERT_TRUE((A * auxmath::solve(A, B, &b) - B).norm() < 1e-3);
+        ASSERT_TRUE(b);
+      }
+    }
+  }
 }
