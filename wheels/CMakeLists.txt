@@ -11,7 +11,7 @@ foreach (M ${modules})
         "${CMAKE_CURRENT_SOURCE_DIR}/src/${M}/*.cu" 
         "${CMAKE_CURRENT_SOURCE_DIR}/src/${M}/*.cuh"
     )
-    source_group ("${M}" FILES ${Src})
+    source_group ("modules\\${M}" FILES ${Src})
     list (APPEND wheels_sources ${Src})
 endforeach()
 set (wheels_includes "")

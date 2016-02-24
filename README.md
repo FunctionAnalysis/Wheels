@@ -1,5 +1,26 @@
 # Wheels
-A C++ Toolkit for Tensor Manipulations.
+A new programming pattern for C++ based on tensors.
+
+## Examples
+Let's start with the standard hello world program:
+```cpp
+#include <wheels/tensor>
+
+using namespace wheels;
+using namespace wheels::literals;
+using namespace wheels::index_tags;
+
+int main(){
+	auto greeting = "hello world!"_ts;
+	println(greeting);
+}
+```
+Seems naive? We can do more with the string:
+```cpp
+println(greeting[where('a' <= greeting && greeting <= 'z')]); // show only letters
+println(greeting[last - iota(greeting.numel())]); // reverse the string
+println(cat(greeting, " "_ts, "let's rock!"_ts)); // concatenation
+```
 
 ## Features
 ### generic tensors

@@ -229,6 +229,13 @@ template <class T> struct is_initializer_list : no {};
 template <class T>
 struct is_initializer_list<std::initializer_list<T>> : yes {};
 
+// is_character
+template <class T> struct is_character : no {};
+template <> struct is_character<char> : yes {};
+template <> struct is_character<wchar_t> : yes {};
+template <> struct is_character<char16_t> : yes {};
+template <> struct is_character<char32_t> : yes {};
+
 // is_zero
 template <class T>
 std::enable_if_t<std::is_scalar<T>::value, bool> is_zero(const T &v) {

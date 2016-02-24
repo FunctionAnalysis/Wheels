@@ -101,3 +101,16 @@ TEST(tensor, demo) {
   static_assert(sizeof(mat_<double, 2, 2>) == 32, "");
   static_assert(std::is_standard_layout<mat_<double, 2, 2>>::value, "");
 }
+
+TEST(tensor, demo2) {
+
+  auto greeting = "hello world!"_ts;
+  println(greeting);
+  println(
+      greeting[where('a' <= greeting && greeting <= 'z')]); // show only letters
+  println(greeting[last - iota(greeting.numel())]); // reverse the string
+  println(cat(greeting, " let's rock!"_ts));        // concatenation
+
+  println(repeat(promote(1_c, greeting), 3, 1));
+  println(repeat(promote(1_c, greeting), 3, 1).t());
+}

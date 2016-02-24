@@ -15,6 +15,7 @@
 #include "./src/tensor/permute.hpp"
 #include "./src/tensor/reformulate.hpp"
 #include "./src/tensor/remap.hpp"
+#include "./src/tensor/reshape.hpp"
 #include "./src/tensor/shape.hpp"
 #include "./src/tensor/subwise.hpp"
 #include "./src/tensor/tensor.hpp"

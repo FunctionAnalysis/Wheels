@@ -554,9 +554,13 @@ constexpr auto cat2(const IntT &a, const tensor_shape<T, Ss...> &b) {
 
 // repeat_shape
 namespace details {
-template <class ShapeOrSizeT>
-constexpr auto _repeat_shape(const ShapeOrSizeT &s, const_size<0>) {
-  static_assert(always<bool, false, ShapeOrSizeT>::value, "times is zero");
+template <class SizeT>
+constexpr auto _repeat_shape(const SizeT &s, const_size<0>) {
+  return tensor_shape<typename int_traits<SizeT>::type>();
+}
+template <class T, class... Ss>
+constexpr auto _repeat_shape(const tensor_shape<T, Ss...> &s, const_size<0>) {
+  return tensor_shape<T>();
 }
 template <class SizeT>
 constexpr auto _repeat_shape(const SizeT &s, const_size<1>) {

@@ -633,29 +633,42 @@ template <class ET, class ShapeT, class T>
 inline std::ostream &_stream_impl(std::ostream &os,
                                   const tensor_base<ET, ShapeT, T> &t,
                                   const_size<1>) {
+  static const char _bracket[2] = {
+      conditional(is_character<ET>(), '\'', '['),
+      conditional(is_character<ET>(), '\'', ']')};
   if (t.numel() == 0) {
-    return os << "[]";
+    return os << _bracket[0] << _bracket[1];
   }
-  os << '[' << t(0);
+  os << _bracket[0] << t(0);
   for (size_t i = 1; i < t.numel(); i++) {
     auto e = t(i);
-    os << ", " << e;
+    if (!is_character<ET>()) {
+      os << ", ";
+    }
+    os << e;
   }
-  return os << ']';
+  return os << _bracket[1];
 }
+
 template <class ET, class ShapeT, class T>
 inline std::ostream &_stream_impl(std::ostream &os,
                                   const tensor_base<ET, ShapeT, T> &t,
                                   const_size<2>) {
+  static const char _bracket[2] = {
+      conditional(is_character<ET>(), '\'', '['),
+      conditional(is_character<ET>(), '\'', ']')};
   for (size_t j = 0; j < t.size(const_index<0>()); j++) {
     if (t.size(const_index<1>()) == 0) {
-      os << "[]\n";
+      os << _bracket[0] << _bracket[1] << '\n';
     } else {
-      os << '[' << t(j, 0);
+      os << _bracket[0] << t(j, 0);
       for (size_t i = 1; i < t.size(const_index<1>()); i++) {
-        os << ", " << t(j, i);
+        if (!is_character<ET>()) {
+          os << ", ";
+        }
+        os << t(j, i);
       }
-      os << ']' << '\n';
+      os << _bracket[1] << '\n';
     }
   }
   return os;

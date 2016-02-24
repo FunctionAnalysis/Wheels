@@ -13,7 +13,7 @@ public:
   using shape_type = ShapeT;
   constexpr reshape_view(const ShapeT &s, T &&in)
       : _shape(s), _input(forward<T>(in)) {
-    assert(s.magnitude() <= _input.numel());
+    assert(s.magnitude() == _input.numel());
   }
 
   const ShapeT &shape() const { return _shape; }
@@ -56,7 +56,6 @@ decltype(auto) element_at_index(reshape_view<ET, ShapeT, T> &t,
   return element_at_index(t.input(), ind);
 }
 
-
 // reshape
 namespace details {
 template <class ET, class OldShapeT, class T, class TT, class ShapeT>
@@ -75,5 +74,36 @@ template <class T, class ST, class... SizeTs>
 constexpr auto reshape(T &&t, const tensor_shape<ST, SizeTs...> &s)
     -> decltype(details::_reshape(t, forward<T>(t), s)) {
   return details::_reshape(t, forward<T>(t), s);
+}
+
+// promote
+namespace details {
+template <class ET, class ST, class... SizeTs, class T, class TT, class K,
+          K Times>
+constexpr auto _promote(const tensor_base<ET, tensor_shape<ST, SizeTs...>, T> &,
+                        TT &&t, const const_ints<K, Times> &) {
+  return reshape(
+      forward<TT>(t),
+      cat2(t.shape(), repeat_shape(const_ints<ST, 1>(), const_size<Times>())));
+}
+template <class ET, class ST, class... SizeTs, class T, class TT, class K,
+          K Times>
+constexpr auto _promote(const const_ints<K, Times> &,
+                        const tensor_base<ET, tensor_shape<ST, SizeTs...>, T> &,
+                        TT &&t) {
+  return reshape(
+      forward<TT>(t),
+      cat2(repeat_shape(const_ints<ST, 1>(), const_size<Times>()), t.shape()));
+}
+}
+template <class T, class K, K Times>
+constexpr auto promote(T &&t, const const_ints<K, Times> &rank)
+    -> decltype(details::_promote(t, forward<T>(t), rank)) {
+  return details::_promote(t, forward<T>(t), rank);
+}
+template <class T, class K, K Times>
+constexpr auto promote(const const_ints<K, Times> &rank, T &&t)
+    -> decltype(details::_promote(rank, t, forward<T>(t))) {
+  return details::_promote(rank, t, forward<T>(t));
 }
 }
