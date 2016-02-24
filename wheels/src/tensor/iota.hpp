@@ -137,6 +137,6 @@ constexpr auto iota(const tensor_shape<ST, SizeTs...> &s) {
 template <class ET = size_t, class SizeT,
           class = std::enable_if_t<is_int<SizeT>::value>>
 constexpr auto iota(const SizeT &s) {
-  return iota(make_shape(s));
+  return iota<ET>(make_shape(s));
 }
 }

@@ -8,7 +8,6 @@ using namespace wheels;
 using namespace wheels::literals;
 
 TEST(tensor, reshape) {
-
   auto s1 = "hello world!"_ts;
   auto s1e = reshape(s1, make_shape(3, 4));
   println(s1e);

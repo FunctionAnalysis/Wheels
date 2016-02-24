@@ -113,4 +113,6 @@ TEST(tensor, demo2) {
 
   println(repeat(promote(1_c, greeting), 3, 1));
   println(repeat(promote(1_c, greeting), 3, 1).t());
+
+  matx_<std::tuple<int, char>> m1;
 }

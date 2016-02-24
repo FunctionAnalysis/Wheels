@@ -222,6 +222,9 @@ template <class ET, class ShapeT, class T> struct tensor_base : tensor_core<T> {
   static_assert(!is_tensor_shape<ET>::value,
                 "value_type should not be a tensor_shape");
 
+  static constexpr auto get_value_type() { return types<value_type>(); }
+  static constexpr auto get_shape_type() { return types<shape_type>(); }
+
   const tensor_base &base() const { return *this; }
 
   constexpr tensor_type eval() const & { return tensor_type(derived()); }
@@ -238,6 +241,9 @@ struct tensor_base<ET, tensor_shape<ST, NT>, T> : tensor_core<T> {
   using tensor_type = tensor<value_type, shape_type>;
   static_assert(!is_tensor_shape<ET>::value,
                 "value_type should not be a tensor_shape");
+
+  static constexpr auto get_value_type() { return types<value_type>(); }
+  static constexpr auto get_shape_type() { return types<shape_type>(); }
 
   const tensor_base &base() const { return *this; }
 
@@ -304,6 +310,9 @@ struct tensor_base<ET, tensor_shape<ST, MT, NT>, T> : tensor_core<T> {
   using tensor_type = tensor<value_type, shape_type>;
   static_assert(!is_tensor_shape<ET>::value,
                 "value_type should not be a tensor_shape");
+
+  static constexpr auto get_value_type() { return types<value_type>(); }
+  static constexpr auto get_shape_type() { return types<shape_type>(); }
 
   const tensor_base &base() const { return *this; }
 

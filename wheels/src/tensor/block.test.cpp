@@ -7,7 +7,7 @@ using namespace wheels::index_tags;
 using namespace wheels::literals;
 
 TEST(tensor, block) {
-  auto a = meshgrid_at(make_shape(5, 4), 0_c);
+  auto a = meshgrid(make_shape(5, 4), 0_c);
   for (auto i : iota(a.size(0_c))) {
     println(a.block(i, everything));
   }

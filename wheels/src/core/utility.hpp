@@ -11,6 +11,11 @@ using std::forward;
 using std::move;
 template <class T> constexpr T copy(const T &t) { return t; }
 
+template <class... Ts>
+constexpr std::tuple<Ts...> safe_forward_as_tuple(Ts &&... ts) {
+  return std::tuple<Ts...>(forward<Ts>(ts)...);
+}
+
 using ignore_t = decltype(std::ignore);
 
 // conditional for enumulating ?:
