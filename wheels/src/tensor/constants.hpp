@@ -95,6 +95,13 @@ E reduce_elements(const constant_result<ET, ShapeT, OpT> &t, E initial,
   return initial;
 }
 
+// sum_of
+template <class ET, class ShapeT, class OpT>
+std::enable_if_t<std::is_scalar<ET>::value, ET>
+sum_of(const constant_result<ET, ShapeT, OpT> &t) {
+  return t.value() * numel(t);
+}
+
 // norm_squared
 template <class ET, class ShapeT, class OpT>
 std::enable_if_t<std::is_scalar<ET>::value, ET>
