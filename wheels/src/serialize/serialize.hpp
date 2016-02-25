@@ -29,8 +29,8 @@
 #include <cereal/archives/portable_binary.hpp>
 #include <cereal/archives/xml.hpp>
 
-#include "fields.hpp"
-#include "macros.hpp"
+#include "../core/macros.hpp"
+#include "../core/fields.hpp"
 
 namespace wheels {
 

@@ -229,23 +229,23 @@ inline bool imwrite(const std::string &path,
   return im.write(path);
 }
 
-// cv_video_props
-class cv_video_props : public serializable<cv_video_props> {
-public:
-  cv_video_props() : fps(0), fourCC(0) {}
-
-public:
-  template <class V> constexpr decltype(auto) fields(V &&visitor) const {
-    return visitor(fps, fourCC);
-  }
-  template <class V> decltype(auto) fields(V &&visitor) {
-    return visitor(fps, fourCC);
-  }
-
-public:
-  double fps;
-  int fourCC;
-};
+//// cv_video_props
+//class cv_video_props : public serializable<cv_video_props> {
+//public:
+//  cv_video_props() : fps(0), fourCC(0) {}
+//
+//public:
+//  template <class V> constexpr decltype(auto) fields(V &&visitor) const {
+//    return visitor(fps, fourCC);
+//  }
+//  template <class V> decltype(auto) fields(V &&visitor) {
+//    return visitor(fps, fourCC);
+//  }
+//
+//public:
+//  double fps;
+//  int fourCC;
+//};
 
 //namespace details {
 //std::vector<cv::Mat> _vdread(const std::string &path,

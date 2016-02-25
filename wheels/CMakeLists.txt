@@ -3,6 +3,10 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 # all files
 set (modules core tensor math unsupported)
 
+if (${Cereal_FOUND})
+    list (APPEND modules serialize)
+endif ()
+
 set (wheels_sources "")
 foreach (M ${modules})
     file (GLOB "Src"

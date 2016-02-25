@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include "../../core"
 #include "../../tensor"
 
 #include "auxmath.hpp"

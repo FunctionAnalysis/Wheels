@@ -68,24 +68,6 @@ TEST(tensor, element) {
   }
 }
 
-#if defined(wheels_compiler_msc)
-TEST(tensor, serialize) {
-  write_tmp("vec3.cereal", vec3(1, 2, 3));
-  vec3 v;
-  read_tmp("vec3.cereal", v);
-  ASSERT_TRUE(v == vec3(1, 2, 3));
-  vecx v2;
-  read_tmp("vec3.cereal", v2);
-  ASSERT_TRUE(v2 == vec3(1, 2, 3));
-
-  auto vb = ones<bool>(5).eval();
-  write_tmp("vecb5", vb);
-  vecx_<bool> vb2;
-  read_tmp("vecb5", vb2);
-  ASSERT_TRUE(vb == vb2);
-}
-#endif
-
 TEST(tensor, demo) {
   // t1: a 3x4x5 double type tensor filled with 1's
   auto t1 = ones(3, 4, 5).eval();
