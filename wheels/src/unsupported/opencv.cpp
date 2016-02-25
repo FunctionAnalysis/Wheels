@@ -3,7 +3,7 @@
 namespace wheels {
 
 namespace details {
-cv::Mat _imread(const filesystem::path &path) {
+cv::Mat _imread(const std::string &path) {
   std::ifstream file(path, std::iostream::binary);
   if (!file.good()) {
     return cv::Mat();
@@ -27,7 +27,7 @@ cv::Mat _imread(const filesystem::path &path) {
   return image;
 }
 
-bool _imwrite(const filesystem::path &path, const cv::Mat &mat) {
+bool _imwrite(const std::string &path, const cv::Mat &mat) {
   std::basic_ofstream<unsigned char, std::char_traits<unsigned char>> file(
       path, std::iostream::binary);
   if (!file.good()) {
@@ -54,10 +54,9 @@ bool _imwrite(const filesystem::path &path, const cv::Mat &mat) {
 }
 
 // _vdread
-std::vector<cv::Mat> _vdread(const filesystem::path &filepath,
-                             cv_video_props *vp) {
+std::vector<cv::Mat> _vdread(const std::string &filepath, cv_video_props *vp) {
   std::vector<cv::Mat> frames;
-  cv::VideoCapture cap(filepath.string());
+  cv::VideoCapture cap(filepath);
   if (!cap.isOpened()) {
     return frames;
   }
@@ -75,10 +74,10 @@ std::vector<cv::Mat> _vdread(const filesystem::path &filepath,
 }
 
 // _vdread
-size_t _vdread(const filesystem::path &path,
+size_t _vdread(const std::string &path,
                const std::function<bool(const cv::Mat &fram)> &processor,
                cv_video_props *vp) {
-  cv::VideoCapture cap(path.string());
+  cv::VideoCapture cap(path);
   if (!cap.isOpened()) {
     return 0;
   }
@@ -98,15 +97,14 @@ size_t _vdread(const filesystem::path &path,
 }
 
 // _vdwrite
-bool _vdwrite(const filesystem::path &path, const std::vector<cv::Mat> &frames,
+bool _vdwrite(const std::string &path, const std::vector<cv::Mat> &frames,
               const cv_video_props &props) {
   if (frames.empty()) {
     return false;
   }
   int width = frames.front().cols;
   int height = frames.front().rows;
-  cv::VideoWriter wrt(path.string(), props.fourCC, props.fps,
-                      cv::Size(width, height));
+  cv::VideoWriter wrt(path, props.fourCC, props.fps, cv::Size(width, height));
   if (!wrt.isOpened()) {
     return false;
   }

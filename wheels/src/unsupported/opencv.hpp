@@ -1,7 +1,5 @@
 #pragma once
 
-#include <filesystem>
-
 #include "../core/macros.hpp"
 #if defined(wheels_compiler_msc)
 #pragma warning(push, 0)
@@ -99,8 +97,8 @@ decltype(auto) fields(cv::Mat_<T> &&mat, U &&, V &&visitor) {
 }
 
 namespace details {
-cv::Mat _imread(const filesystem::path &path);
-bool _imwrite(const filesystem::path &path, const cv::Mat &mat);
+cv::Mat _imread(const std::string &path);
+bool _imwrite(const std::string &path, const cv::Mat &mat);
 }
 
 // cv_image
@@ -112,14 +110,14 @@ class cv_image
 
 public:
   cv_image() {}
-  cv_image(const filesystem::path &path) : mat(details::_imread(path)) {}
+  cv_image(const std::string &path) : mat(details::_imread(path)) {}
   cv_image(const cv::Mat_<cv::Vec<T, Depth>> &m) : mat(m) {}
   template <wheels_enable_if(Depth == 1)>
   cv_image(const cv::Mat_<T> &m) : mat(m) {}
 
   constexpr bool null() const { return mat.empty(); }
 
-  bool write(const filesystem::path &path) const {
+  bool write(const std::string &path) const {
     return details::_imwrite(path, mat);
   }
 
@@ -221,12 +219,12 @@ bool for_each_element(behavior_flag<unordered>, FunT &&fun,
 
 // imread
 template <class T = uint8_t, size_t Depth = 3>
-inline auto imread(const filesystem::path &path) {
+inline auto imread(const std::string &path) {
   return cv_image<T, Depth>(path);
 }
 // imread
 template <class T = uint8_t, size_t Depth = 3>
-inline bool imwrite(const filesystem::path &path,
+inline bool imwrite(const std::string &path,
                     const cv_image<T, Depth> &im) {
   return im.write(path);
 }
@@ -250,12 +248,12 @@ public:
 };
 
 //namespace details {
-//std::vector<cv::Mat> _vdread(const filesystem::path &path,
+//std::vector<cv::Mat> _vdread(const std::string &path,
 //                             cv_video_props *vp = nullptr);
-//size_t _vdread(const filesystem::path &path,
+//size_t _vdread(const std::string &path,
 //               const std::function<bool(const cv::Mat &fram)> &processor,
 //               cv_video_props *vp = nullptr);
-//bool _vdwrite(const filesystem::path &path, const std::vector<cv::Mat> &frames,
+//bool _vdwrite(const std::string &path, const std::vector<cv::Mat> &frames,
 //              const cv_video_props &props);
 //}
 
@@ -272,7 +270,7 @@ public:
 //  using shape_type =
 //      tensor_shape<size_t, size_t, size_t, size_t, const_size<Depth>>;
 //  cv_video() {}
-//  explicit cv_video(const filesystem::path &path) {
+//  explicit cv_video(const std::string &path) {
 //    auto frms = details::_vdread(path, &props);
 //    frames.reserve(frms.size());
 //    for (auto &f : frms) {
@@ -280,7 +278,7 @@ public:
 //    }
 //  }
 //
-//  bool write(const filesystem::path &path) const {
+//  bool write(const std::string &path) const {
 //    std::vector<cv::Mat> frms;
 //    frms.reserve(frames.size());
 //    for (auto &f : frames) {

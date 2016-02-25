@@ -30,10 +30,7 @@
 #include <cereal/archives/xml.hpp>
 
 #include "fields.hpp"
-
-#if defined(wheels_compiler_msc)
-#include <filesystem>
-#endif
+#include "macros.hpp"
 
 namespace wheels {
 
@@ -173,13 +170,9 @@ void load(ArcT &arc, serializable<T> &data, WHEELS_PARAMETER_DISTINGUISH(3)) {
 
 #undef WHEELS_PARAMETER_DISTINGUISH
 
-#if defined(wheels_compiler_msc)
-
-using namespace std::experimental;
-
 // write
 template <class ArchiveT = cereal::PortableBinaryOutputArchive, class... T>
-inline bool write(const filesystem::path &filename, const T &... data) {
+inline bool write(const std::string &filename, const T &... data) {
   std::ofstream out(filename, std::ios::binary);
   if (!out.is_open()) {
     println("file \"", filename, "\" cannot be saved!");
@@ -196,15 +189,10 @@ inline bool write(const filesystem::path &filename, const T &... data) {
   }
   return true;
 }
-// write_tmp
-template <class ArchiveT = cereal::PortableBinaryOutputArchive, class... T>
-inline bool write_tmp(const filesystem::path &filename, const T &... data) {
-  return write<ArchiveT>(filesystem::temp_directory_path() / filename, data...);
-}
 
 // read
 template <class ArchiveT = cereal::PortableBinaryInputArchive, class... T>
-inline bool read(const filesystem::path &filename, T &... data) {
+inline bool read(const std::string &filename, T &... data) {
   std::ifstream in(filename, std::ios::binary);
   if (!in.is_open()) {
     println("file \"", filename, "\" cannot be loaded!");
@@ -221,12 +209,25 @@ inline bool read(const filesystem::path &filename, T &... data) {
   }
   return true;
 }
+}
+
+#if defined(wheels_compiler_msc)
+#include <filesystem>
+namespace wheels {
+using namespace std::experimental;
+
+// write_tmp
+template <class ArchiveT = cereal::PortableBinaryOutputArchive, class... T>
+inline bool write_tmp(const filesystem::path &filename, const T &... data) {
+  return write<ArchiveT>(
+      (filesystem::temp_directory_path() / filename).string(), data...);
+}
 
 // read_tmp
 template <class ArchiveT = cereal::PortableBinaryInputArchive, class... T>
 inline bool read_tmp(const filesystem::path &filename, T &... data) {
-  return read<ArchiveT>(filesystem::temp_directory_path() / filename, data...);
+  return read<ArchiveT>((filesystem::temp_directory_path() / filename).string(),
+                        data...);
 }
-
+}
 #endif
-}

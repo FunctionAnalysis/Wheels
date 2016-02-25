@@ -164,12 +164,12 @@ void *matlab_mxarray::real_data() const { return mxGetData(_m); }
 void *matlab_mxarray::imag_data() const { return mxGetImagData(_m); }
 
 matlab_matfile::matlab_matfile() : _fp(nullptr) {}
-matlab_matfile::matlab_matfile(const filesystem::path &fname,
+matlab_matfile::matlab_matfile(const std::string &fname,
                                const std::string &mode)
     : _fname(fname) {
-  _fp = matOpen(fname.string().c_str(), mode.c_str());
+  _fp = matOpen(fname.c_str(), mode.c_str());
 }
-matlab_matfile::matlab_matfile(const filesystem::path &fname, OpeningMode mode)
+matlab_matfile::matlab_matfile(const std::string &fname, OpeningMode mode)
     : _fname(fname), _fp(nullptr) {
   std::string m;
   switch (mode) {
@@ -194,7 +194,7 @@ matlab_matfile::matlab_matfile(const filesystem::path &fname, OpeningMode mode)
   default:
     return;
   }
-  _fp = matOpen(fname.string().c_str(), m.c_str());
+  _fp = matOpen(fname.c_str(), m.c_str());
 }
 
 matlab_matfile::matlab_matfile(matlab_matfile &&a) {
@@ -248,7 +248,7 @@ bool matlab_matfile::remove_var(const std::string &name) {
   return matDeleteVariable(static_cast<::MATFile *>(_fp), name.c_str()) == 0;
 }
 
-matlab_engine::matlab_engine(const filesystem::path &defaultDir, bool singleUse)
+matlab_engine::matlab_engine(const std::string &defaultDir, bool singleUse)
     : _eng(nullptr), _buffer(nullptr) {
   static const int bufferSize = 1024;
   if (singleUse) {
@@ -264,7 +264,7 @@ matlab_engine::matlab_engine(const filesystem::path &defaultDir, bool singleUse)
     std::cout << "matlab_engine Engine Launched" << std::endl;
     if (!defaultDir.empty()) {
       engEvalString(static_cast<::Engine *>(_eng),
-                    ("cd " + defaultDir.string() + "; startup; pwd").c_str());
+                    ("cd " + defaultDir + "; startup; pwd").c_str());
     }
     std::cout << _buffer << std::endl;
   }

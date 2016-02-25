@@ -19,7 +19,7 @@ struct E : serializable<E>, comparable<E> {
   template <class V> auto fields(V &&v) { return v(as, bs); }
 };
 
-#if defined(wheels_with_stdfilesystem)
+#if defined(wheels_compiler_msc)
 TEST(core, serialize) {
   std::error_code errc;
   auto path = filesystem::temp_directory_path(errc);

@@ -68,6 +68,7 @@ TEST(tensor, element) {
   }
 }
 
+#if defined(wheels_compiler_msc)
 TEST(tensor, serialize) {
   write_tmp("vec3.cereal", vec3(1, 2, 3));
   vec3 v;
@@ -83,6 +84,7 @@ TEST(tensor, serialize) {
   read_tmp("vecb5", vb2);
   ASSERT_TRUE(vb == vb2);
 }
+#endif
 
 TEST(tensor, demo) {
   // t1: a 3x4x5 double type tensor filled with 1's

@@ -15,7 +15,7 @@ TEST(third, opencv) {
 
   matx_<vec3> mmm(make_shape(50, 50));
 
-  auto im = imread(filesystem::path(wheels_data_dir_str) / "wheels.jpg");
+  auto im = imread(wheels_data_dir_str"/wheels.jpg");
 
   auto nim = remap(extend_as_subtensor(im), make_shape(800, 200, 3),
                    [](auto y, auto x, auto c) {
