@@ -37,7 +37,7 @@ message(STATUS "wheels_sources:")
 foreach(i ${wheels_sources})
     message (STATUS ${i})  
 endforeach()
-wheels_add_library(Wheels.Lib ${wheels_includes} ${wheels_sources} ./dummy.cpp)
+add_library(Wheels.Lib ${wheels_includes} ${wheels_sources} ./dummy.cpp)
 target_link_libraries (Wheels.Lib ${DEPENDENCY_LIBS})
 
 
@@ -57,7 +57,7 @@ find_package(GTest REQUIRED)
 enable_testing ()
 
 include_directories (${GTEST_INCLUDE_DIR})
-wheels_add_executable(Wheels.UnitTest ${wheels_test_sources} ./unittest.cpp)
+add_executable(Wheels.UnitTest ${wheels_test_sources} ./unittest.cpp)
 target_link_libraries (Wheels.UnitTest ${DEPENDENCY_LIBS})
 target_link_libraries (Wheels.UnitTest Wheels.Lib)
 target_link_libraries (Wheels.UnitTest optimized ${GTEST_LIBRARY})

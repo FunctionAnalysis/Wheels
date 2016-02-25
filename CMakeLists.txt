@@ -98,23 +98,6 @@ else ()
     add_definitions ( "-Dwheels_data_dir_str=\"${wheels_data_dir}\"" )
 endif ()
 
-
-macro(wheels_add_executable BIN_NAME)
-    if (CUDA_TOOLKIT_INCLUDE)
-        cuda_add_executable(${BIN_NAME} ${ARGN})
-    else()
-        add_executable(${BIN_NAME} ${ARGN})
-    endif()
-endmacro()
-macro(wheels_add_library BIN_NAME)
-    if (CUDA_TOOLKIT_INCLUDE)
-        cuda_add_library(${BIN_NAME} ${ARGN})
-    else()
-        add_library(${BIN_NAME} ${ARGN})
-    endif()
-endmacro()
-
-
 include_directories (".")
 
 add_subdirectory (wheels)
