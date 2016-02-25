@@ -106,10 +106,10 @@ constexpr auto make_transform_iterator(IterT it, FunT f) {
   return transform_iterator<value_t, IterT, FunT>(it, f);
 }
 
-// range
-template <class FromT, class ToT> class range {
+// interval
+template <class FromT, class ToT> class interval {
 public:
-  constexpr range(const FromT &b, const ToT &e) : _begin(b), _end(e) {}
+  constexpr interval(const FromT &b, const ToT &e) : _begin(b), _end(e) {}
   constexpr FromT begin() const { return _begin; }
   constexpr ToT end() const { return _end; }
   constexpr auto size() const { return _end - _begin; }
@@ -119,18 +119,19 @@ private:
   ToT _end;
 };
 
-// make_range
+// make_interval
 template <class FromT, class ToT>
-constexpr auto make_range(const FromT &begin, const ToT &end) {
-  return range<FromT, ToT>(begin, end);
+constexpr auto make_interval(const FromT &begin, const ToT &end) {
+  return interval<FromT, ToT>(begin, end);
 }
 // span
 template <class FromT, class SizeT = const_size<1>>
 constexpr auto span(const FromT &begin, const SizeT &s = SizeT()) {
-  return make_range(begin, begin + s);
+  return make_interval(begin, begin + s);
 }
 
-// is_range
-template <class T> struct is_range : no {};
-template <class FromT, class ToT> struct is_range<range<FromT, ToT>> : yes {};
+// is_interval
+template <class T> struct is_interval : no {};
+template <class FromT, class ToT>
+struct is_interval<interval<FromT, ToT>> : yes {};
 }

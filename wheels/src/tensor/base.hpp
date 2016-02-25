@@ -23,7 +23,7 @@ namespace index_tags {
 constexpr auto first = const_index<0>();
 constexpr auto length = const_symbol<0>();
 constexpr auto last = length - const_index<1>();
-constexpr auto everything = make_range(first, length);
+constexpr auto everything = make_interval(first, length);
 }
 
 namespace details {
@@ -39,6 +39,7 @@ constexpr T &&_eval_index_expr(T &&t, const SizeT &) {
   return static_cast<T &&>(t);
 }
 
+// _brackets
 template <class T, class E, class EE,
           class = std::enable_if_t<is_int<E>::value>>
 constexpr decltype(auto) _brackets_impl(T &&t, const E &, EE &&ind) {
@@ -55,6 +56,8 @@ template <class T, class TensorTT>
 constexpr decltype(auto) _brackets(T &&t, TensorTT &&inds) {
   return _brackets_impl(forward<T>(t), inds, forward<TensorTT>(inds));
 }
+
+//
 }
 
 // tensor_core
@@ -118,11 +121,49 @@ template <class T> struct tensor_core {
   }
 
   // transform
-  template <class FunT> auto transform(FunT &&fun) const & {
+  template <class FunT> constexpr auto transform(FunT &&fun) const & {
     return ::wheels::transform(derived(), forward<FunT>(fun));
   }
   template <class FunT> auto transform(FunT &&fun) && {
     return ::wheels::transform(std::move(derived()), forward<FunT>(fun));
+  }
+
+  // reshape
+  template <class ST, class... SizeTs>
+  constexpr auto reshape(const tensor_shape<ST, SizeTs...> &ns) const & {
+    return ::wheels::reshape(derived(), ns);
+  }
+  template <class ST, class... SizeTs>
+  auto reshape(const tensor_shape<ST, SizeTs...> &ns) & {
+    return ::wheels::reshape(derived(), ns);
+  }
+  template <class ST, class... SizeTs>
+  auto reshape(const tensor_shape<ST, SizeTs...> &ns) && {
+    return ::wheels::reshape(std::move(derived()), ns);
+  }
+
+  // subwise
+  template <class K, K FixedRank>
+  constexpr decltype(auto) subwise(const const_ints<K, FixedRank> &r) const & {
+    return ::wheels::subwise(derived(), r);
+  }
+  template <class K, K FixedRank>
+  decltype(auto) subwise(const const_ints<K, FixedRank> &r) & {
+    return ::wheels::subwise(derived(), r);
+  }
+  template <class K, K FixedRank>
+  decltype(auto) subwise(const const_ints<K, FixedRank> &r) && {
+    return ::wheels::subwise(std::move(derived()), r);
+  }
+
+  // permute
+  template <class... IndexTs>
+  constexpr decltype(auto) permute(const IndexTs &... inds) const & {
+    return ::wheels::permute(derived(), inds...);
+  }
+  template <class... IndexTs>
+  decltype(auto) permute(const IndexTs &... inds) && {
+    return ::wheels::permute(std::move(derived()), inds...);
   }
 
   // block
@@ -232,8 +273,32 @@ template <class ET, class ShapeT, class T> struct tensor_base : tensor_core<T> {
   constexpr operator tensor_type() const { return eval(); }
 };
 
+// 0 dimensional tensor (scalar)
+template <class ET, class ST, class T>
+struct tensor_base<ET, tensor_shape<ST>, T> : tensor_core<T> {
+  using value_type = ET;
+  using shape_type = tensor_shape<ST>;
+  static constexpr size_t rank = 0;
+  using tensor_type = tensor<value_type, shape_type>;
+  static_assert(!is_tensor_shape<ET>::value,
+                "value_type should not be a tensor_shape");
+
+  static constexpr auto get_value_type() { return types<value_type>(); }
+  static constexpr auto get_shape_type() { return types<shape_type>(); }
+
+  const tensor_base &base() const { return *this; }
+
+  constexpr tensor_type eval() const & { return tensor_type(derived()); }
+  tensor_type eval() && { return tensor_type(move(derived())); }
+  constexpr operator tensor_type() const { return eval(); }
+
+  constexpr operator value_type() const {
+    return ::wheels::element_at(derived());
+  }
+};
+
 // 1 dimensional tensor (vector)
-template <class ST, class NT, class ET, class T>
+template <class ET, class ST, class NT, class T>
 struct tensor_base<ET, tensor_shape<ST, NT>, T> : tensor_core<T> {
   using value_type = ET;
   using shape_type = tensor_shape<ST, NT>;
@@ -302,7 +367,7 @@ struct tensor_base<ET, tensor_shape<ST, NT>, T> : tensor_core<T> {
 };
 
 // 2 dimensional tensor (matrix)
-template <class ST, class MT, class NT, class ET, class T>
+template <class ET, class ST, class MT, class NT, class T>
 struct tensor_base<ET, tensor_shape<ST, MT, NT>, T> : tensor_core<T> {
   using value_type = ET;
   using shape_type = tensor_shape<ST, MT, NT>;
@@ -642,9 +707,8 @@ template <class ET, class ShapeT, class T>
 inline std::ostream &_stream_impl(std::ostream &os,
                                   const tensor_base<ET, ShapeT, T> &t,
                                   const_size<1>) {
-  static const char _bracket[2] = {
-      conditional(is_character<ET>(), '\'', '['),
-      conditional(is_character<ET>(), '\'', ']')};
+  static const char _bracket[2] = {conditional(is_character<ET>(), '\"', '['),
+                                   conditional(is_character<ET>(), '\"', ']')};
   if (t.numel() == 0) {
     return os << _bracket[0] << _bracket[1];
   }
@@ -663,9 +727,8 @@ template <class ET, class ShapeT, class T>
 inline std::ostream &_stream_impl(std::ostream &os,
                                   const tensor_base<ET, ShapeT, T> &t,
                                   const_size<2>) {
-  static const char _bracket[2] = {
-      conditional(is_character<ET>(), '\'', '['),
-      conditional(is_character<ET>(), '\'', ']')};
+  static const char _bracket[2] = {conditional(is_character<ET>(), '\"', '['),
+                                   conditional(is_character<ET>(), '\"', ']')};
   for (size_t j = 0; j < t.size(const_index<0>()); j++) {
     if (t.size(const_index<1>()) == 0) {
       os << _bracket[0] << _bracket[1] << '\n';

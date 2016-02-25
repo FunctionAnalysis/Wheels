@@ -23,3 +23,22 @@ TEST(tensor, iota) {
     ASSERT_EQ(data[i], rev_data[index_tags::last - i]);
   }
 }
+
+TEST(tensor, range) {
+  ASSERT_TRUE(range(0, 2, 5) == vecxi(0, 2, 4));
+  ASSERT_TRUE(range(0, 2, 6) == vecxi(0, 2, 4));
+  ASSERT_TRUE(range(0, 2, 7) == vecxi(0, 2, 4, 6));
+  ASSERT_TRUE(range(0, 2, 1) == vecxi(0));
+  println(range(0, 2, 0));
+  ASSERT_TRUE(range(0, 2, 0) == vecxi());
+  println(range(0, 2, -1).shape());
+  ASSERT_TRUE(range(0, 2, -1) == vecxi());
+  ASSERT_TRUE(range(5, 2, -1) == vecxi());
+  ASSERT_TRUE(range(5, -1, -1) == vecxi(5, 4, 3, 2, 1, 0));
+  ASSERT_TRUE(range(5, -2, -1) == vecxi(5, 3, 1));
+  println(range(5, -2, 0));
+  ASSERT_TRUE(range(5, -2, 0) == vecxi(5, 3, 1));
+  ASSERT_TRUE(range(5, -3, 0) == vecxi(5, 2));
+  ASSERT_TRUE(range(5, -4, 1) == vecxi(5));
+  ASSERT_TRUE(range(5, -5, 1) == vecxi(5));
+}

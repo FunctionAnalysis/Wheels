@@ -91,13 +91,13 @@ private:
 
 namespace details {
 //// initialize_n
-//template <class T>
-//inline std::enable_if_t<std::is_scalar<T>::value> _initialize_n(T *data,
+// template <class T>
+// inline std::enable_if_t<std::is_scalar<T>::value> _initialize_n(T *data,
 //                                                                size_t n) {
 //  std::fill_n(data, n, T(0));
 //}
-//template <class T>
-//inline std::enable_if_t<!std::is_scalar<T>::value> _initialize_n(T *data,
+// template <class T>
+// inline std::enable_if_t<!std::is_scalar<T>::value> _initialize_n(T *data,
 //                                                                 size_t n) {
 //  for (size_t i = 0; i < n; i++) {
 //    void *ptr = (void *)(data + i);
@@ -106,13 +106,13 @@ namespace details {
 //}
 //
 //// initialize_n_by_move
-//template <class T>
-//inline std::enable_if_t<std::is_scalar<T>::value>
+// template <class T>
+// inline std::enable_if_t<std::is_scalar<T>::value>
 //_initialize_n_by_move(T *data, size_t n, T *src) {
 //  std::copy_n(src, n, data);
 //}
-//template <class T>
-//inline std::enable_if_t<!std::is_scalar<T>::value>
+// template <class T>
+// inline std::enable_if_t<!std::is_scalar<T>::value>
 //_initialize_n_by_move(T *data, size_t n, T *src) {
 //  for (size_t i = 0; i < n; i++) {
 //    void *ptr = (void *)(data + i);
@@ -133,7 +133,7 @@ template <class T, class AllocT>
 inline void _construct_each_by(T *data, AllocT &alloc) {}
 template <class T, class AllocT, class EleT, class... EleTs>
 inline void _construct_each_by(T *data, AllocT &alloc, EleT &&ele,
-                                    EleTs &&... eles) {
+                               EleTs &&... eles) {
   alloc.construct(data, forward<EleT>(ele));
   _construct_each_by(data + 1, alloc, std::forward<EleTs>(eles)...);
 }
@@ -279,8 +279,8 @@ public:
 
   template <class V> decltype(auto) fields(V &&visitor) {
     return visitor(
-        as_container(make_range(_alloc.address(_data[0]),
-                                _alloc.address(_data[_shape.magnitude()])),
+        as_container(make_interval(_alloc.address(_data[0]),
+                                   _alloc.address(_data[_shape.magnitude()])),
                      visitor));
   }
 

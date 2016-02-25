@@ -87,8 +87,8 @@ _block_at_direct(const block_view<ET, ShapeT, T, OldRangeTs...> &, TT &&t,
                  const RangeTs &... ranges) {
   return _block_at_direct(
       t.input, forward<TT>(t).input, seq,
-      make_range(std::get<Is>(t.ranges).begin() + ranges.begin(),
-                 std::get<Is>(t.ranges).begin() + ranges.end())...);
+      make_interval(std::get<Is>(t.ranges).begin() + ranges.begin(),
+                    std::get<Is>(t.ranges).begin() + ranges.end())...);
 }
 
 // parse the length symbol
@@ -97,7 +97,7 @@ constexpr auto _block_at(TT &&t, const const_ints<size_t, Is...> &seq,
                          const RangeTs &... ranges) {
   return _block_at_direct(
       t, forward<TT>(t), seq,
-      make_range(
+      make_interval(
           details::_eval_index_expr(ranges.begin(), t.size(const_index<Is>())),
           details::_eval_index_expr(ranges.end(),
                                     t.size(const_index<Is>())))...);
@@ -105,13 +105,13 @@ constexpr auto _block_at(TT &&t, const const_ints<size_t, Is...> &seq,
 
 // transform nonrange indices to ranges
 template <class RangeOrIndexT>
-constexpr std::enable_if_t<is_range<RangeOrIndexT>::value,
+constexpr std::enable_if_t<is_interval<RangeOrIndexT>::value,
                            const RangeOrIndexT &>
 _unify_to_range(const RangeOrIndexT &roi) {
   return roi;
 }
 template <class RangeOrIndexT,
-          class = std::enable_if_t<!is_range<RangeOrIndexT>::value>>
+          class = std::enable_if_t<!is_interval<RangeOrIndexT>::value>>
 constexpr auto _unify_to_range(const RangeOrIndexT &roi) {
   return span(roi, const_index<1>());
 }

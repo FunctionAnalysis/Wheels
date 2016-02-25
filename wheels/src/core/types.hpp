@@ -244,4 +244,17 @@ std::enable_if_t<std::is_scalar<T>::value, bool> is_zero(const T &v) {
 template <class T> bool is_zero(const std::complex<T> &v) {
   return is_zero(v.real()) && is_zero(v.imag());
 }
+
+// type_restrict
+namespace details {
+template <class RestrictT, class T>
+constexpr T &&_type_restrict(const RestrictT &, T &&t) {
+  return static_cast<T &&>(t);
+}
+}
+template <class RestrictT, class T>
+constexpr auto type_restrict(T &&t)
+    -> decltype(details::_type_restrict<RestrictT>(t, forward<T>(t))) {
+  return details::_type_restrict<RestrictT>(t, forward<T>(t));
+}
 }

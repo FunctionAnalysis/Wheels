@@ -6,9 +6,9 @@
 namespace wheels {
 
 template <class ET, class ShapeT, class IndexTensorT, class InputTensorT>
-class index_view : public tensor_op_result_base<
-                       ET, ShapeT, void,
-                       index_view<ET, ShapeT, IndexTensorT, InputTensorT>> {
+class index_view
+    : public tensor_base<ET, ShapeT,
+                         index_view<ET, ShapeT, IndexTensorT, InputTensorT>> {
 public:
   index_view(IndexTensorT &&indt, InputTensorT &&inpt)
       : index_tensor(forward<IndexTensorT>(indt)),

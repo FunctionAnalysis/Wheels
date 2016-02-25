@@ -16,6 +16,17 @@ public:
     assert(s.magnitude() == _input.numel());
   }
 
+  // operator=
+  template <class AnotherT>
+  reshape_view &operator=(const tensor_core<AnotherT> &another) {
+    assign_elements(*this, another.derived());
+    return *this;
+  }
+  reshape_view &operator=(const ET &e) {
+    fill_elements_with(*this, e);
+    return *this;
+  }
+
   const ShapeT &shape() const { return _shape; }
   const T &input() const & { return _input; }
   T &input() & { return _input; }

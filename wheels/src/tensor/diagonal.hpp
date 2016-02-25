@@ -81,6 +81,17 @@ public:
   T &input() & { return _input; }
   T &&input() && { return _input; }
 
+  // operator=
+  template <class AnotherT>
+  diag_view &operator=(const tensor_core<AnotherT> &another) {
+    assign_elements(*this, another.derived());
+    return *this;
+  }
+  diag_view &operator=(const ET &e) {
+    fill_elements_with(*this, e);
+    return *this;
+  }
+
 private:
   T _input;
 };

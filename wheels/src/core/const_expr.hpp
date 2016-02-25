@@ -6,10 +6,16 @@ namespace wheels {
 
 struct category_const_expr {};
 
+// const_expr_base
+template <class T> struct const_expr_base {
+  constexpr const T &derived() const { return static_cast<const T &>(*this); }
+  T &derived() { return static_cast<T &>(*this); }
+};
+
 template <class T> struct is_const_expr : no {};
 
 // const_symbol
-template <size_t Idx> struct const_symbol {
+template <size_t Idx> struct const_symbol : const_expr_base<const_symbol<Idx>> {
   constexpr const_symbol() {}
   template <class... ArgTs> constexpr auto operator()(ArgTs &&... args) const {
     return std::get<Idx>(std::forward_as_tuple(forward<ArgTs>(args)...));
@@ -32,7 +38,7 @@ template <char... Cs> constexpr auto operator"" _symbol() {
 }
 
 // const_coeff
-template <class T> struct const_coeff {
+template <class T> struct const_coeff : const_expr_base<const_coeff<T>> {
   T val;
   template <class TT> constexpr const_coeff(TT &&v) : val(forward<TT>(v)) {}
   template <class... ArgTs> constexpr T operator()(ArgTs &&...) const {
@@ -58,7 +64,8 @@ constexpr const_coeff<std::decay_t<T>> as_const_coeff(T &&v) {
 }
 
 // const_unary_op
-template <class Op, class E> struct const_unary_op {
+template <class Op, class E>
+struct const_unary_op : const_expr_base<const_unary_op<Op, E>> {
   Op op;
   E e;
   template <class OpT, class T>
@@ -85,7 +92,8 @@ constexpr auto category_for_overloading(const const_unary_op<Op, E> &,
 };
 
 // const_binary_op
-template <class Op, class E1, class E2> struct const_binary_op {
+template <class Op, class E1, class E2>
+struct const_binary_op : const_expr_base<const_binary_op<Op, E1, E2>> {
   Op op;
   E1 e1;
   E2 e2;

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../tensor/tensor.hpp"
+#include "../tensor/block.hpp"
 #include "../tensor/cat.hpp"
 #include "../tensor/constants.hpp"
-#include "../tensor/block.hpp"
 #include "../tensor/permute.hpp"
+#include "../tensor/tensor.hpp"
 
 #include "lapack.hpp"
 
@@ -52,7 +52,8 @@ auto solve(const tensor_base<ET, tensor_shape<ST1, MT1, NT1>, T1> &A,
     *succeed = info == 0;
   }
 
-  return std::move(Bdata).t().block(make_range(0, n), index_tags::everything);
+  return std::move(Bdata).t().block(make_interval(0, n),
+                                    index_tags::everything);
 }
 
 // solve min |AX - B|
@@ -95,7 +96,7 @@ auto solve(const tensor_base<ET, tensor_shape<ST1, MT1, NT1>, T1> &A,
     *succeed = info == 0;
   }
 
-  return std::move(Bdata).block(make_range(0, n));
+  return std::move(Bdata).block(make_interval(0, n));
 }
 
 // inverse n x n matrix
@@ -107,7 +108,7 @@ auto inverse(const tensor_base<ET, tensor_shape<ST, MT, NT>, T> &A,
   assert(n > 0);
   blas_int lda = n;
   auto Adata = A.t().eval();
-  
+
   std::vector<blas_int> ipiv(n);
 
   blas_int lwork = n;

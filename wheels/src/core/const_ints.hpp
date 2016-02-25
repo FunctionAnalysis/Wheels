@@ -133,6 +133,15 @@ template <class T, T... Val> struct int_traits<const_ints<T, Val...>, false> {
   static constexpr bool is_const_int = true;
 };
 
+// scalar_traits
+template <class T, bool IsScalar = std::is_scalar<T>::value>
+struct scalar_traits {};
+template <class T> struct scalar_traits<T, true> { using type = T; };
+template <class T, T... Val>
+struct scalar_traits<const_ints<T, Val...>, false> {
+  using type = T;
+};
+
 // conversion with std::integer_sequence
 template <class T, T... Vals>
 constexpr auto to_const_ints(const std::integer_sequence<T, Vals...> &) {
