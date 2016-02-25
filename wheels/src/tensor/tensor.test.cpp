@@ -106,13 +106,17 @@ TEST(tensor, demo2) {
 
   auto greeting = "hello world!"_ts;
   println(greeting);
-  println(
-      greeting[where('a' <= greeting && greeting <= 'z')]); // show only letters
-  println(greeting[last - iota(greeting.numel())]); // reverse the string
-  println(cat(greeting, " let's rock!"_ts));        // concatenation
+  // show only letters
+  println(greeting[where('a' <= greeting && greeting <= 'Z')]);
 
-  println(repeat(promote(1_c, greeting), 3, 1));
+  // reverse the string
+  println(greeting[last - iota(greeting.numel())]);
+  println(greeting[range(greeting.numel(), -1, -1)]);
+
+  // concatenate the strings
+  println(cat(greeting, " "_ts, "let's rock!"_ts));
+
+  // promote the string from a vector to a matrix,
+  // repeat it along rows, and transpose it
   println(repeat(promote(1_c, greeting), 3, 1).t());
-
-  matx_<std::tuple<int, char>> m1;
 }

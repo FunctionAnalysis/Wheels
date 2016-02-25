@@ -1,5 +1,5 @@
 # Wheels
-A new programming pattern for C++ based on tensors.
+C++ programming based on tensors.
 
 ## Examples
 Let's start with the standard hello world program:
@@ -7,30 +7,41 @@ Let's start with the standard hello world program:
 #include <wheels/tensor>
 
 using namespace wheels;
-using namespace wheels::literals;
-using namespace wheels::index_tags;
+using namespace wheels::literals; // to use user defined literals like '_ts'
+using namespace wheels::index_tags; // to use index tags like 'length', 'last' ...
 
 int main(){
 	auto greeting = "hello world!"_ts;
 	println(greeting);
 }
 ```
-Seems naive? We can do more with the string:
+We can do more with the string:
 ```cpp
-println(greeting[where('a' <= greeting && greeting <= 'z')]); // show only letters
-println(greeting[last - iota(greeting.numel())]); // reverse the string
-println(cat(greeting, " "_ts, "let's rock!"_ts)); // concatenation
+ // show only letters
+println(greeting[where('a' <= greeting && greeting <= 'Z')]);
+
+// reverse the string
+println(greeting[last - iota(greeting.numel())]); 
+println(greeting[range(greeting.numel(), -1, -1)]);
+
+// concatenate the strings
+println(cat(greeting, " "_ts, "let's rock!"_ts)); 
+
+// promote the string from a vector to a matrix, 
+// repeat it along rows, and transpose it
+println(repeat(promote(1_c, greeting), 3, 1).t()); 
+
 ```
 
 ## Features
 ### generic tensors
-Wheels provide tensor types of varies ranks, shapes and element types, from small fix-sized vectors allocated on stack to large dynamic-sized matrices allocated on heap.
+Wheels provide tensor types of varies ranks, shapes and element types, from small fix-sized vectors allocated on stack to large dynamic-sized multi-dimensional arrays allocated on heap.
 ```cpp
 using namespace wheels;
 // t1: a 3x4x5 double type tensor filled with 1's
-auto t1 = ones(3, 4, 5).eval(); 
+auto t1 = ones(3, 4, 5); 
 // t2: a 2x2x2x2 complex<double> type tensor filled with 0's
-auto t2 = zeros<std::complex<double>>(2, 2, 2, 2).eval(); 
+auto t2 = zeros<std::complex<double>>(2, 2, 2, 2);
 // t3: a 3-vector, with static shape, initialized with 1, 2, 3
 vec3 t3(1, 2, 3);
 // t4: a 3-vector, with dynamic shape, initialized with 1, 2, 3
@@ -55,13 +66,13 @@ Static polymorphism is employed to unify the behavior of all tensor types, inclu
 We can implement different functions for different tensors without considering their underlying types.
 ```cpp
 // deal with all kinds of tensors
-template <class ShapeT, class EleT, class DerivedT>
-void foo(const tensor_base<ShapeT, EleT, DerivedT> & t){
+template <class EleT, class ShapeT, class DerivedT>
+void foo(const tensor_base<EleT, ShapeT, DerivedT> & t){
   // ...
 }
 // deal with matrices of complex numbers
-template <class RowsT, class ColsT, class T, class DerivedT>
-void foo(const tensor_base<tensor_shape<size_t, RowsT, ColsT>, std::complex<T>, DerivedT> & t){
+template <class T, class RowsT, class ColsT, class DerivedT>
+void foo(const tensor_base<std::complex<T>, tensor_shape<size_t, RowsT, ColsT>, DerivedT> & t){
   // ... 
 }
 ```
@@ -77,16 +88,11 @@ auto e2 = t(length / 2, (length - 20) / 2);   // same with t(100/2, (200-20)/2)
 auto e3 = t(10, (length / 10 + 2) * 2);       // same with t(10, (200/10+2)*2)
 auto e4 = t(last, last / 3);                  // last = length-1
 ```
-Symbolic expressions. 
-```cpp
-auto fun = max(0_symbol + 1, 1_symbol * 2);
-auto result1 = fun(3, 2);                          // 0_symbol->3, 1_symbol->2, result1 = 4 of int
-auto result2 = fun(vec3(2, 3, 4), ones(3)).eval(); // 0_symbol->vec3(2, 3, 4), 1_symbol->ones(3), result2 = [4, 4, 5] of vec3
-```
+
 Tensors are all serializable based on [cereal](https://github.com/USCiLab/cereal).
 ```cpp
 write(filesystem::temp_directory_path() / "vec3.cereal", vec3(1, 2, 3));
-vec3 v;
+vecx v;
 read(filesystem::temp_directory_path() / "vec3.cereal", v); // v == vec3(1, 2, 3)
 ```
 
