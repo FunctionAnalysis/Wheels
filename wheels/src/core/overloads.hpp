@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include "const_ints.hpp"
+#include "utility.hpp"
 #include "types.hpp"
 
 namespace wheels {

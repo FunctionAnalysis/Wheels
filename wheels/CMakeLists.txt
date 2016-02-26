@@ -62,7 +62,7 @@ target_link_libraries (Wheels.UnitTest ${DEPENDENCY_LIBS})
 target_link_libraries (Wheels.UnitTest Wheels.Lib)
 
 
-if (DEFINED GTEST_LIBRARY_DEBUG)
+if (EXISTS ${GTEST_LIBRARY_DEBUG})
     message (STATUS ${GTEST_LIBRARY_DEBUG})
     target_link_libraries (Wheels.UnitTest optimized ${GTEST_LIBRARY})
     target_link_libraries (Wheels.UnitTest debug ${GTEST_LIBRARY_DEBUG})
@@ -70,7 +70,7 @@ else ()
     target_link_libraries (Wheels.UnitTest ${GTEST_LIBRARY})
 endif ()
 
-if (DEFINED GTEST_MAIN_LIBRARY_DEBUG)
+if (EXISTS ${GTEST_MAIN_LIBRARY_DEBUG})
     message (STATUS ${GTEST_MAIN_LIBRARY_DEBUG})
     target_link_libraries (Wheels.UnitTest optimized ${GTEST_MAIN_LIBRARY})
     target_link_libraries (Wheels.UnitTest debug ${GTEST_MAIN_LIBRARY_DEBUG})

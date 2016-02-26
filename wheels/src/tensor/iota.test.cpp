@@ -4,6 +4,7 @@
 #include "../../tensor"
 
 using namespace wheels;
+using namespace wheels::literals;
 
 TEST(tensor, iota) {
   size_t ns = 0;
@@ -42,4 +43,6 @@ TEST(tensor, range) {
   ASSERT_TRUE(range(5, -3, 0) == vecxi(5, 2));
   ASSERT_TRUE(range(5, -4, 1) == vecxi(5));
   ASSERT_TRUE(range(5, -5, 1) == vecxi(5));
+
+  ASSERT_TRUE(range(0_symbol, 2, 1_symbol)(0, 5) == range(0, 2, 5));
 }
