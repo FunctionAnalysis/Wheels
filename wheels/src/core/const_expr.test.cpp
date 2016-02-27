@@ -17,14 +17,15 @@ TEST(core, const_exprs) {
   static_assert(sumv == (-5 + 5 * (5 % 3) + 1 - 5) + 1, "");
 }
 
-struct print_types {
-  template <class... Ts> void operator()(Ts &&... ts) const {
-    println(type_of(ts)...);
+struct tuple_maker {
+  template <class... Ts> auto operator()(Ts &&... ts) const {
+    return std::make_tuple(ts...);
   }
 };
 
 TEST(core, smart_invoke) {
-  auto e = details::_has_const_expr(1_symbol);
-  smart_invoke(print_types(), 1, 2);
-  smart_invoke(print_types(), 1_symbol, 2, 0_symbol)("hahaha", true);
+  ASSERT_TRUE(smart_invoke(tuple_maker(), 1, 2) == std::make_tuple(1, 2));
+  ASSERT_TRUE(smart_invoke(tuple_maker(), 1_symbol, 2,
+                           0_symbol)(std::string("hahaha"), true) ==
+              std::make_tuple(true, 2, std::string("hahaha")));
 }

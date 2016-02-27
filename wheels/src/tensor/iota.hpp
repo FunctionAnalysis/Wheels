@@ -142,8 +142,8 @@ template <class ET> struct _iota_impl {
   }
 };
 }
-template <class ET = size_t, class ArgT> constexpr auto iota(const ArgT &arg) {
-  return smart_invoke(details::_iota_impl<ET>(), arg);
+template <class ET = size_t, class SizeT> constexpr auto iota(const SizeT &s) {
+  return smart_invoke(details::_iota_impl<ET>(), s);
 }
 
 // range
@@ -154,15 +154,15 @@ _range_count(const T1 &t1, const T2 &t2,
              std::enable_if_t<std::is_floating_point<T1>::value ||
                               std::is_floating_point<T2>::value> * = nullptr) {
   assert(t2 != 0);
-  return conditional((t1 > 0) != (t2 > 0), 0, size_t(t1 / t2));
+  return (size_t)conditional(t1 >= 0 != t2 >= 0, 0, std::floor(t1 / t2) + 1.0);
 }
 template <class T1, class T2>
 constexpr size_t _range_count(
     const T1 &t1, const T2 &t2,
     std::enable_if_t<is_int<T1>::value && is_int<T2>::value> * = nullptr) {
   assert(t2 != 0);
-  return conditional((t1 > 0) != (t2 > 0), 0,
-                     t1 / t2 + conditional(t1 % t2 == const_int<0>(), 0, 1));
+  return (size_t)conditional(t1 >= const_int<0>() != t2 >= const_int<0>(), 0,
+                             t1 / t2 + 1);
 }
 
 struct _range_impl {
@@ -172,17 +172,22 @@ struct _range_impl {
     using _t = std::common_type_t<typename scalar_traits<BeginT>::type,
                                   typename scalar_traits<StepT>::type,
                                   typename scalar_traits<EndT>::type>;
-    return b + iota<_t>(details::_range_count(e - b, s)) * s;
+    return b + iota<_t>(_range_count(e - b, s)) * s;
   }
   template <class BeginT, class EndT>
   constexpr auto operator()(const BeginT &b, const EndT &e) const {
     using _t = std::common_type_t<typename scalar_traits<BeginT>::type,
                                   typename scalar_traits<EndT>::type>;
-    return b + iota<_t>((size_t)max(e - b, 0));
+    return b + iota<_t>((size_t)(e - b + const_int<1>()));
   }
 };
 }
-template <class... ArgTs> constexpr auto range(const ArgTs &... args) {
-  return smart_invoke(details::_range_impl(), args...);
+template <class BeginT, class StepT, class EndT>
+constexpr auto range(const BeginT &b, const StepT &s, const EndT &e) {
+  return smart_invoke(details::_range_impl(), b, s, e);
+}
+template <class BeginT, class EndT>
+constexpr auto range(const BeginT &b, const EndT &e) {
+  return smart_invoke(details::_range_impl(), b, e);
 }
 }

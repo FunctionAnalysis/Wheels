@@ -1,5 +1,6 @@
 #pragma once
 
+#include "object.hpp"
 #include "overloads.hpp"
 
 namespace wheels {
@@ -7,10 +8,7 @@ namespace wheels {
 struct category_const_expr {};
 
 // const_expr_base
-template <class T> struct const_expr_base {
-  constexpr const T &derived() const { return static_cast<const T &>(*this); }
-  T &derived() { return static_cast<T &>(*this); }
-};
+template <class T> struct const_expr_base : object<T> {};
 
 template <class T, class OpT>
 constexpr auto category_for_overloading(const const_expr_base<T> &,
