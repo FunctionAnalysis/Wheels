@@ -1,7 +1,11 @@
 #include <gtest/gtest.h>
 
 #include "../../core"
-#include "../../tensor"
+
+#include "ewise_ops.hpp"
+#include "index.hpp"
+#include "iota.hpp"
+#include "tensor.hpp"
 
 using namespace wheels;
 using namespace wheels::literals;

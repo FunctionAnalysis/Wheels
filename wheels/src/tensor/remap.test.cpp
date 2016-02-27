@@ -5,6 +5,7 @@
 using namespace wheels;
 
 TEST(tensor, remap) {
+  // todo: add meaningful tests
   vecx anchors(1, 2, 3);
   auto remapped = remap(
       anchors, make_shape(12),

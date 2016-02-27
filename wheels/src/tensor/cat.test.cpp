@@ -20,17 +20,5 @@ TEST(tensor, cat) {
 
   auto result = cat(vecx(1, 2, 3), vec2(4, 5), vecx(6, 7, 8, 9, 10),
                     vecx(11)) == vecx(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
-  result.for_each([](bool b){ASSERT_TRUE(b);});
-
-  auto left =  cat(vecx(1, 2, 3), vec2(4, 5), vecx(6, 7, 8, 9, 10),
-                    vecx(11)).shape();
-  auto right = vecx(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11).shape();
-
-  bool aa = all_of(result);
-  bool bb = result;
-  //ASSERT_TRUE(result);
-  for (int i = 1; i <= 11; i++) {
-      ASSERT_TRUE(result[i-1]);
-  }
-  //ASSERT_TRUE(result);
+  result.for_each([](bool b) { ASSERT_TRUE(b); });
 }

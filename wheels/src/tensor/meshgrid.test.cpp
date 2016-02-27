@@ -1,14 +1,25 @@
 #include <gtest/gtest.h>
 
-#include "../../tensor"
+#include "block.hpp"
+#include "constants.hpp"
+#include "ewise_ops.hpp"
+#include "iota.hpp"
+#include "meshgrid.hpp"
+#include "permute.hpp"
+#include "tensor.hpp"
 
 using namespace wheels;
+using namespace wheels::index_tags;
 
 TEST(tensor, meshgrid) {
   matx xx, yy;
   std::tie(xx, yy) = meshgrid<double>(make_shape(4, 5));
-  println(xx);
-  println(yy);
+  for (int i = 0; i < 4; i++) {
+    ASSERT_TRUE(xx.block(i, range(0, last)) == ones(1, 5) * i);
+  }
+  for (int i = 0; i < 5; i++) {
+    ASSERT_TRUE(yy.block(range(0, last), i) == ones(4, 1) * i);
+  }
   std::tie(xx, yy) = meshgrid<double>(make_shape(40, 40));
   ASSERT_TRUE(xx.t() == yy);
 }

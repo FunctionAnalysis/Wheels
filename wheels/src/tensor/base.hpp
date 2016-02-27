@@ -77,13 +77,13 @@ template <class T, size_t... Is, class... SubsTensorOrIntTs>
 constexpr auto _block_seq(T &&t, const const_ints<size_t, Is...> &,
                           SubsTensorOrIntTs &&... subs)
     -> decltype(::wheels::at_block(
-        forward<T>(t),
-        _all_as_tensor(_eval_index_expr(forward<SubsTensorOrIntTs>(subs),
-                                        size_at(t, const_index<Is>())))...)) {
-  return ::wheels::at_block(
-      forward<T>(t),
-      _all_as_tensor(_eval_index_expr(forward<SubsTensorOrIntTs>(subs),
-                                      size_at(t, const_index<Is>())))...);
+        forward<T>(t), _all_as_tensor(_eval_index_expr(
+                           forward<SubsTensorOrIntTs>(subs),
+                           (int64_t)size_at(t, const_index<Is>())))...)) {
+  return ::wheels::at_block(forward<T>(t),
+                            _all_as_tensor(_eval_index_expr(
+                                forward<SubsTensorOrIntTs>(subs),
+                                (int64_t)size_at(t, const_index<Is>())))...);
 }
 }
 

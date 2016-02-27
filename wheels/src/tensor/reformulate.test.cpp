@@ -1,7 +1,13 @@
 #include <gtest/gtest.h>
 
 #include "../../core"
-#include "../../tensor"
+
+#include "cat.hpp"
+#include "ewise_ops.hpp"
+#include "permute.hpp"
+#include "reformulate.hpp"
+#include "subwise.hpp"
+#include "tensor.hpp"
 
 using namespace wheels;
 using namespace wheels::literals;

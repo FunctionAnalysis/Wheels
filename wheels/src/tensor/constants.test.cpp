@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
-#include "../../tensor"
+#include "constants.hpp"
+#include "ewise_ops.hpp"
 
 using namespace wheels;
 using namespace wheels::literals;

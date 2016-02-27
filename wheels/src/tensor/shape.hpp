@@ -305,7 +305,7 @@ using shape_of_rank = typename details::_make_shape_of_rank_seq<
     T, decltype(make_const_sequence(const_size<Rank>()))>::type;
 
 // sub2ind
-template <class T> constexpr T sub2ind(const tensor_shape<T> &) { return 0; }
+template <class T> constexpr T sub2ind(const tensor_shape<T> &) { return (T)0; }
 template <class T, class SizeT, class... SizeTs>
 constexpr T sub2ind(const tensor_shape<T, SizeT, SizeTs...> &) {
   return 0;

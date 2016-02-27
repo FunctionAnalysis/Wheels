@@ -12,12 +12,12 @@ class make_diag_result
 public:
   constexpr explicit make_diag_result(const ShapeT &s, T &&in)
       : _shape(s), _input(forward<T>(in)) {
-    assert(in.numel() == min_shape_size(_shape));
+    assert(_input.numel() == min_shape_size(_shape));
   }
   constexpr const ShapeT &shape() const { return _shape; }
   constexpr const T &input() const & { return _input; }
   T &input() & { return _input; }
-  T &&input() && { return _input; }
+  T &&input() && { return std::move(_input); }
 
 private:
   ShapeT _shape;

@@ -208,6 +208,22 @@ template <class E, class T>
 using gmatx_ = tensor_base<E, tensor_shape<size_t, size_t, size_t>, T>;
 template <class T> using gmatx = gmatx_<double, T>;
 
+// rowvec_, colvec_
+template <class T, size_t N>
+using rowvec_ = tensor<T, tensor_shape<size_t, const_size<1>, const_size<N>>>;
+template <class T, size_t N>
+using colvec_ = tensor<T, tensor_shape<size_t, const_size<N>, const_size<1>>>;
+
+// rowvecx_, colvecx_
+template <class T>
+using rowvecx_ = tensor<T, tensor_shape<size_t, const_size<1>, size_t>>;
+template <class T>
+using colvecx_ = tensor<T, tensor_shape<size_t, size_t, const_size<1>>>;
+
+using rowvecx = rowvecx_<double>;
+using colvecx = colvecx_<double>;
+
+
 // cube_
 template <class T, size_t M, size_t N, size_t L>
 using cube_ =

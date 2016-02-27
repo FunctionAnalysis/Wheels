@@ -1,14 +1,15 @@
 #include <gtest/gtest.h>
 
 #include "diagonal.hpp"
+#include "tensor.hpp"
 
 using namespace wheels;
 
 TEST(tensor, diagonal) {
-  auto I = eye(5000);
-  auto n = I.norm();
-  ASSERT_TRUE(n == sqrt(5000));
-  ASSERT_TRUE(I.sum() == 5000);
-  decltype(auto) Icore = diag(I);
-  ASSERT_TRUE(Icore == ones(make_shape(5000)));
+  ASSERT_TRUE(eye(5000).norm() == sqrt(5000));
+  ASSERT_TRUE(eye(5000).sum() == 5000);
+  ASSERT_TRUE(diag(eye(5000)) == ones(make_shape(5000)));
+  ASSERT_TRUE(make_diag(vecx(2.0, 3.0, 4.0)) == matx(make_shape(3, 3),
+                                                     with_elements, 2.0, 0.0, 0,
+                                                     0, 3, 0, 0, 0, 4));
 }

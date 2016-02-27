@@ -1,23 +1,41 @@
 #include <gtest/gtest.h>
 
-#include "../../tensor"
+#include "aligned.hpp"
+#include "block.hpp"
+#include "constants.hpp"
+#include "iota.hpp"
+#include "reshape.hpp"
+#include "tensor.hpp"
 
 using namespace wheels;
 using namespace wheels::index_tags;
 using namespace wheels::literals;
 
 TEST(tensor, block) {
-  auto a = meshgrid(make_shape(5, 4), 0_c);
-  auto bb = a.block(0, range(0, last));
-  for (auto i : iota(a.size(0_c))) {
-    println(a.block(i, range(0, last)));
-  }
-  auto b = a.eval();
-  b.block(range(0, last), 0) = b.block(range(0, last), 1) + 2;
-  println(b);
-  println(b.block(range(0, 2, last), range(0, 3, last)));
+  // 1, 2, 3, 4, 5,
+  // 6, 7, 8, 9, 10,
+  // 11, 12, 13, 14, 15,
+  // 16, 17, 18, 19, 20
+  matx a(make_shape(4, 5), with_elements, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
+         13, 14, 15, 16, 17, 18, 19, 20);
 
-  auto xy = coordinate(make_shape(5, 4));
-  println(xy);
-  println(xy.block(range(0, 2, last), range(last, -1, first)));
+  ASSERT_TRUE(a.block(0, range(0, last)) == rowvecx(1.0, 2.0, 3.0, 4.0, 5.0));
+  ASSERT_TRUE(a.block(1, range(0, last)) == rowvecx(6, 7, 8, 9, 10));
+
+  ASSERT_TRUE(a.block(0, range(0, 2, last)) == rowvecx(1, 3, 5));
+  ASSERT_TRUE(a.block(1, range(0, 2, last)) == rowvecx(6, 8, 10));
+
+  // 1, 3, 5
+  // 16, 18, 20
+  println(a.block(range(0, 3, last), range(0, 2, last)));
+  println(matx(make_shape(2, 3), with_elements, 1, 3, 5, 16, 18, 20));
+  ASSERT_TRUE(a.block(range(0, 3, last), range(0, 2, last)) ==
+              matx(make_shape(2, 3), with_elements, 1, 3, 5, 16, 18, 20));
+
+  // 5, 3, 1
+  // 20, 18, 16
+  println(a.block(range(0, 3, last), range(last, -2, 0)));
+  println(matx(make_shape(2, 3), with_elements, 5, 3, 1, 20, 18, 16));
+  ASSERT_TRUE(a.block(range(0, 3, last), range(last, -2, 0)) ==
+              matx(make_shape(2, 3), with_elements, 5, 3, 1, 20, 18, 16));
 }
