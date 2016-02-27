@@ -148,21 +148,22 @@ constexpr TT &&_pass_or_evaluate(const T &, TT &&expr, ArgTs &&...) {
 
 // _smart_invoke
 template <class FunT, class... ArgTs>
-struct _expr_wrapper : const_expr_base<_expr_wrapper<FunT, ArgTs...>> {
+struct _call_once_functor
+    : const_expr_base<_call_once_functor<FunT, ArgTs...>> {
   FunT _fun;
   std::tuple<ArgTs...> _args;
-  constexpr explicit _expr_wrapper(FunT &&f, ArgTs &&... args)
+  constexpr explicit _call_once_functor(FunT &&f, ArgTs &&... args)
       : _fun(forward<FunT>(f)), _args(forward<ArgTs>(args)...) {}
   template <class... NewArgTs>
-  constexpr decltype(auto) operator()(NewArgTs &&... nargs) const {
+  inline decltype(auto) operator()(NewArgTs &&... nargs) {
     return _invoke_seq(make_const_sequence_for<ArgTs...>(),
                        std::forward<NewArgTs>(nargs)...);
   }
   template <size_t... Is, class... NewArgTs>
-  constexpr decltype(auto) _invoke_seq(const const_ints<size_t, Is...> &,
-                                       NewArgTs &&... nargs) const {
-    return _fun(_pass_or_evaluate(std::get<Is>(_args), std::get<Is>(_args),
-                                  nargs...)...);
+  inline decltype(auto) _invoke_seq(const const_ints<size_t, Is...> &,
+                                    NewArgTs &&... nargs) {
+    return _fun(_pass_or_evaluate(std::forward<ArgTs>(std::get<Is>(_args)),
+                                  std::get<Is>(_args), nargs...)...);
   }
 
   template <class V> decltype(auto) fields(V &&visitor) {
@@ -173,8 +174,8 @@ struct _expr_wrapper : const_expr_base<_expr_wrapper<FunT, ArgTs...>> {
 template <class FunT, class... ArgTs>
 constexpr decltype(auto) _smart_invoke(FunT &&fun, yes there_are_const_exprs,
                                        ArgTs &&... args) {
-  return _expr_wrapper<FunT, ArgTs...>(forward<FunT>(fun),
-                                       forward<ArgTs>(args)...);
+  return _call_once_functor<FunT, ArgTs...>(forward<FunT>(fun),
+                                            forward<ArgTs>(args)...);
 }
 template <class FunT, class... ArgTs>
 constexpr decltype(auto) _smart_invoke(FunT &&fun, no there_are_const_exprs,

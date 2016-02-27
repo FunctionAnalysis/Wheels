@@ -29,7 +29,7 @@ constexpr auto last = length - const_int<1>();
 namespace details {
 template <class E, class SizeT,
           class = std::enable_if_t<is_const_expr<std::decay_t<E>>::value>>
-constexpr auto _eval_index_expr(E &&e, const SizeT &sz) {
+constexpr decltype(auto) _eval_index_expr(E &&e, const SizeT &sz) {
   return forward<E>(e)(sz);
 }
 template <class T, class SizeT,
@@ -72,12 +72,16 @@ template <class T> constexpr decltype(auto) _all_as_tensor(T &&t) {
 }
 
 // _block_seq
-template <class T, class SubsTensorOrIntsTupleT, size_t... Is>
-constexpr auto _block_seq(T &&t, SubsTensorOrIntsTupleT &&subs,
-                          const const_ints<size_t, Is...> &) {
+template <class T, size_t... Is, class... SubsTensorOrIntTs>
+constexpr auto _block_seq(T &&t, const const_ints<size_t, Is...> &,
+                          SubsTensorOrIntTs &&... subs)
+    -> decltype(::wheels::at_block(
+        forward<T>(t),
+        _all_as_tensor(_eval_index_expr(forward<SubsTensorOrIntTs>(subs),
+                                        size_at(t, const_index<Is>())))...)) {
   return ::wheels::at_block(
       forward<T>(t),
-      _all_as_tensor(_eval_index_expr(std::get<Is>(subs),
+      _all_as_tensor(_eval_index_expr(forward<SubsTensorOrIntTs>(subs),
                                       size_at(t, const_index<Is>())))...);
 }
 }
@@ -135,21 +139,20 @@ template <class T> struct tensor_core : object<T> {
   // block
   template <class... TensorOrIndexTs>
   constexpr auto block(TensorOrIndexTs &&... tois) const & {
-    return details::_block_seq(
-        derived(), std::forward_as_tuple(forward<TensorOrIndexTs>(tois)...),
-        make_const_sequence_for<TensorOrIndexTs...>());
+    return details::_block_seq(derived(),
+                               make_const_sequence_for<TensorOrIndexTs...>(),
+                               forward<TensorOrIndexTs>(tois)...);
   }
   template <class... TensorOrIndexTs> auto block(TensorOrIndexTs &&... tois) & {
-    return details::_block_seq(
-        derived(), std::forward_as_tuple(forward<TensorOrIndexTs>(tois)...),
-        make_const_sequence_for<TensorOrIndexTs...>());
+    return details::_block_seq(derived(),
+                               make_const_sequence_for<TensorOrIndexTs...>(),
+                               forward<TensorOrIndexTs>(tois)...);
   }
   template <class... TensorOrIndexTs>
   auto block(TensorOrIndexTs &&... tois) && {
-    return details::_block_seq(
-        move(derived()),
-        std::forward_as_tuple(forward<TensorOrIndexTs>(tois)...),
-        make_const_sequence_for<TensorOrIndexTs...>());
+    return details::_block_seq(move(derived()),
+                               make_const_sequence_for<TensorOrIndexTs...>(),
+                               forward<TensorOrIndexTs>(tois)...);
   }
 
   // for_each

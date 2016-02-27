@@ -33,14 +33,15 @@ public:
 // shape_of
 namespace details {
 template <class SubsViewT, size_t... Is>
-constexpr decltype(auto)
-_shape_of_block_view(SubsViewT &sv, const const_ints<size_t, Is...> &) {
-  return make_shape(std::get<Is>(sv.subs_tensors).numel()...);
+constexpr auto _shape_of_block_view(SubsViewT &sv,
+                                    const const_ints<size_t, Is...> &) {
+  return make_shape(
+      ::wheels::numel(std::get<Is>(sv.subs_tensors).derived())...);
 }
 }
 template <class ET, class ShapeT, class InputTensorT,
           class... SubscriptTensorTs>
-constexpr decltype(auto)
+constexpr auto
 shape_of(const block_view<ET, ShapeT, InputTensorT, SubscriptTensorTs...> &t) {
   return details::_shape_of_block_view(
       t, make_const_sequence_for<SubscriptTensorTs...>());
@@ -73,7 +74,7 @@ template <class InET, class InShapeT, class InT, class InTT,
           class... SubsTensorTs>
 constexpr auto _at_block(const tensor_base<InET, InShapeT, InT> &, InTT &&in,
                          SubsTensorTs &&... sts) {
-  using shape_t = decltype(make_shape(sts.numel()...));
+  using shape_t = std::decay_t<decltype(make_shape(sts.numel()...))>;
   return block_view<InET, shape_t, InTT, SubsTensorTs...>(
       forward<InTT>(in), forward<SubsTensorTs>(sts)...);
 }

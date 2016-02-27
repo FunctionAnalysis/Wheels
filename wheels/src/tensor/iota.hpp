@@ -183,11 +183,11 @@ struct _range_impl {
 };
 }
 template <class BeginT, class StepT, class EndT>
-constexpr auto range(const BeginT &b, const StepT &s, const EndT &e) {
+constexpr decltype(auto) range(const BeginT &b, const StepT &s, const EndT &e) {
   return smart_invoke(details::_range_impl(), b, s, e);
 }
 template <class BeginT, class EndT>
-constexpr auto range(const BeginT &b, const EndT &e) {
+constexpr decltype(auto) range(const BeginT &b, const EndT &e) {
   return smart_invoke(details::_range_impl(), b, e);
 }
 }
