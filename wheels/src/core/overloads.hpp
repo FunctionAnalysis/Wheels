@@ -3,7 +3,9 @@
 #include <algorithm>
 
 #include "const_ints.hpp"
+#include "object.hpp"
 #include "types.hpp"
+#include "utility.hpp"
 
 namespace wheels {
 
@@ -69,7 +71,7 @@ template <class OpT> struct ewised {
 };
 
 // common_func
-template <class OpT> struct common_func {
+template <class OpT> struct common_func : object<OpT> {
   const OpT &derived() const { return static_cast<const OpT &>(*this); }
 };
 
@@ -151,6 +153,7 @@ WHEELS_OVERLOAD_BINARY_OP(||, or)
 WHEELS_OVERLOAD_BINARY_OP(&, bitwise_and)
 WHEELS_OVERLOAD_BINARY_OP(|, bitwise_or)
 WHEELS_OVERLOAD_BINARY_OP (^, bitwise_xor)
+
 #undef WHEELS_OVERLOAD_BINARY_OP
 
 // WHEELS_OVERLOAD_STD_UNARY_FUNC
@@ -200,7 +203,7 @@ WHEELS_OVERLOAD_BINARY_OP (^, bitwise_xor)
     template <class... ArgTs>                                                  \
     constexpr decltype(auto) operator()(ArgTs &&... vs) const {                \
       using std::name;                                                         \
-      return name(forward<ArgTs>(vs)...);                                 \
+      return name(forward<ArgTs>(vs)...);                                      \
     }                                                                          \
   };                                                                           \
   template <class FirstT, class... RestTs,                                     \
@@ -238,6 +241,7 @@ WHEELS_OVERLOAD_STD_UNARY_FUNC(round)
 WHEELS_OVERLOAD_STD_UNARY_FUNC(isinf)
 WHEELS_OVERLOAD_STD_UNARY_FUNC(isfinite)
 WHEELS_OVERLOAD_STD_UNARY_FUNC(isnan)
+WHEELS_OVERLOAD_STD_UNARY_FUNC(abs)
 
 WHEELS_OVERLOAD_STD_BINARY_FUNC(atan2)
 WHEELS_OVERLOAD_STD_BINARY_FUNC(pow)

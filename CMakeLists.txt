@@ -46,17 +46,6 @@ if (${OpenBLAS_FOUND})
 endif()
 
 
-find_package(CUDA)
-if (${CUDA_FOUND})  
-    list (APPEND DEPENDENCY_INCLUDES ${CUDA_TOOLKIT_INCLUDE})
-    if (MSVC)
-        add_definitions ( "/Dwheels_with_cuda" )
-    else ()
-        add_definitions ( "-Dwheels_with_cuda" )
-    endif ()
-endif()
-
-
 find_package(MATLAB)
 if (${MATLAB_FOUND})
     #  MATLAB_INCLUDE_DIR: include path for mex.h, engine.h
@@ -76,7 +65,7 @@ if (${MATLAB_FOUND})
     endif ()
 endif()
 
-find_package(OpenCV REQUIRED)
+find_package(OpenCV)
 if (${OpenCV_FOUND})
     list (APPEND DEPENDENCY_INCLUDES ${OpenCV_INCLUDE_DIRS})
     list (APPEND DEPENDENCY_LIBS ${OpenCV_LIBS})
@@ -88,7 +77,7 @@ if (${OpenCV_FOUND})
     endif ()
 endif()
 
-find_package (Cereal REQUIRED)
+find_package (Cereal)
 if (${Cereal_FOUND})
     list (APPEND DEPENDENCY_INCLUDES ${CEREAL_INCLUDE_DIR}) 
     if (MSVC)
@@ -108,23 +97,6 @@ if (MSVC)
 else ()
     add_definitions ( "-Dwheels_data_dir_str=\"${wheels_data_dir}\"" )
 endif ()
-
-
-macro(wheels_add_executable BIN_NAME)
-    if (CUDA_TOOLKIT_INCLUDE)
-        cuda_add_executable(${BIN_NAME} ${ARGN})
-    else()
-        add_executable(${BIN_NAME} ${ARGN})
-    endif()
-endmacro()
-macro(wheels_add_library BIN_NAME)
-    if (CUDA_TOOLKIT_INCLUDE)
-        cuda_add_library(${BIN_NAME} ${ARGN})
-    else()
-        add_library(${BIN_NAME} ${ARGN})
-    endif()
-endmacro()
-
 
 include_directories (".")
 

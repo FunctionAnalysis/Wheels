@@ -1,8 +1,7 @@
 #include <gtest/gtest.h>
 
-#include "constants.hpp"
-#include "extend.hpp"
-#include "subwise.hpp"
+#include "../../core"
+#include "../../tensor"
 
 using namespace wheels;
 using namespace wheels::literals;

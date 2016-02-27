@@ -4,9 +4,10 @@
 
 #include "../core/const_expr.hpp"
 #include "../core/const_ints.hpp"
+#include "../core/iterators.hpp"
+#include "../core/object.hpp"
 #include "../core/overloads.hpp"
 #include "../core/parallel.hpp"
-#include "../core/serialize.hpp"
 #include "../core/types.hpp"
 
 #include "shape.hpp"
@@ -57,14 +58,13 @@ constexpr decltype(auto) _brackets(T &&t, TensorTT &&inds) {
   return _brackets_impl(forward<T>(t), inds, forward<TensorTT>(inds));
 }
 
-//
+// _
+
 }
 
 // tensor_core
-template <class T> struct tensor_core {
+template <class T> struct tensor_core : object<T> {
   const tensor_core &core() const { return *this; }
-  constexpr const T &derived() const { return static_cast<const T &>(*this); }
-  T &derived() { return static_cast<T &>(*this); }
 
   constexpr auto shape() const { return ::wheels::shape_of(derived()); }
   template <class K, K Idx>
@@ -165,6 +165,13 @@ template <class T> struct tensor_core {
   decltype(auto) permute(const IndexTs &... inds) && {
     return ::wheels::permute(std::move(derived()), inds...);
   }
+
+  // all
+  constexpr bool all() const { return ::wheels::all_of(derived()); }
+  // any
+  constexpr bool any() const { return ::wheels::any_of(derived()); }
+  // none
+  constexpr bool none() const { return !::wheels::any_of(derived()); }
 
   // block
   template <class... RangeOrIndexTs>

@@ -130,14 +130,20 @@ norm_squared(const iota_result<ET, ShapeT, StaticShape> &t) {
 }
 
 // iota
-template <class ET = size_t, class ST, class... SizeTs>
-constexpr auto iota(const tensor_shape<ST, SizeTs...> &s) {
-  return iota_result<ET, tensor_shape<ST, SizeTs...>>(s);
+namespace details {
+template <class ET> struct _iota_impl {
+  template <class ST, class... SizeTs>
+  constexpr auto operator()(const tensor_shape<ST, SizeTs...> &s) const {
+    return iota_result<ET, tensor_shape<ST, SizeTs...>>(s);
+  }
+  template <class SizeT, class = std::enable_if_t<is_int<SizeT>::value>>
+  constexpr auto operator()(const SizeT &s) const {
+    return (*this)(make_shape(s));
+  }
+};
 }
-template <class ET = size_t, class SizeT,
-          class = std::enable_if_t<is_int<SizeT>::value>>
-constexpr auto iota(const SizeT &s) {
-  return iota<ET>(make_shape(s));
+template <class ET = size_t, class SizeT> constexpr auto iota(const SizeT &s) {
+  return smart_invoke(details::_iota_impl<ET>(), s);
 }
 
 // range
@@ -148,28 +154,40 @@ _range_count(const T1 &t1, const T2 &t2,
              std::enable_if_t<std::is_floating_point<T1>::value ||
                               std::is_floating_point<T2>::value> * = nullptr) {
   assert(t2 != 0);
-  return conditional((t1 > 0) != (t2 > 0), 0, size_t(t1 / t2));
+  return (size_t)conditional(t1 >= 0 != t2 >= 0, 0, std::floor(t1 / t2) + 1.0);
 }
 template <class T1, class T2>
 constexpr size_t _range_count(
     const T1 &t1, const T2 &t2,
     std::enable_if_t<is_int<T1>::value && is_int<T2>::value> * = nullptr) {
   assert(t2 != 0);
-  return conditional((t1 > 0) != (t2 > 0), 0,
-                     t1 / t2 + conditional(t1 % t2 == const_int<0>(), 0, 1));
+  return (size_t)conditional(t1 >= const_int<0>() != t2 >= const_int<0>(), 0,
+                             t1 / t2 + 1);
 }
+
+struct _range_impl {
+  template <class BeginT, class StepT, class EndT>
+  constexpr auto operator()(const BeginT &b, const StepT &s,
+                            const EndT &e) const {
+    using _t = std::common_type_t<typename scalar_traits<BeginT>::type,
+                                  typename scalar_traits<StepT>::type,
+                                  typename scalar_traits<EndT>::type>;
+    return b + iota<_t>(_range_count(e - b, s)) * s;
+  }
+  template <class BeginT, class EndT>
+  constexpr auto operator()(const BeginT &b, const EndT &e) const {
+    using _t = std::common_type_t<typename scalar_traits<BeginT>::type,
+                                  typename scalar_traits<EndT>::type>;
+    return b + iota<_t>((size_t)(e - b + const_int<1>()));
+  }
+};
 }
 template <class BeginT, class StepT, class EndT>
 constexpr auto range(const BeginT &b, const StepT &s, const EndT &e) {
-  using _t = std::common_type_t<typename scalar_traits<BeginT>::type,
-                                typename scalar_traits<StepT>::type,
-                                typename scalar_traits<EndT>::type>;
-  return b + iota<_t>(details::_range_count(e - b, s)) * s;
+  return smart_invoke(details::_range_impl(), b, s, e);
 }
 template <class BeginT, class EndT>
 constexpr auto range(const BeginT &b, const EndT &e) {
-  using _t = std::common_type_t<typename scalar_traits<BeginT>::type,
-                                typename scalar_traits<EndT>::type>;
-  return b + iota<_t>((size_t)max(e - b, 0));
+  return smart_invoke(details::_range_impl(), b, e);
 }
 }

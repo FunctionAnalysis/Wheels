@@ -4,6 +4,7 @@
 #include <tuple>
 
 #include "macros.hpp"
+#include "const_ints.hpp"
 
 namespace wheels {
 

@@ -6,7 +6,6 @@
 #include <tuple>
 
 #include "macros.hpp"
-#include "utility.hpp"
 
 namespace wheels {
 
@@ -377,9 +376,13 @@ constexpr auto make_const_range(const const_ints<T, From> &from,
 // repeat
 namespace details {
 template <class T, T S, class SeqT> struct _repeat { using type = void; };
+template <class T, T Ret, class ArgT> struct _always_for_repeat {
+  static constexpr T value = Ret;
+};
 template <class T, T S, size_t... Is>
 struct _repeat<T, S, const_ints<size_t, Is...>> {
-  using type = const_ints<T, always<T, S, const_index<Is>>::value...>;
+  using type =
+      const_ints<T, _always_for_repeat<T, S, const_index<Is>>::value...>;
 };
 }
 template <class T, T Val, class K, K Times>

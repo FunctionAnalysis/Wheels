@@ -6,7 +6,6 @@
 #include "./src/core/types.hpp"
 #include "./src/core/overloads.hpp"
 #include "./src/core/fields.hpp"
-#include "./src/core/serialize.hpp"
 #include "./src/core/const_expr.hpp"
 #include "./src/core/time.hpp"
 #include "./src/core/parallel.hpp"
