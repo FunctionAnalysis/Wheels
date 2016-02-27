@@ -66,8 +66,9 @@ constexpr TensorTT &&_all_as_tensor_impl(const tensor_core<TensorT> &id,
                                          TensorTT &&inds) {
   return static_cast<TensorTT &&>(inds);
 }
-
-template <class T> constexpr decltype(auto) _all_as_tensor(T &&t) {
+template <class T>
+constexpr auto _all_as_tensor(T &&t)
+    -> decltype(_all_as_tensor_impl(identify(t), forward<T>(t))) {
   return _all_as_tensor_impl(identify(t), forward<T>(t));
 }
 

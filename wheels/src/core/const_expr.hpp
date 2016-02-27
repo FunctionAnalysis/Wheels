@@ -146,36 +146,56 @@ constexpr TT &&_pass_or_evaluate(const T &, TT &&expr, ArgTs &&...) {
   return static_cast<TT &&>(expr);
 }
 
-// _smart_invoke
+// _functor_expr
+template <class FunT, class... ArgTs> struct _functor_expr;
+template <class FunT, class... ArgTs, class FT, size_t... Is, class... NewArgTs>
+constexpr decltype(auto)
+_call_functor_expr_seq(const _functor_expr<FunT, ArgTs...> &, FT &&f,
+                       const const_ints<size_t, Is...> &,
+                       NewArgTs &&... nargs) {
+  return forward<FT>(f).fun(_pass_or_evaluate(
+      std::forward<ArgTs>(std::get<Is>(forward<FT>(f).args)),
+      std::get<Is>(forward<FT>(f).args), forward<NewArgTs>(nargs)...)...);
+}
+
 template <class FunT, class... ArgTs>
-struct _call_once_functor
-    : const_expr_base<_call_once_functor<FunT, ArgTs...>> {
-  FunT _fun;
-  std::tuple<ArgTs...> _args;
-  constexpr explicit _call_once_functor(FunT &&f, ArgTs &&... args)
-      : _fun(forward<FunT>(f)), _args(forward<ArgTs>(args)...) {}
+struct _functor_expr : const_expr_base<_functor_expr<FunT, ArgTs...>> {
+  FunT fun;
+  std::tuple<ArgTs...> args;
+
+  constexpr explicit _functor_expr(FunT &&f, ArgTs &&... args)
+      : fun(forward<FunT>(f)), args(forward<ArgTs>(args)...) {}
+
   template <class... NewArgTs>
-  inline decltype(auto) operator()(NewArgTs &&... nargs) {
-    return _invoke_seq(make_const_sequence_for<ArgTs...>(),
-                       std::forward<NewArgTs>(nargs)...);
+  inline decltype(auto) operator()(NewArgTs &&... nargs) & {
+    return _call_functor_expr_seq(*this, *this,
+                                  make_const_sequence_for<ArgTs...>(),
+                                  std::forward<NewArgTs>(nargs)...);
   }
-  template <size_t... Is, class... NewArgTs>
-  inline decltype(auto) _invoke_seq(const const_ints<size_t, Is...> &,
-                                    NewArgTs &&... nargs) {
-    return _fun(_pass_or_evaluate(std::forward<ArgTs>(std::get<Is>(_args)),
-                                  std::get<Is>(_args), nargs...)...);
+  template <class... NewArgTs>
+  constexpr decltype(auto) operator()(NewArgTs &&... nargs) const & {
+    return _call_functor_expr_seq(*this, *this,
+                                  make_const_sequence_for<ArgTs...>(),
+                                  std::forward<NewArgTs>(nargs)...);
+  }
+  template <class... NewArgTs>
+  inline decltype(auto) operator()(NewArgTs &&... nargs) && {
+    return _call_functor_expr_seq(*this, std::move(*this),
+                                  make_const_sequence_for<ArgTs...>(),
+                                  std::forward<NewArgTs>(nargs)...);
   }
 
   template <class V> decltype(auto) fields(V &&visitor) {
-    return visitor(_fun, _args);
+    return visitor(fun, args);
   }
 };
 
+// _smart_invoke
 template <class FunT, class... ArgTs>
 constexpr decltype(auto) _smart_invoke(FunT &&fun, yes there_are_const_exprs,
                                        ArgTs &&... args) {
-  return _call_once_functor<FunT, ArgTs...>(forward<FunT>(fun),
-                                            forward<ArgTs>(args)...);
+  return _functor_expr<FunT, ArgTs...>(forward<FunT>(fun),
+                                       forward<ArgTs>(args)...);
 }
 template <class FunT, class... ArgTs>
 constexpr decltype(auto) _smart_invoke(FunT &&fun, no there_are_const_exprs,
