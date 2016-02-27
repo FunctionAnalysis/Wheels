@@ -52,8 +52,8 @@ auto solve(const tensor_base<ET, tensor_shape<ST1, MT1, NT1>, T1> &A,
     *succeed = info == 0;
   }
 
-  return std::move(Bdata).t().block(make_interval(0, n),
-                                    index_tags::everything);
+  return std::move(Bdata).t().block(range(0, n - 1),
+                                    range(0, index_tags::last));
 }
 
 // solve min |AX - B|
@@ -96,7 +96,7 @@ auto solve(const tensor_base<ET, tensor_shape<ST1, MT1, NT1>, T1> &A,
     *succeed = info == 0;
   }
 
-  return std::move(Bdata).block(make_interval(0, n));
+  return std::move(Bdata).block(range(0, n - 1));
 }
 
 // inverse n x n matrix

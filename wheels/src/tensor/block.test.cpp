@@ -8,10 +8,11 @@ using namespace wheels::literals;
 
 TEST(tensor, block) {
   auto a = meshgrid(make_shape(5, 4), 0_c);
+  auto bb = a.block(0, range(0, last));
   for (auto i : iota(a.size(0_c))) {
-    println(a.block(i, everything));
+    println(a.block(i, range(0, last)));
   }
   auto b = a.eval();
-  b.block(everything, 0) = b.block(everything, 1) + 2;
+  b.block(range(0, last), 0) = b.block(range(0, last), 1) + 2;
   println(b);
 }

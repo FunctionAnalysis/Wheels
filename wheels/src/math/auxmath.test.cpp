@@ -17,6 +17,7 @@ TEST(math, solve) {
         randomize_fields(A, rng);
         randomize_fields(B, rng);
         bool b = false;
+        println(type_of(auxmath::solve(A, B, &b)));
         ASSERT_TRUE((A * auxmath::solve(A, B, &b) - B).norm() < 1e-3);
         ASSERT_TRUE(b);
       }

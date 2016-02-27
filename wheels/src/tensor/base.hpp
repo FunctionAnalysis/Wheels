@@ -21,10 +21,9 @@ template <class T> struct tensor_iterator;
 
 // index_tags
 namespace index_tags {
-constexpr auto first = const_index<0>();
+constexpr auto first = const_int<0>();
 constexpr auto length = const_symbol<0>();
-constexpr auto last = length - const_index<1>();
-constexpr auto everything = make_interval(first, length);
+constexpr auto last = length - const_int<1>();
 }
 
 namespace details {
@@ -41,25 +40,46 @@ constexpr T &&_eval_index_expr(T &&t, const SizeT &) {
 }
 
 // _brackets
-template <class T, class E, class EE,
-          class = std::enable_if_t<is_int<E>::value>>
-constexpr decltype(auto) _brackets_impl(T &&t, const E &, EE &&ind) {
+template <class T, class E, class EE>
+constexpr decltype(auto) _brackets_impl(T &&t, const other<E> &id, EE &&ind) {
   return ::wheels::element_at_index(forward<T>(t), forward<EE>(ind));
 }
 
 template <class T, class TensorT, class TensorTT>
-constexpr auto _brackets_impl(T &&t, const tensor_core<TensorT> &,
+constexpr auto _brackets_impl(T &&t, const tensor_core<TensorT> &id,
                               TensorTT &&inds) {
   return ::wheels::at_indices(forward<T>(t), forward<TensorTT>(inds));
 }
 
 template <class T, class TensorTT>
 constexpr decltype(auto) _brackets(T &&t, TensorTT &&inds) {
-  return _brackets_impl(forward<T>(t), inds, forward<TensorTT>(inds));
+  return _brackets_impl(forward<T>(t), identify(inds), forward<TensorTT>(inds));
 }
 
-// _
+// _all_as_tensor
+template <class E, class EE>
+constexpr auto _all_as_tensor_impl(const other<E> &id, EE &&s) {
+  return ::wheels::constants(make_shape(), forward<EE>(s));
+}
+template <class TensorT, class TensorTT>
+constexpr TensorTT &&_all_as_tensor_impl(const tensor_core<TensorT> &id,
+                                         TensorTT &&inds) {
+  return static_cast<TensorTT &&>(inds);
+}
 
+template <class T> constexpr decltype(auto) _all_as_tensor(T &&t) {
+  return _all_as_tensor_impl(identify(t), forward<T>(t));
+}
+
+// _block_seq
+template <class T, class SubsTensorOrIntsTupleT, size_t... Is>
+constexpr auto _block_seq(T &&t, SubsTensorOrIntsTupleT &&subs,
+                          const const_ints<size_t, Is...> &) {
+  return ::wheels::at_block(
+      forward<T>(t),
+      _all_as_tensor(_eval_index_expr(std::get<Is>(subs),
+                                      size_at(t, const_index<Is>())))...);
+}
 }
 
 // tensor_core
@@ -110,6 +130,26 @@ template <class T> struct tensor_core : object<T> {
   template <class E> decltype(auto) operator[](E &&e) && {
     return details::_brackets(
         move(derived()), details::_eval_index_expr(forward<E>(e), numel()));
+  }
+
+  // block
+  template <class... TensorOrIndexTs>
+  constexpr auto block(TensorOrIndexTs &&... tois) const & {
+    return details::_block_seq(
+        derived(), std::forward_as_tuple(forward<TensorOrIndexTs>(tois)...),
+        make_const_sequence_for<TensorOrIndexTs...>());
+  }
+  template <class... TensorOrIndexTs> auto block(TensorOrIndexTs &&... tois) & {
+    return details::_block_seq(
+        derived(), std::forward_as_tuple(forward<TensorOrIndexTs>(tois)...),
+        make_const_sequence_for<TensorOrIndexTs...>());
+  }
+  template <class... TensorOrIndexTs>
+  auto block(TensorOrIndexTs &&... tois) && {
+    return details::_block_seq(
+        move(derived()),
+        std::forward_as_tuple(forward<TensorOrIndexTs>(tois)...),
+        make_const_sequence_for<TensorOrIndexTs...>());
   }
 
   // for_each
@@ -172,20 +212,6 @@ template <class T> struct tensor_core : object<T> {
   constexpr bool any() const { return ::wheels::any_of(derived()); }
   // none
   constexpr bool none() const { return !::wheels::any_of(derived()); }
-
-  // block
-  template <class... RangeOrIndexTs>
-  constexpr auto block(const RangeOrIndexTs &... rois) const & {
-    return ::wheels::block_at(derived(), rois...);
-  }
-  template <class... RangeOrIndexTs>
-  auto block(const RangeOrIndexTs &... rois) & {
-    return ::wheels::block_at(derived(), rois...);
-  }
-  template <class... RangeOrIndexTs>
-  auto block(const RangeOrIndexTs &... rois) && {
-    return ::wheels::block_at(std::move(derived()), rois...);
-  }
 
   // begin/end
   constexpr tensor_iterator<const T> begin() const {
