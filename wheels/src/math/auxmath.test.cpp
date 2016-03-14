@@ -32,7 +32,7 @@ TEST(math, solve) {
 
 TEST(math, inverse) {
   std::default_random_engine rng;
-  for (size_t i : iota(10) + 2) {
+  for (size_t i : iota(100) + 2) {
     auto A = rand(make_shape(i, i), rng);
     bool b = false;
     auto X = auxmath::inverse(A, &b);
