@@ -23,7 +23,6 @@ namespace wheels {
 
 using blas_int = int;
 
-// https://software.intel.com/en-us/node/521115
 namespace lapack {
 
 template <class TT>
@@ -47,6 +46,24 @@ inline void gels(char *trans, blas_int *m, blas_int *n, blas_int *nrhs, TT *a,
     typedef std::complex<double> T;
     wheels_lapack(zgels)(trans, m, n, nrhs, (T *)a, lda, (T *)b, ldb, (T *)work,
                          lwork, info);
+  }
+}
+
+template <class TT>
+inline void getrf(blas_int *m, blas_int *n, TT *a, blas_int *lda,
+                  blas_int *ipiv, blas_int *info) {
+  if (types<TT>() == types<float>()) {
+    typedef float T;
+    wheels_lapack(sgetrf)(m, n, (T *)a, lda, ipiv, info);
+  } else if (types<TT>() == types<double>()) {
+    typedef double T;
+    wheels_lapack(dgetrf)(m, n, (T *)a, lda, ipiv, info);
+  } else if (types<TT>() == types<std::complex<float>>()) {
+    typedef std::complex<float> T;
+    wheels_lapack(cgetrf)(m, n, (T *)a, lda, ipiv, info);
+  } else if (types<TT>() == types<std::complex<double>>()) {
+    typedef std::complex<double> T;
+    wheels_lapack(zgetrf)(m, n, (T *)a, lda, ipiv, info);
   }
 }
 

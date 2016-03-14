@@ -110,15 +110,24 @@ auto inverse(const tensor_base<ET, tensor_shape<ST, MT, NT>, T> &A,
   auto Adata = A.t().eval();
 
   std::vector<blas_int> ipiv(n);
-
-  blas_int lwork = n;
-  vecx_<ET> work(make_shape(lwork));
-
   blas_int info = 0;
-  // calling to getri causes heap corruption, FIXME!!
-  lapack::getri(&n, Adata.ptr(), &lda, ipiv.data(), work.ptr(), &lwork, &info);
+
+  // lu factorization
+  lapack::getrf(&n, &n, Adata.ptr(), &lda, ipiv.data(), &info);
   if (succeed) {
     *succeed = info == 0;
+  }
+
+  if (info == 0) {
+    blas_int lwork = n;
+    vecx_<ET> work(make_shape(lwork));
+
+    // inverse
+    lapack::getri(&n, Adata.ptr(), &lda, ipiv.data(), work.ptr(), &lwork,
+                  &info);
+    if (succeed) {
+      *succeed = info == 0;
+    }
   }
 
   return std::move(Adata).t();

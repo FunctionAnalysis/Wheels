@@ -30,7 +30,7 @@ TEST(math, solve) {
   }
 }
 
-TEST(DISABLED_math, inverse) {
+TEST(math, inverse) {
   std::default_random_engine rng;
   for (size_t i : iota(10) + 2) {
     auto A = rand(make_shape(i, i), rng);
