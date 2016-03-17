@@ -20,7 +20,7 @@ TEST(core, constants) {
   auto b7 = 101_c % 10_c == 1_uc;
   static_assert(b3 && b4 && b5 && b6 && b7, "");
 
-  auto seq1 = cat(1_c, 2_c, 5_int64c);
+  constexpr auto seq1 = cat(1_c, 2_c, 5_int64c);
   static_assert(seq1[0_uc] == 1_c, "");
   static_assert(seq1[1_uc] == 2_c, "");
   static_assert(seq1[2_uc] == 5_c, "");

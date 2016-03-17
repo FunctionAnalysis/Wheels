@@ -1,5 +1,5 @@
-PROJECT (Wheels)
 cmake_minimum_required (VERSION 3.0)
+PROJECT (Wheels VERSION 0.1 LANGUAGES CXX)
 
 
 set (CMAKE_ALLOW_LOOSE_CONSTRUCTS true)
@@ -8,14 +8,14 @@ list (APPEND CMAKE_MODULE_PATH
 )
 
 
-if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+if (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
     message (STATUS "Clang: ${CLANG_VERSION_STRING}")
     if(CLANG_VERSION_STRING VERSION_GREATER 3.5)
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
     else()
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1y")
     endif()
-elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
+elseif (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
     execute_process(
         COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
     message (STATUS "GCC: ${GCC_VERSION}")
@@ -31,18 +31,8 @@ set (DEPENDENCY_LIBS "")
 set (DEPENDENCY_BIN_PATHS "")
 
 
-find_package(Eigen3)
-if (${EIGEN3_FOUND})
-    list (APPEND DEPENDENCY_INCLUDES ${EIGEN3_INCLUDE_DIR})
-    if (MSVC)
-        add_definitions ( "/Dwheels_with_eigen" )
-    else ()
-        add_definitions ( "-Dwheels_with_eigen" )
-    endif ()
-endif()
 
-
-find_package(OpenBLAS)
+find_package(OpenBLAS REQUIRED)
 if (${OpenBLAS_FOUND})
 	list (APPEND DEPENDENCY_INCLUDES ${OpenBLAS_INCLUDE_DIR})
     list (APPEND DEPENDENCY_LIBS ${OpenBLAS_LIB})
@@ -54,6 +44,25 @@ if (${OpenBLAS_FOUND})
     endif ()
 endif()
 
+find_package (Cereal)
+if (${Cereal_FOUND})
+    list (APPEND DEPENDENCY_INCLUDES ${CEREAL_INCLUDE_DIR}) 
+    if (MSVC)
+        add_definitions ( "/Dwheels_with_cereal" )
+    else ()
+        add_definitions ( "-Dwheels_with_cereal" )
+    endif ()
+endif()
+
+find_package(Eigen3)
+if (${EIGEN3_FOUND})
+    list (APPEND DEPENDENCY_INCLUDES ${EIGEN3_INCLUDE_DIR})
+    if (MSVC)
+        add_definitions ( "/Dwheels_with_eigen" )
+    else ()
+        add_definitions ( "-Dwheels_with_eigen" )
+    endif ()
+endif()
 
 find_package(MATLAB)
 if (${MATLAB_FOUND})
@@ -85,17 +94,6 @@ if (${OpenCV_FOUND})
         add_definitions ( "-Dwheels_with_opencv" )
     endif ()
 endif()
-
-find_package (Cereal)
-if (${Cereal_FOUND})
-    list (APPEND DEPENDENCY_INCLUDES ${CEREAL_INCLUDE_DIR}) 
-    if (MSVC)
-        add_definitions ( "/Dwheels_with_cereal" )
-    else ()
-        add_definitions ( "-Dwheels_with_cereal" )
-    endif ()
-endif()
-
 
 
 get_filename_component(wheels_data_dir "${CMAKE_CURRENT_SOURCE_DIR}/data/" REALPATH)

@@ -71,7 +71,7 @@ template <class OpT> struct ewised {
 };
 
 // common_func
-template <class OpT> struct common_func : object<OpT> {
+template <class OpT> struct common_func : kinds::object<OpT> {
   const OpT &derived() const { return static_cast<const OpT &>(*this); }
 };
 

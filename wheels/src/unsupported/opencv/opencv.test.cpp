@@ -1,8 +1,8 @@
 #if defined(wheels_with_opencv)
 #include <gtest/gtest.h>
 
-#include "../../tensor"
-#include "../core/time.hpp"
+#include "../../../tensor"
+#include "../../core/time.hpp"
 
 #include "opencv.hpp"
 

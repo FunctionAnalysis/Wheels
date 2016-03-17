@@ -8,7 +8,7 @@ namespace wheels {
 struct category_const_expr {};
 
 // const_expr_base
-template <class T> struct const_expr_base : object<T> {};
+template <class T> struct const_expr_base : kinds::object<T> {};
 
 template <class T, class OpT>
 constexpr auto category_for_overloading(const const_expr_base<T> &,
@@ -192,8 +192,8 @@ struct _functor_expr : const_expr_base<_functor_expr<FunT, ArgTs...>> {
 
 // _smart_invoke
 template <class FunT, class... ArgTs>
-constexpr decltype(auto) _smart_invoke(FunT &&fun, yes there_are_const_exprs,
-                                       ArgTs &&... args) {
+constexpr _functor_expr<FunT, ArgTs...>
+_smart_invoke(FunT &&fun, yes there_are_const_exprs, ArgTs &&... args) {
   return _functor_expr<FunT, ArgTs...>(forward<FunT>(fun),
                                        forward<ArgTs>(args)...);
 }

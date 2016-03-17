@@ -1,13 +1,15 @@
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-# all files
-set (modules core tensor math unsupported)
+set (wheels_sources "")
+set (wheels_includes "")
+set (wheels_test_sources "")
 
+# add essential modules
+set (modules core tensor math)
 if (${Cereal_FOUND})
     list (APPEND modules serialize)
 endif ()
 
-set (wheels_sources "")
 foreach (M ${modules})
     file (GLOB "Src"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/${M}/*.cpp" 
@@ -15,19 +17,52 @@ foreach (M ${modules})
         "${CMAKE_CURRENT_SOURCE_DIR}/src/${M}/*.cu" 
         "${CMAKE_CURRENT_SOURCE_DIR}/src/${M}/*.cuh"
     )
+    file (GLOB "TestSrc" 
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/${M}/*.test.cpp" 
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/${M}/*.test.hpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/${M}/*.test.cu" 
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/${M}/*.test.cuh"
+    )
+    list (REMOVE_ITEM Src ${TestSrc})
     source_group ("modules\\${M}" FILES ${Src})
+    source_group ("modules\\${M}" FILES ${TestSrc})
     list (APPEND wheels_sources ${Src})
-endforeach()
-set (wheels_includes "")
-foreach (M ${modules})
+    list (APPEND wheels_test_sources ${TestSrc})
     list (APPEND wheels_includes "${CMAKE_CURRENT_SOURCE_DIR}/${M}")
 endforeach()
 source_group ("includes" FILES ${wheels_includes})
 
+# add unsupported modules
+set (unsupported_modules "")
+if (${MATLAB_FOUND})
+    list (APPEND unsupported_modules matlab)
+endif ()
+if (${EIGEN3_FOUND})
+    list (APPEND unsupported_modules eigen)
+endif ()
+if (${OpenCV_FOUND})
+    list (APPEND unsupported_modules opencv)
+endif ()
 
-file (GLOB_RECURSE wheels_test_sources "." *.test.cpp *.test.hpp *.test.cu *.test.cuh)
-# remove test sources from the lib sources
-list (REMOVE_ITEM wheels_sources ${wheels_test_sources})
+foreach (M ${unsupported_modules})
+    file (GLOB "Src"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/unsupported/${M}/*.cpp" 
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/unsupported/${M}/*.hpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/unsupported/${M}/*.cu" 
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/unsupported/${M}/*.cuh"
+    )
+    file (GLOB "TestSrc" 
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/unsupported/${M}/*.test.cpp" 
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/unsupported/${M}/*.test.hpp"
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/unsupported/${M}/*.test.cu" 
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/unsupported/${M}/*.test.cuh"
+    )
+    list (REMOVE_ITEM Src ${TestSrc})
+    source_group ("modules\\unsupported\\${M}" FILES ${Src})
+    source_group ("modules\\unsupported\\${M}" FILES ${TestSrc})
+    list (APPEND wheels_sources ${Src})
+    list (APPEND wheels_test_sources ${TestSrc})
+endforeach()
 
 
 include_directories (${DEPENDENCY_INCLUDES})

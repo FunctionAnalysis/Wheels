@@ -1,5 +1,0 @@
-#pragma once
-
-#include "./src/unsupported/eigen.hpp"
-#include "./src/unsupported/opencv.hpp"
-#include "./src/unsupported/matlab.hpp"

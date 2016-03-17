@@ -2,8 +2,8 @@
 
 #include <Eigen/Dense>
 
-#include "../tensor/map.hpp"
-#include "../tensor/permute.hpp"
+#include "../../tensor/map.hpp"
+#include "../../tensor/permute.hpp"
 
 namespace wheels {
 namespace details {

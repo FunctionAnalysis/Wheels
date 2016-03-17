@@ -6,11 +6,11 @@
 #include <mat.h>
 #include <mex.h>
 
-#include "../core/types.hpp"
-#include "../core/const_expr.hpp"
-#include "../core/const_ints.hpp"
+#include "../../core/types.hpp"
+#include "../../core/const_expr.hpp"
+#include "../../core/const_ints.hpp"
 
-#include "../tensor/tensor.hpp"
+#include "../../tensor/tensor.hpp"
 
 namespace wheels {
 

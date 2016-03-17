@@ -41,7 +41,7 @@ constexpr T &&_eval_index_expr(T &&t, const SizeT &) {
 
 // _brackets
 template <class T, class E, class EE>
-constexpr decltype(auto) _brackets_impl(T &&t, const other<E> &id, EE &&ind) {
+constexpr decltype(auto) _brackets_impl(T &&t, const kinds::other<E> &id, EE &&ind) {
   return ::wheels::element_at_index(forward<T>(t), forward<EE>(ind));
 }
 
@@ -53,12 +53,12 @@ constexpr auto _brackets_impl(T &&t, const tensor_core<TensorT> &id,
 
 template <class T, class TensorTT>
 constexpr decltype(auto) _brackets(T &&t, TensorTT &&inds) {
-  return _brackets_impl(forward<T>(t), identify(inds), forward<TensorTT>(inds));
+  return _brackets_impl(forward<T>(t), kinds::identify(inds), forward<TensorTT>(inds));
 }
 
 // _all_as_tensor
 template <class E, class EE>
-constexpr auto _all_as_tensor_impl(const other<E> &id, EE &&s) {
+constexpr auto _all_as_tensor_impl(const kinds::other<E> &id, EE &&s) {
   return ::wheels::constants(make_shape(), forward<EE>(s));
 }
 template <class TensorT, class TensorTT>
@@ -68,8 +68,8 @@ constexpr TensorTT &&_all_as_tensor_impl(const tensor_core<TensorT> &id,
 }
 template <class T>
 constexpr auto _all_as_tensor(T &&t)
-    -> decltype(_all_as_tensor_impl(identify(t), forward<T>(t))) {
-  return _all_as_tensor_impl(identify(t), forward<T>(t));
+    -> decltype(_all_as_tensor_impl(kinds::identify(t), forward<T>(t))) {
+  return _all_as_tensor_impl(kinds::identify(t), forward<T>(t));
 }
 
 // _block_seq
@@ -88,7 +88,7 @@ constexpr auto _block_seq(T &&t, const const_ints<size_t, Is...> &,
 }
 
 // tensor_core
-template <class T> struct tensor_core : object<T> {
+template <class T> struct tensor_core : kinds::object<T> {
   const tensor_core &core() const { return *this; }
 
   constexpr auto shape() const { return ::wheels::shape_of(derived()); }

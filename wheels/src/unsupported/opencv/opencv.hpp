@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../core/macros.hpp"
+#include "../../core/macros.hpp"
 #if defined(wheels_compiler_msc)
 #pragma warning(push, 0)
 #endif
@@ -9,8 +9,8 @@
 #pragma warning(pop)
 #endif
 
-#include "../tensor/map.hpp"
-#include "../tensor/tensor.hpp"
+#include "../../tensor/map.hpp"
+#include "../../tensor/tensor.hpp"
 
 namespace cv {
 
