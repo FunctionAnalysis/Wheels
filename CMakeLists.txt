@@ -1,12 +1,12 @@
 cmake_minimum_required (VERSION 3.0)
 PROJECT (Wheels VERSION 0.1 LANGUAGES CXX)
 
-
 set (CMAKE_ALLOW_LOOSE_CONSTRUCTS true)
 list (APPEND CMAKE_MODULE_PATH 
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake
 )
 
+option(BuildWheelsUnitTest "build Wheels.UnitTest" on)
 
 if (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
     message (STATUS "Clang: ${CLANG_VERSION_STRING}")
@@ -26,11 +26,9 @@ elseif (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
 endif()
 
 
-set (DEPENDENCY_INCLUDES "")
+set (DEPENDENCY_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
 set (DEPENDENCY_LIBS "")
 set (DEPENDENCY_BIN_PATHS "")
-
-
 
 find_package(OpenBLAS REQUIRED)
 if (${OpenBLAS_FOUND})
@@ -96,6 +94,11 @@ if (${OpenCV_FOUND})
 endif()
 
 
+if (${BuildWheelsUnitTest})   
+    add_subdirectory("./ext/gtest")
+endif()
+
+
 get_filename_component(wheels_data_dir "${CMAKE_CURRENT_SOURCE_DIR}/data/" REALPATH)
 message (STATUS "data directory: " ${wheels_data_dir})
 if (MSVC)
@@ -104,7 +107,5 @@ if (MSVC)
 else ()
     add_definitions ( "-Dwheels_data_dir_str=\"${wheels_data_dir}\"" )
 endif ()
-
-include_directories (".")
 
 add_subdirectory (wheels)

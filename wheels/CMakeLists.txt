@@ -84,31 +84,26 @@ endif ()
 
 
 # the test project
-message(STATUS "wheels_test_sources:")
-foreach(i ${wheels_test_sources})
-    message (STATUS ${i})  
-endforeach()
-find_package(GTest REQUIRED)
-enable_testing ()
+if (${BuildWheelsUnitTest})
 
-include_directories (${GTEST_INCLUDE_DIR})
-add_executable(Wheels.UnitTest ${wheels_test_sources} ./unittest.cpp)
-target_link_libraries (Wheels.UnitTest ${DEPENDENCY_LIBS})
-target_link_libraries (Wheels.UnitTest Wheels.Lib)
+    enable_testing()
+    include_directories(${GTEST_INCLUDE_DIRS})
+    
+    add_executable(Wheels.UnitTest ${wheels_test_sources} ./unittest.cpp)
+    target_link_libraries (Wheels.UnitTest ${DEPENDENCY_LIBS})
+    add_dependencies(Wheels.UnitTest googletest)
+    
+    if(NOT MSVC)
+        target_link_libraries(Wheels.UnitTest
+            ${GTEST_LIBS_DIR}/libgtest.a
+            ${GTEST_LIBS_DIR}/libgtest_main.a)
+    else()
+        target_link_libraries(Wheels.UnitTest
+            debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}
+            optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES})
+        target_link_libraries(Wheels.UnitTest
+            debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES}
+            optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES})
+    endif()
 
-
-if (EXISTS ${GTEST_LIBRARY_DEBUG})
-    message (STATUS ${GTEST_LIBRARY_DEBUG})
-    target_link_libraries (Wheels.UnitTest optimized ${GTEST_LIBRARY})
-    target_link_libraries (Wheels.UnitTest debug ${GTEST_LIBRARY_DEBUG})
-else ()
-    target_link_libraries (Wheels.UnitTest ${GTEST_LIBRARY})
-endif ()
-
-if (EXISTS ${GTEST_MAIN_LIBRARY_DEBUG})
-    message (STATUS ${GTEST_MAIN_LIBRARY_DEBUG})
-    target_link_libraries (Wheels.UnitTest optimized ${GTEST_MAIN_LIBRARY})
-    target_link_libraries (Wheels.UnitTest debug ${GTEST_MAIN_LIBRARY_DEBUG})
-else ()
-    target_link_libraries (Wheels.UnitTest ${GTEST_MAIN_LIBRARY})
 endif ()

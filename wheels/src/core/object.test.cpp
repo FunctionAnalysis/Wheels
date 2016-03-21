@@ -15,4 +15,6 @@ template <class T> std::string get_kind_name(const kinds::other<T> &) {
 TEST(core, object) {
   ASSERT_TRUE(get_kind_name(kinds::identify(1)) == "other");
   ASSERT_TRUE(get_kind_name(kinds::identify(1_symbol)) == "object");
+  int a[5];
+  kinds::identify(a);
 }

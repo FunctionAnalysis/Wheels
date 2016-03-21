@@ -4,14 +4,6 @@
 
 #include <gtest/gtest.h>
 
-#include <cereal/archives/binary.hpp>
-#include <cereal/archives/portable_binary.hpp>
-#include <cereal/cereal.hpp>
-#include <cereal/types/array.hpp>
-#include <cereal/types/deque.hpp>
-#include <cereal/types/list.hpp>
-#include <cereal/types/vector.hpp>
-
 #include "fields.hpp"
 
 using namespace wheels;
