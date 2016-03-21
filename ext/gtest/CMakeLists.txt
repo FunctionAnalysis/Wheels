@@ -1,14 +1,11 @@
 cmake_minimum_required(VERSION 3.0.0)
-project(gtest_builder C CXX)
+project(GTestProxy C CXX)
 include(ExternalProject)
-
-
 
 ExternalProject_Add(googletest
     GIT_REPOSITORY https://github.com/google/googletest.git
     CMAKE_ARGS -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG:PATH=DebugLibs
                -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH=ReleaseLibs
-               #-DCMAKE_CXX_FLAGS=${CMAKE_CXX_FLAGS}
                -Dgtest_force_shared_crt=ON
                -DBUILD_GTEST=ON
      PREFIX "${CMAKE_CURRENT_BINARY_DIR}"
