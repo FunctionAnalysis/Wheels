@@ -88,14 +88,15 @@ TEST(tensor, demo) {
 
 TEST(tensor, demo2) {
 
-  auto greeting = "hello world!"_ts;
+  auto greeting = "hello world! 123456"_ts;
   println(greeting);
   // show only letters
-  println(greeting[where('a' <= greeting && greeting <= 'Z')]);
+  println(greeting[where('a' <= greeting && greeting <= 'z' ||
+                         'A' <= greeting && greeting <= 'Z')]);
 
   // reverse the string
-  println(greeting[last - iota(greeting.numel())]);
-  println(greeting[range(greeting.numel(), -1, -1)]);
+  println(greeting[last - iota(length)]);
+  println(greeting[range(length, -1, -1)]);
 
   // concatenate the strings
   println(cat(greeting, " "_ts, "let's rock!"_ts));
