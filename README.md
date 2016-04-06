@@ -17,8 +17,8 @@ int main(){
 ```
 We can do more with the string:
 ```cpp
- // show only letters
-println(greeting[where('a' <= greeting && greeting <= 'Z')]);
+ // show only small letters
+println(greeting[where('a' <= greeting && greeting <= 'z')]);
 
 // reverse the string
 println(greeting[last - iota(greeting.numel())]); 
