@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../core/combine.hpp"
 #include "../core/const_ints.hpp"
+#include "../core/utility.hpp"
 
 namespace wheels {
 
@@ -116,8 +116,7 @@ public:
     return rest().at(const_index<Idx - 1>());
   }
   constexpr auto at(const const_index<0> &) const { return value(); }
-  template <class K, K Idx, bool _B = std::is_same<K, size_t>::value,
-            wheels_enable_if(!_B)>
+  template <class K, K Idx, wheels_enable_if(!(std::is_same<K, size_t>::value))>
   constexpr auto at(const const_ints<K, Idx> &) const {
     return at(const_index<Idx>());
   }
@@ -137,8 +136,7 @@ public:
     rest().resize(const_index<Idx - 1>(), ns);
   }
   void resize(const const_index<0u> &, T ns) { assert(ns == S); }
-  template <class K, K Idx, bool _B = std::is_same<K, size_t>::value,
-            wheels_enable_if(!_B)>
+  template <class K, K Idx, wheels_enable_if(!(std::is_same<K, size_t>::value))>
   void resize(const const_ints<K, Idx> &, T ns) {
     resize(const_index<Idx>(), ns);
   }
@@ -149,8 +147,7 @@ public:
     return rest().mag_at(const_index<Idx - 1>());
   }
   constexpr auto mag_at(const const_index<0> &) const { return magnitude(); }
-  template <class K, K Idx, bool _B = std::is_same<K, size_t>::value,
-            wheels_enable_if(!_B)>
+  template <class K, K Idx, wheels_enable_if(!(std::is_same<K, size_t>::value))>
   constexpr auto mag_at(const const_ints<K, Idx> &) const {
     return mag_at(const_index<Idx>());
   }
@@ -231,8 +228,7 @@ public:
     return rest().at(const_index<Idx - 1>());
   }
   constexpr T at(const const_index<0u>) const { return _val; }
-  template <class K, K Idx, bool _B = std::is_same<K, size_t>::value,
-            wheels_enable_if(!_B)>
+  template <class K, K Idx, wheels_enable_if(!(std::is_same<K, size_t>::value))>
   constexpr auto at(const const_ints<K, Idx> &) const {
     return at(const_index<Idx>());
   }
@@ -256,8 +252,7 @@ public:
     _val = ns;
     _mag = _val * rest().magnitude();
   }
-  template <class K, K Idx, bool _B = std::is_same<K, size_t>::value,
-            wheels_enable_if(!_B)>
+  template <class K, K Idx, wheels_enable_if(!(std::is_same<K, size_t>::value))>
   void resize(const const_ints<K, Idx> &, size_t ns) {
     resize(const_index<Idx>(), ns);
   }
@@ -268,8 +263,7 @@ public:
     return rest().mag_at(const_index<Idx - 1>());
   }
   constexpr auto mag_at(const const_index<0> &) const { return magnitude(); }
-  template <class K, K Idx, bool _B = std::is_same<K, size_t>::value,
-            wheels_enable_if(!_B)>
+  template <class K, K Idx, wheels_enable_if(!(std::is_same<K, size_t>::value))>
   constexpr auto mag_at(const const_ints<K, Idx> &) const {
     return mag_at(const_index<Idx>());
   }

@@ -1,20 +1,14 @@
 #pragma once
 
-#include "object.hpp"
+#include "object_fwd.hpp"
 #include "overloads.hpp"
+
+#include "const_expr_fwd.hpp"
 
 namespace wheels {
 
-struct category_const_expr {};
-
 // const_expr_base
-template <class T> struct const_expr_base : kinds::object<T> {};
-
-template <class T, class OpT>
-constexpr auto category_for_overloading(const const_expr_base<T> &,
-                                        const common_func<OpT> &) {
-  return category_const_expr();
-}
+template <class T> struct const_expr_base : category::object<T> {};
 
 // is_const_expr
 template <class T>
@@ -66,6 +60,11 @@ struct const_unary_op : const_expr_base<const_unary_op<Op, E>> {
   }
 };
 
+template <class Op, class E>
+constexpr const_unary_op<Op, E> make_unary_op_expr(const Op &op, E &&e) {
+  return const_unary_op<Op, E>(op, std::forward<E>(e));
+}
+
 // const_binary_op
 template <class Op, class E1, class E2>
 struct const_binary_op : const_expr_base<const_binary_op<Op, E1, E2>> {
@@ -83,43 +82,42 @@ struct const_binary_op : const_expr_base<const_binary_op<Op, E1, E2>> {
   }
 };
 
+template <class Op, class E1, class E2>
+constexpr const_binary_op<Op, E1, E2> make_binary_op_expr(const Op &op, E1 &&e1,
+                                                          E2 &&e2) {
+  return const_binary_op<Op, E1, E2>(op, std::forward<E1>(e1),
+                                     std::forward<E2>(e2));
+}
+
 // overload operators
-template <class Op> struct overloaded<Op, category_const_expr> {
-  constexpr overloaded() {}
-  template <class TT> constexpr decltype(auto) operator()(TT &&v) const {
-    return const_unary_op<Op, TT>(Op(), forward<TT>(v));
-  }
-};
+template <class OpT, class T>
+constexpr auto overload_as(const func_base<OpT> &, const const_expr_base<T> &) {
+  return [](auto &&v) { return make_unary_op_expr(OpT(), wheels_forward(v)); };
+}
+template <class OpT, class T1, class T2>
+constexpr auto overload_as(const func_base<OpT> &, const const_expr_base<T1> &,
+                           const const_expr_base<T2> &) {
+  return [](auto &&v1, auto &&v2) {
+    return make_binary_op_expr(OpT(), wheels_forward(v1), wheels_forward(v2));
+  };
+}
 
-template <class Op>
-struct overloaded<Op, category_const_expr, category_const_expr> {
-  constexpr overloaded() {}
-  template <class TT1, class TT2>
-  constexpr decltype(auto) operator()(TT1 &&v1, TT2 &&v2) const {
-    return const_binary_op<Op, std::decay_t<TT1>, std::decay_t<TT2>>(
-        Op(), forward<TT1>(v1), forward<TT2>(v2));
-  }
-};
-
-template <class Op> struct overloaded<Op, category_const_expr, void> {
-  constexpr overloaded() {}
-  template <class TT1, class TT2>
-  constexpr decltype(auto) operator()(TT1 &&v1, TT2 &&v2) const {
-    return const_binary_op<Op, std::decay_t<TT1>,
-                           const_coeff<std::decay_t<TT2>>>(
-        Op(), forward<TT1>(v1), as_const_coeff(forward<TT2>(v2)));
-  }
-};
-
-template <class Op> struct overloaded<Op, void, category_const_expr> {
-  constexpr overloaded() {}
-  template <class TT1, class TT2>
-  constexpr decltype(auto) operator()(TT1 &&v1, TT2 &&v2) const {
-    return const_binary_op<Op, const_coeff<std::decay_t<TT1>>,
-                           std::decay_t<TT2>>(
-        Op(), as_const_coeff(forward<TT1>(v1)), forward<TT2>(v2));
-  }
-};
+template <class OpT, class T1, class T2>
+constexpr auto overload_as(const func_base<OpT> &, const const_expr_base<T1> &,
+                           const category::other<T2> &) {
+  return [](auto &&v1, auto &&v2) {
+    return make_binary_op_expr(OpT(), wheels_forward(v1),
+                               as_const_coeff(wheels_forward(v2)));
+  };
+}
+template <class OpT, class T1, class T2>
+constexpr auto overload_as(const func_base<OpT> &, const category::other<T1> &,
+                           const const_expr_base<T2> &) {
+  return [](auto &&v1, auto &&v2) {
+    return make_binary_op_expr(OpT(), as_const_coeff(wheels_forward(v1)),
+                               wheels_forward(v2));
+  };
+}
 
 namespace details {
 // _has_const_expr

@@ -7,97 +7,34 @@
 #include "types.hpp"
 #include "utility.hpp"
 
+#include "overloads_fwd.hpp"
+
 namespace wheels {
 
-// overload operators without losing any type information
-
-// join_overloading
-namespace details {
-template <class T, class OpT> struct _join_overloading {
-  template <class TT, class OpTT>
-  static constexpr auto test(int)
-      -> decltype(category_for_overloading(std::declval<const TT &>(),
-                                           std::declval<const OpTT &>()),
-                  yes()) {
-    return yes();
-  }
-  template <class, class> static constexpr no test(...) { return no(); }
-  static constexpr bool value =
-      std::is_same<decltype(test<T, OpT>(1)), yes>::value;
-};
-}
-template <class T, class OpT>
-struct join_overloading
-    : const_bool<details::_join_overloading<T, OpT>::value> {};
-
-// category_for_overloading_t
-namespace details {
-template <class T, class OpT,
-          bool JoinOverloading = _join_overloading<T, OpT>::value>
-struct _category_for_overloading_helper {
-  using type = void;
-};
-template <class T, class OpT>
-struct _category_for_overloading_helper<T, OpT, true> {
-  using type = decltype(category_for_overloading(std::declval<const T &>(),
-                                                 std::declval<const OpT &>()));
-};
-}
-template <class T, class OpT>
-using category_for_overloading_t =
-    typename details::_category_for_overloading_helper<T, OpT>::type;
-
-// the overloaded<...> functor is called
-// if any of the parameters join overloading
-template <class OpT, class... ArgInfoTs> struct overloaded {
-  constexpr overloaded() {}
-  template <class... ArgTs> int operator()(ArgTs &&...) const {
-    static_assert(
-        always<bool, false, ArgTs...>::value,
-        "error: this overloaded operator/function is not implemented, "
-        "instantiate overloaded<...> to fix this.");
-  }
-};
-
-// ewised wrapper
-template <class OpT> struct ewised {
-  constexpr ewised() : op() {}
-  template <class OpTT> constexpr ewised(OpTT &&o) : op(forward<OpTT>(o)) {}
-  template <class... ArgTs>
-  constexpr decltype(auto) operator()(ArgTs &&... args) const {
-    return op(forward<ArgTs>(args)...);
-  }
-  OpT op;
-};
-
-// common_func
-template <class OpT> struct common_func : kinds::object<OpT> {
+// func_base
+template <class OpT> struct func_base : category::object<OpT> {
   const OpT &derived() const { return static_cast<const OpT &>(*this); }
 };
 
-// WHEELS_OVERLOAD_UNARY_OP
+// overload_as (default implementation)
+template <class OpT, class... CatTs>
+inline void overload_as(const func_base<OpT> &,
+                        const category::other<CatTs> &...) {}
+
 #define WHEELS_OVERLOAD_UNARY_OP(op, name)                                     \
-  struct unary_op_##name : common_func<unary_op_##name> {                      \
+  struct unary_op_##name : func_base<unary_op_##name> {                        \
     constexpr unary_op_##name() {}                                             \
     template <class TT> constexpr decltype(auto) operator()(TT &&v) const {    \
-      return (op forward<TT>(v));                                              \
+      return (op std::forward<TT>(v));                                         \
     }                                                                          \
   };                                                                           \
-  template <class T,                                                           \
-            class =                                                            \
-                std::enable_if_t<join_overloading<T, unary_op_##name>::value>> \
-  constexpr decltype(auto) operator op(T &&v) {                                \
-    return overloaded<unary_op_##name,                                         \
-                      category_for_overloading_t<T, unary_op_##name>>()(       \
-        forward<T>(v));                                                        \
-  }                                                                            \
-  template <class T,                                                           \
-            class =                                                            \
-                std::enable_if_t<join_overloading<T, unary_op_##name>::value>> \
-  constexpr decltype(auto) ewise_##name(T &&v) {                               \
-    return overloaded<ewised<unary_op_##name>,                                 \
-                      category_for_overloading_t<T, unary_op_##name>>()(       \
-        forward<T>(v));                                                        \
+  template <class T>                                                           \
+  constexpr auto operator op(T &&v)->decltype(::wheels::overload_as(           \
+      unary_op_##name(),                                                       \
+      ::wheels::category::identify(v))(std::forward<T>(v))) {                  \
+    return ::wheels::overload_as(unary_op_##name(),                            \
+                                 ::wheels::category::identify(v))(             \
+        std::forward<T>(v));                                                   \
   }
 
 WHEELS_OVERLOAD_UNARY_OP(-, minus)
@@ -107,32 +44,23 @@ WHEELS_OVERLOAD_UNARY_OP(~, bitwise_not)
 
 // WHEELS_OVERLOAD_BINARY_OP
 #define WHEELS_OVERLOAD_BINARY_OP(op, name)                                    \
-  struct binary_op_##name : common_func<binary_op_##name> {                    \
+  struct binary_op_##name : func_base<binary_op_##name> {                      \
     constexpr binary_op_##name() {}                                            \
     template <class TT1, class TT2>                                            \
     constexpr decltype(auto) operator()(TT1 &&v1, TT2 &&v2) const {            \
-      return (forward<TT1>(v1) op forward<TT2>(v2));                           \
+      return (std::forward<TT1>(v1) op std::forward<TT2>(v2));                 \
     }                                                                          \
   };                                                                           \
-  template <class T1, class T2,                                                \
-            class = std::enable_if_t<                                          \
-                join_overloading<T1, binary_op_##name>::value ||               \
-                join_overloading<T2, binary_op_##name>::value>>                \
-  constexpr decltype(auto) operator op(T1 &&v1, T2 &&v2) {                     \
-    return overloaded<binary_op_##name,                                        \
-                      category_for_overloading_t<T1, binary_op_##name>,        \
-                      category_for_overloading_t<T2, binary_op_##name>>()(     \
-        forward<T1>(v1), forward<T2>(v2));                                     \
-  }                                                                            \
-  template <class T1, class T2,                                                \
-            class = std::enable_if_t<                                          \
-                join_overloading<T1, binary_op_##name>::value ||               \
-                join_overloading<T2, binary_op_##name>::value>>                \
-  constexpr decltype(auto) ewise_##name(T1 &&v1, T2 &&v2) {                    \
-    return overloaded<ewised<binary_op_##name>,                                \
-                      category_for_overloading_t<T1, binary_op_##name>,        \
-                      category_for_overloading_t<T2, binary_op_##name>>()(     \
-        forward<T1>(v1), forward<T2>(v2));                                     \
+  template <class T1, class T2>                                                \
+  constexpr auto operator op(T1 &&v1, T2 &&v2)                                 \
+      ->decltype(::wheels::overload_as(binary_op_##name(),                     \
+                                       ::wheels::category::identify(v1),       \
+                                       ::wheels::category::identify(v2))(      \
+          std::forward<T1>(v1), std::forward<T2>(v2))) {                       \
+    return ::wheels::overload_as(binary_op_##name(),                           \
+                                 ::wheels::category::identify(v1),             \
+                                 ::wheels::category::identify(v2))(            \
+        std::forward<T1>(v1), std::forward<T2>(v2));                           \
   }
 
 WHEELS_OVERLOAD_BINARY_OP(+, plus)
@@ -152,70 +80,48 @@ WHEELS_OVERLOAD_BINARY_OP(&&, and)
 WHEELS_OVERLOAD_BINARY_OP(||, or)
 WHEELS_OVERLOAD_BINARY_OP(&, bitwise_and)
 WHEELS_OVERLOAD_BINARY_OP(|, bitwise_or)
-WHEELS_OVERLOAD_BINARY_OP (^, bitwise_xor)
+WHEELS_OVERLOAD_BINARY_OP(^, bitwise_xor)
 
 #undef WHEELS_OVERLOAD_BINARY_OP
 
 // WHEELS_OVERLOAD_STD_UNARY_FUNC
 // WHEELS_OVERLOAD_STD_BINARY_FUNC
 #define WHEELS_OVERLOAD_STD_UNARY_FUNC(name)                                   \
-  struct func_##name : common_func<func_##name> {                              \
-    constexpr func_##name() {}                                                 \
-    template <class ArgT>                                                      \
-    constexpr decltype(auto) operator()(ArgT &&v) const {                      \
+  struct std_func_##name : func_base<std_func_##name> {                        \
+    constexpr std_func_##name() {}                                             \
+    template <class TT> constexpr decltype(auto) operator()(TT &&v) const {    \
       using std::name;                                                         \
-      return name(forward<ArgT>(v));                                           \
+      return name(std::forward<TT>(v));                                        \
     }                                                                          \
   };                                                                           \
-  template <class T,                                                           \
-            class = std::enable_if_t<join_overloading<T, func_##name>::value>, \
-            class = void>                                                      \
-  constexpr decltype(auto) name(T &&f) {                                       \
-    return overloaded<func_##name,                                             \
-                      category_for_overloading_t<T, func_##name>>()(           \
-        forward<T>(f));                                                        \
+  template <class T>                                                           \
+  constexpr auto name(T &&v)->decltype(::wheels::overload_as(                  \
+      std_func_##name(),                                                       \
+      ::wheels::category::identify(v))(std::forward<T>(v))) {                  \
+    return ::wheels::overload_as(std_func_##name(),                            \
+                                 ::wheels::category::identify(v))(             \
+        std::forward<T>(v));                                                   \
   }
 
 #define WHEELS_OVERLOAD_STD_BINARY_FUNC(name)                                  \
-  struct func_##name : common_func<func_##name> {                              \
-    constexpr func_##name() {}                                                 \
+  struct std_func_##name : func_base<std_func_##name> {                        \
+    constexpr std_func_##name() {}                                             \
     template <class ArgT1, class ArgT2>                                        \
     constexpr decltype(auto) operator()(ArgT1 &&v1, ArgT2 &&v2) const {        \
       using std::name;                                                         \
-      return name(forward<ArgT1>(v1), forward<ArgT2>(v2));                     \
+      return name(std::forward<ArgT1>(v1), std::forward<ArgT2>(v2));           \
     }                                                                          \
   };                                                                           \
-  template <                                                                   \
-      class T1, class T2,                                                      \
-      class = std::enable_if_t<any(join_overloading<T1, func_##name>::value,   \
-                                   join_overloading<T2, func_##name>::value)>, \
-      class = void>                                                            \
-  constexpr decltype(auto) name(T1 &&t1, T2 &&t2) {                            \
-    return overloaded<func_##name,                                             \
-                      category_for_overloading_t<T1, func_##name>,             \
-                      category_for_overloading_t<T2, func_##name>>()(          \
-        forward<T1>(t1), forward<T2>(t2));                                     \
-  }
-
-#define WHEELS_OVERLOAD_STD_FUNC(name)                                         \
-  struct func_##name : common_func<func_##name> {                              \
-    constexpr func_##name() {}                                                 \
-    template <class... ArgTs>                                                  \
-    constexpr decltype(auto) operator()(ArgTs &&... vs) const {                \
-      using std::name;                                                         \
-      return name(forward<ArgTs>(vs)...);                                      \
-    }                                                                          \
-  };                                                                           \
-  template <class FirstT, class... RestTs,                                     \
-            class = std::enable_if_t<any(                                      \
-                join_overloading<FirstT, func_##name>::value,                  \
-                join_overloading<RestTs, func_##name>::value...)>,             \
-            class = void>                                                      \
-  constexpr decltype(auto) name(FirstT &&f, RestTs &&... rests) {              \
-    return overloaded<func_##name,                                             \
-                      category_for_overloading_t<FirstT, func_##name>,         \
-                      category_for_overloading_t<RestTs, func_##name>...>()(   \
-        forward<FirstT>(f), forward<RestTs>(rests)...);                        \
+  template <class T1, class T2>                                                \
+  constexpr auto name(T1 &&t1, T2 &&t2)                                        \
+      ->decltype(::wheels::overload_as(std_func_##name(),                      \
+                                       ::wheels::category::identify(t1),       \
+                                       ::wheels::category::identify(t2))(      \
+          std::forward<T1>(t1), std::forward<T2>(t2))) {                       \
+    return ::wheels::overload_as(std_func_##name(),                            \
+                                 ::wheels::category::identify(t1),             \
+                                 ::wheels::category::identify(t2))(            \
+        std::forward<T1>(t1), std::forward<T2>(t2));                           \
   }
 
 WHEELS_OVERLOAD_STD_UNARY_FUNC(sin)
@@ -250,115 +156,5 @@ WHEELS_OVERLOAD_STD_BINARY_FUNC(max)
 
 #undef WHEELS_OVERLOAD_STD_UNARY_FUNC
 #undef WHEELS_OVERLOAD_STD_BINARY_FUNC
-#undef WHEELS_OVERLOAD_STD_FUNC
 
-// object_overloading
-template <class DerivedT, class OpT> struct object_overloading {};
-template <class DerivedT, class... OpTs>
-struct object_overloadings : object_overloading<DerivedT, OpTs>... {};
-
-// member_func
-template <class OpT> struct member_func {
-  const OpT &derived() const { return static_cast<const OpT &>(*this); }
-};
-
-#define WHEELS_OVERLOAD_MEMBER_UNARY_OP(op1, op2, op3, opsymbol, name)         \
-  struct member_op_##name : member_func<member_op_##name> {                    \
-    constexpr member_op_##name() {}                                            \
-    template <class CallerT, class ArgT>                                       \
-    constexpr decltype(auto) operator()(CallerT &&caller, ArgT &&arg) const {  \
-      return op1 forward<CallerT>(caller) op2 forward<ArgT>(arg) op3;          \
-    }                                                                          \
-  };                                                                           \
-  template <class DerivedT>                                                    \
-  struct object_overloading<DerivedT, member_op_##name> {                      \
-    template <class ArgT>                                                      \
-    constexpr decltype(auto) operator opsymbol(ArgT &&arg) const & {           \
-      return overloaded<                                                       \
-          member_op_##name, DerivedT,                                          \
-          category_for_overloading_t<std::decay_t<ArgT>, member_op_##name>>()( \
-          static_cast<const DerivedT &>(*this), forward<ArgT>(arg));           \
-    }                                                                          \
-    template <class ArgT> decltype(auto) operator opsymbol(ArgT &&arg) & {     \
-      return overloaded<                                                       \
-          member_op_##name, DerivedT,                                          \
-          category_for_overloading_t<std::decay_t<ArgT>, member_op_##name>>()( \
-          static_cast<DerivedT &>(*this), forward<ArgT>(arg));                 \
-    }                                                                          \
-    template <class ArgT> decltype(auto) operator opsymbol(ArgT &&arg) && {    \
-      return overloaded<                                                       \
-          member_op_##name, DerivedT,                                          \
-          category_for_overloading_t<std::decay_t<ArgT>, member_op_##name>>()( \
-          static_cast<DerivedT &&>(*this), forward<ArgT>(arg));                \
-    }                                                                          \
-    template <class ArgT>                                                      \
-    decltype(auto) operator opsymbol(ArgT &&arg) const && {                    \
-      return overloaded<                                                       \
-          member_op_##name, DerivedT,                                          \
-          category_for_overloading_t<std::decay_t<ArgT>, member_op_##name>>()( \
-          static_cast<const DerivedT &&>(*this), forward<ArgT>(arg));          \
-    }                                                                          \
-  };
-
-#define WHEELS_SYMBOL_LEFT_BRACKET [
-#define WHEELS_SYMBOL_RIGHT_BRACKET ]
-WHEELS_OVERLOAD_MEMBER_UNARY_OP(, WHEELS_SYMBOL_LEFT_BRACKET,
-                                WHEELS_SYMBOL_RIGHT_BRACKET, [], bracket)
-#undef WHEELS_SYMBOL_LEFT_BRACKET
-#undef WHEELS_SYMBOL_RIGHT_BRACKET
-WHEELS_OVERLOAD_MEMBER_UNARY_OP(, +=, , +=, plus_equal)
-WHEELS_OVERLOAD_MEMBER_UNARY_OP(, -=, , -=, minus_equal)
-WHEELS_OVERLOAD_MEMBER_UNARY_OP(, *=, , *=, mul_equal)
-WHEELS_OVERLOAD_MEMBER_UNARY_OP(, /=, , /=, div_equal)
-WHEELS_OVERLOAD_MEMBER_UNARY_OP(, =, , =, assign)
-#undef WHEELS_OVERLOAD_MEMBER_UNARY_OP
-
-#define WHEELS_OVERLOAD_MEMBER_VARARG_OP(op1, op2, op3, opsymbol, name)        \
-  struct member_op_##name : member_func<member_op_##name> {                    \
-    constexpr member_op_##name() {}                                            \
-    template <class CallerT, class... ArgTs>                                   \
-    constexpr decltype(auto) operator()(CallerT &&caller,                      \
-                                        ArgTs &&... args) const {              \
-      return op1 forward<CallerT>(caller) op2 forward<ArgTs>(args)... op3;     \
-    }                                                                          \
-  };                                                                           \
-  template <class DerivedT>                                                    \
-  struct object_overloading<DerivedT, member_op_##name> {                      \
-    template <class... ArgTs>                                                  \
-    constexpr decltype(auto) operator opsymbol(ArgTs &&... args) const & {     \
-      return overloaded<member_op_##name, DerivedT,                            \
-                        category_for_overloading_t<std::decay_t<ArgTs>,        \
-                                                   member_op_##name>...>()(    \
-          static_cast<const DerivedT &>(*this), forward<ArgTs>(args)...);      \
-    }                                                                          \
-    template <class... ArgTs>                                                  \
-    decltype(auto) operator opsymbol(ArgTs &&... args) & {                     \
-      return overloaded<member_op_##name, DerivedT,                            \
-                        category_for_overloading_t<std::decay_t<ArgTs>,        \
-                                                   member_op_##name>...>()(    \
-          static_cast<DerivedT &>(*this), forward<ArgTs>(args)...);            \
-    }                                                                          \
-    template <class... ArgTs>                                                  \
-    decltype(auto) operator opsymbol(ArgTs &&... args) && {                    \
-      return overloaded<member_op_##name, DerivedT,                            \
-                        category_for_overloading_t<std::decay_t<ArgTs>,        \
-                                                   member_op_##name>...>()(    \
-          static_cast<DerivedT &&>(*this), forward<ArgTs>(args)...);           \
-    }                                                                          \
-    template <class... ArgTs>                                                  \
-    decltype(auto) operator opsymbol(ArgTs &&... args) const && {              \
-      return overloaded<member_op_##name, DerivedT,                            \
-                        category_for_overloading_t<std::decay_t<ArgTs>,        \
-                                                   member_op_##name>...>()(    \
-          static_cast<const DerivedT &&>(*this), forward<ArgTs>(args)...);     \
-    }                                                                          \
-  };
-
-#define WHEELS_SYMBOL_LEFT_PAREN (
-#define WHEELS_SYMBOL_RIGHT_PAREN )
-WHEELS_OVERLOAD_MEMBER_VARARG_OP(, WHEELS_SYMBOL_LEFT_PAREN,
-                                 WHEELS_SYMBOL_RIGHT_PAREN, (), paren)
-#undef WHEELS_SYMBOL_LEFT_PAREN
-#undef WHEELS_SYMBOL_RIGHT_PAREN
-#undef WHEELS_OVERLOAD_MEMBER_VARARG_OP
 }

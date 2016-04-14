@@ -46,7 +46,7 @@ template <class... Ts> struct types {
     return const_ints<bool, std::is_empty<Ts>::value...>();
   }
   static constexpr auto is_default_constructible() {
-    return const_ints<bool, std::is_default_constructible<T>::value...>();
+    return const_ints<bool, std::is_default_constructible<Ts>::value...>();
   }
 
   static constexpr auto decay() { return types<std::decay_t<Ts>...>(); }
@@ -82,7 +82,7 @@ template <class T> struct types<T> {
   static constexpr T zero() { return T(); }
 
   template <class... ArgTs> static constexpr auto construct(ArgTs &&... args) {
-    return T(forward<ArgTs>(args)...);
+    return T(std::forward<ArgTs>(args)...);
   }
 
   static type_info info() { return typeid(T); }
@@ -126,7 +126,7 @@ template <> struct types<void> {
   constexpr types() {}
 
   template <class K> constexpr auto operator[](const const_ints<K, 0> &) const {
-    return types<T>();
+    return types<void>();
   }
 
   template <class K> static constexpr auto is() {
@@ -143,10 +143,6 @@ template <> struct types<void> {
   }
 
   static constexpr auto decay() { return types<void>(); }
-
-  template <class... ArgTs> static constexpr auto construct(ArgTs &&... args) {
-    return T(forward<ArgTs>(args)...);
-  }
 
   const char *name() const { return typeid(void).name(); }
   const char *raw_name() const { return typeid(void).raw_name(); }
@@ -254,7 +250,7 @@ constexpr T &&_type_restrict(const RestrictT &, T &&t) {
 }
 template <class RestrictT, class T>
 constexpr auto type_restrict(T &&t)
-    -> decltype(details::_type_restrict<RestrictT>(t, forward<T>(t))) {
-  return details::_type_restrict<RestrictT>(t, forward<T>(t));
+    -> decltype(details::_type_restrict<RestrictT>(t, std::forward<T>(t))) {
+  return details::_type_restrict<RestrictT>(t, std::forward<T>(t));
 }
 }

@@ -12,18 +12,15 @@
 
 #include "shape.hpp"
 
+#include "base_fwd.hpp"
+
 namespace wheels {
-
-template <class EleT, class ShapeT, class T> struct category_tensor {};
-
-template <class T> struct tensor_core;
-template <class T> struct tensor_iterator;
 
 // index_tags
 namespace index_tags {
-constexpr auto first = const_int<0>();
-constexpr auto length = const_symbol<0>();
-constexpr auto last = length - const_int<1>();
+static const auto first = const_int<0>();
+static const auto length = const_symbol<0>();
+static const auto last = length - const_int<1>();
 }
 
 namespace details {
@@ -41,7 +38,7 @@ constexpr T &&_eval_index_expr(T &&t, const SizeT &) {
 
 // _brackets
 template <class T, class E, class EE>
-constexpr decltype(auto) _brackets_impl(T &&t, const kinds::other<E> &id, EE &&ind) {
+constexpr decltype(auto) _brackets_impl(T &&t, const category::other<E> &id, EE &&ind) {
   return ::wheels::element_at_index(forward<T>(t), forward<EE>(ind));
 }
 
@@ -53,12 +50,12 @@ constexpr auto _brackets_impl(T &&t, const tensor_core<TensorT> &id,
 
 template <class T, class TensorTT>
 constexpr decltype(auto) _brackets(T &&t, TensorTT &&inds) {
-  return _brackets_impl(forward<T>(t), kinds::identify(inds), forward<TensorTT>(inds));
+  return _brackets_impl(forward<T>(t), category::identify(inds), forward<TensorTT>(inds));
 }
 
 // _all_as_tensor
 template <class E, class EE>
-constexpr auto _all_as_tensor_impl(const kinds::other<E> &id, EE &&s) {
+constexpr auto _all_as_tensor_impl(const category::other<E> &id, EE &&s) {
   return ::wheels::constants(make_shape(), forward<EE>(s));
 }
 template <class TensorT, class TensorTT>
@@ -68,8 +65,8 @@ constexpr TensorTT &&_all_as_tensor_impl(const tensor_core<TensorT> &id,
 }
 template <class T>
 constexpr auto _all_as_tensor(T &&t)
-    -> decltype(_all_as_tensor_impl(kinds::identify(t), forward<T>(t))) {
-  return _all_as_tensor_impl(kinds::identify(t), forward<T>(t));
+    -> decltype(_all_as_tensor_impl(category::identify(t), forward<T>(t))) {
+  return _all_as_tensor_impl(category::identify(t), forward<T>(t));
 }
 
 // _block_seq
@@ -88,7 +85,7 @@ constexpr auto _block_seq(T &&t, const const_ints<size_t, Is...> &,
 }
 
 // tensor_core
-template <class T> struct tensor_core : kinds::object<T> {
+template <class T> struct tensor_core : category::object<T> {
   const tensor_core &core() const { return *this; }
 
   constexpr auto shape() const { return ::wheels::shape_of(derived()); }
@@ -511,16 +508,6 @@ constexpr decltype(auto) element_at_index(const tensor_core<T> &t,
 template <class T, class ST, class... SizeTs>
 void reserve_shape(tensor_core<T> &, const tensor_shape<ST, SizeTs...> &shape) {
 }
-
-// behavior_flag used in for_each_element*
-enum behavior_flag_enum {
-  index_ascending,
-  unordered,
-  break_on_false,
-  nonzero_only
-};
-template <behavior_flag_enum O>
-using behavior_flag = const_ints<behavior_flag_enum, O>;
 
 // index_ascending
 template <class FunT, class T, class... Ts>

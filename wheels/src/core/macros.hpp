@@ -43,3 +43,5 @@
   claz(const claz &) = delete;                                                 \
   claz &operator=(claz &&) = default;                                          \
   claz &operator=(const claz &) = delete;
+
+#define wheels_forward(v) std::forward<decltype(v)>(v)

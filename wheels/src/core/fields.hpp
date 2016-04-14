@@ -11,41 +11,21 @@
 
 #include "const_ints.hpp"
 #include "iterators.hpp"
-#include "overloads.hpp"
+#include "object.hpp"
 #include "types.hpp"
+#include "utility.hpp"
+
+#include "fields_fwd.hpp"
 
 namespace wheels {
 
-// func_fields
-struct func_fields {
-  template <class T, class U, class V>
-  decltype(auto) operator()(T &&t, U &&u, V &&v) const {
-    return fields(forward<T>(t), forward<U>(u), forward<V>(v));
-  }
-};
-
-// fields
-template <class T, class U, class V, class = std::enable_if_t<join_overloading<
-                                         std::decay_t<T>, func_fields>::value>>
-constexpr decltype(auto) fields(T &&t, U &&usage, V &&visitor) {
-  return overloaded<func_fields,
-                    category_for_overloading_t<std::decay_t<T>, func_fields>,
-                    std::decay_t<U>, std::decay_t<V>>()(
-      forward<T>(t), forward<U>(usage), forward<V>(visitor));
-}
-
-// fields categories
-struct fields_category_tuple_like {};
-struct fields_category_container {};
 
 //// fields implementations
 
 // empty classes -> nullptr_t
-template <class T, class U, class V, class = void,
-          class = std::enable_if_t<
-              !join_overloading<std::decay_t<T>, func_fields>::value &&
-              std::is_empty<std::decay_t<T>>::value>>
-constexpr decltype(auto) fields(T &&, U &&, V &&) {
+template <class TT, class T, class U, class V,
+          class = std::enable_if_t<std::is_empty<TT>::value>>
+constexpr decltype(auto) fields_impl(const category::other<TT> &, T &&, U &&, V &&) {
   return nullptr;
 }
 
@@ -54,47 +34,16 @@ namespace details {
 template <class TupleT, class V, size_t... Is>
 auto _fields_of_tuple_seq(TupleT &&t, V &&visitor,
                           const const_ints<size_t, Is...> &) {
-  return forward<V>(visitor)(std::get<Is>(forward<TupleT>(t))...);
+  return forward<V>(visitor)(get<Is>(forward<TupleT>(t))...);
 }
-}
-template <class U, class V>
-struct overloaded<func_fields, fields_category_tuple_like, U, V> {
-  template <class TT, class UU, class VV>
-  constexpr decltype(auto) operator()(TT &&t, UU &&, VV &&visitor) const {
-    return details::_fields_of_tuple_seq(
-        forward<TT>(t), forward<VV>(visitor),
-        make_const_sequence(
-            const_size<std::tuple_size<std::decay_t<TT>>::value>()));
-  }
-};
-template <class T1, class T2>
-constexpr auto category_for_overloading(const std::pair<T1, T2> &,
-                                        const func_fields &) {
-  return fields_category_tuple_like();
-}
-template <class T, size_t N>
-constexpr auto category_for_overloading(const std::array<T, N> &,
-                                        const func_fields &) {
-  return fields_category_tuple_like();
-}
-template <class... Ts>
-constexpr auto category_for_overloading(const std::tuple<Ts...> &,
-                                        const func_fields &) {
-  return fields_category_tuple_like();
 }
 
-// static raw array -> tuple
-namespace details {
-template <class T, size_t N, class V, size_t... Is>
-auto _fields_of_raw_array_seq(T (&arr)[N], V &&visitor,
-                              const const_ints<size_t, Is...> &) {
-  return forward<V>(visitor)(arr[Is]...);
-}
-}
-template <class T, size_t N, class U, class V>
-constexpr decltype(auto) fields(T (&arr)[N], U &&, V &&visitor) {
-  return details::_fields_of_raw_array_seq(
-      arr, forward<V>(visitor), make_const_sequence(const_size<N>()));
+template <class TT, class T, class U, class V>
+constexpr decltype(auto) fields_impl(const category::std_tuplelike<TT> &, T &&t,
+                                     U &&u, V &&v) {
+  return details::_fields_of_tuple_seq(
+      forward<T>(t), forward<V>(v),
+      make_const_sequence(const_size<std::tuple_size<TT>::value>()));
 }
 
 // container types -> container_proxy
@@ -132,8 +81,8 @@ public:
     return make_transform_iterator(std::end(_content), _visit_functor());
   }
 
-  auto size() const { return _content.size(); }
-  decltype(auto) operator[](size_t i) const {
+  constexpr auto size() const { return _content.size(); }
+  constexpr decltype(auto) operator[](size_t i) const {
     return _visitor.visit(*std::next(std::begin(_content), i));
   }
   decltype(auto) operator[](size_t i) {
@@ -196,29 +145,22 @@ constexpr auto as_container(ContT &&c, VisitorT &&v) {
                                           forward<VisitorT>(v));
 }
 
-template <class U, class V>
-struct overloaded<func_fields, fields_category_container, U, V> {
-  template <class TT, class UU, class VV>
-  constexpr decltype(auto) operator()(TT &&t, UU &&, VV &v) const {
-    return v(as_container(forward<TT>(t), v));
-  }
-};
+template <class TT, class T, class U, class V>
+constexpr decltype(auto) fields_impl(const category::std_container<TT> &, T &&t,
+                                     U &&u, V &&v) {
+  return v(as_container(forward<T>(t), forward<V>(v)));
+}
 
-template <class T, class AllocT>
-constexpr auto category_for_overloading(const std::vector<T, AllocT> &,
-                                        const func_fields &) {
-  return fields_category_container();
-};
-template <class T, class AllocT>
-constexpr auto category_for_overloading(const std::list<T, AllocT> &,
-                                        const func_fields &) {
-  return fields_category_container();
-};
-template <class T, class AllocT>
-constexpr auto category_for_overloading(const std::deque<T, AllocT> &,
-                                        const func_fields &) {
-  return fields_category_container();
-};
+// fields
+template <class T, class U, class V>
+constexpr auto fields(T &&t, U &&u, V &&v)
+    -> decltype(fields_impl(category::identify(t), forward<T>(t), forward<U>(u),
+                            forward<V>(v))) {
+  return fields_impl(category::identify(t), forward<T>(t), forward<U>(u),
+                     forward<V>(v));
+}
+
+
 
 // has_member_func_fields
 struct test_visitor {

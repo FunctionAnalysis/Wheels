@@ -17,6 +17,12 @@ constexpr std::tuple<Ts...> safe_forward_as_tuple(Ts &&... ts) {
   return std::tuple<Ts...>(forward<Ts>(ts)...);
 }
 
+using std::get;
+template <size_t Idx, class T, size_t N> constexpr T &get(T (&arr)[N]) {
+  static_assert(Idx < N, "index overflow");
+  return arr[Idx];
+}
+
 using ignore_t = decltype(std::ignore);
 
 // conditional for enumulating ?:

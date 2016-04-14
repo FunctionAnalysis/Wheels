@@ -1,8 +1,14 @@
 #pragma once
 
-#include "base.hpp"
+#include "aligned_fwd.hpp"
 
 namespace wheels {
+
+template <class T> constexpr auto ptr_of(const tensor_core<T> &t) {
+  static_assert(always<bool, false, T>::value,
+                "ptr_of(const T &) is not supported by tensor_core<T>, do "
+                "you forget to call .derived()?");
+}
 
 // tensor_aligned_data_base
 // - requires: ::wheels::ptr_of, ::wheels::sub_scale_of, ::wheels::sub_offset_of

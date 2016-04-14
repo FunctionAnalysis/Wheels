@@ -1,11 +1,12 @@
 #pragma once
 
 #include <array>
-#include <cstdint>
 #include <iostream>
 #include <tuple>
 
 #include "macros.hpp"
+
+#include "const_ints_fwd.hpp"
 
 namespace wheels {
 
@@ -97,14 +98,6 @@ template <class T, T Val> struct const_ints<T, Val> {
     return const_ints<K, V>();
   }
 };
-
-template <bool Val> using const_bool = const_ints<bool, Val>;
-template <int Val> using const_int = const_ints<int, Val>;
-template <size_t Val> using const_size = const_ints<size_t, Val>;
-template <size_t Val> using const_index = const_ints<size_t, Val>;
-
-using yes = const_bool<true>;
-using no = const_bool<false>;
 
 // is_const_ints
 template <class T> struct is_const_ints : no {};
