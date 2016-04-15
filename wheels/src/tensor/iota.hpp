@@ -1,10 +1,14 @@
 #pragma once
 
+#include "../core/smart_invoke.hpp"
+
 #include "base.hpp"
+
+#include "iota_fwd.hpp"
 
 namespace wheels {
 
-template <class ET, class ShapeT, bool StaticShape = ShapeT::is_static>
+template <class ET, class ShapeT, bool StaticShape>
 class iota_result
     : public tensor_base<ET, ShapeT, iota_result<ET, ShapeT, StaticShape>> {
 public:
@@ -142,7 +146,7 @@ template <class ET> struct _iota_impl {
   }
 };
 }
-template <class ET = size_t, class SizeT> constexpr auto iota(const SizeT &s) {
+template <class ET, class SizeT> constexpr auto iota(const SizeT &s) {
   return smart_invoke(details::_iota_impl<ET>(), s);
 }
 

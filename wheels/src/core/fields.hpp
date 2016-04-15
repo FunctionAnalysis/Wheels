@@ -33,7 +33,7 @@ namespace details {
 template <class TupleT, class V, size_t... Is>
 auto _fields_of_tuple_seq(TupleT &&t, V &&visitor,
                           const const_ints<size_t, Is...> &) {
-  return forward<V>(visitor)(get<Is>(forward<TupleT>(t))...);
+  return std::forward<V>(visitor)(get<Is>(std::forward<TupleT>(t))...);
 }
 }
 
@@ -41,7 +41,7 @@ template <class TT, class T, class U, class V>
 constexpr decltype(auto) fields_impl(const category::std_tuplelike<TT> &, T &&t,
                                      U &&u, V &&v) {
   return details::_fields_of_tuple_seq(
-      forward<T>(t), forward<V>(v),
+      std::forward<T>(t), std::forward<V>(v),
       make_const_sequence(const_size<std::tuple_size<TT>::value>()));
 }
 
@@ -50,7 +50,7 @@ template <class ContT, class VisitorT> class container_proxy {
 public:
   template <class C, class V>
   constexpr container_proxy(C &&c, V &&v)
-      : _content(forward<C>(c)), _visitor(forward<V>(v)) {}
+      : _content(std::forward<C>(c)), _visitor(std::forward<V>(v)) {}
   constexpr container_proxy(const container_proxy &) = default;
   container_proxy(container_proxy &&) = default;
   container_proxy &operator=(const container_proxy &) = default;
@@ -140,23 +140,23 @@ struct is_container_proxy<container_proxy<T, V>> : yes {};
 // as_container
 template <class ContT, class VisitorT>
 constexpr auto as_container(ContT &&c, VisitorT &&v) {
-  return container_proxy<ContT, VisitorT>(forward<ContT>(c),
-                                          forward<VisitorT>(v));
+  return container_proxy<ContT, VisitorT>(std::forward<ContT>(c),
+                                          std::forward<VisitorT>(v));
 }
 
 template <class TT, class T, class U, class V>
 constexpr decltype(auto) fields_impl(const category::std_container<TT> &, T &&t,
                                      U &&u, V &&v) {
-  return v(as_container(forward<T>(t), forward<V>(v)));
+  return v(as_container(std::forward<T>(t), std::forward<V>(v)));
 }
 
 // fields
 template <class T, class U, class V>
 constexpr auto fields(T &&t, U &&u, V &&v)
-    -> decltype(fields_impl(category::identify(t), forward<T>(t), forward<U>(u),
-                            forward<V>(v))) {
-  return fields_impl(category::identify(t), forward<T>(t), forward<U>(u),
-                     forward<V>(v));
+    -> decltype(fields_impl(category::identify(t), std::forward<T>(t), std::forward<U>(u),
+                            std::forward<V>(v))) {
+  return fields_impl(category::identify(t), std::forward<T>(t), std::forward<U>(u),
+                     std::forward<V>(v));
 }
 
 
@@ -245,7 +245,7 @@ template <class PackT, class ProcessT, class UsageT> class field_visitor {
 public:
   template <class PP, class RR>
   constexpr field_visitor(PP &&p, RR &&r)
-      : _pack(forward<PP>(p)), _process(forward<RR>(r)) {}
+      : _pack(std::forward<PP>(p)), _process(std::forward<RR>(r)) {}
 
 // visit single member
 #define WHEELS_PARAMETER_DISTINGUISH(i) const_size<i> = const_size<i>()
@@ -254,7 +254,7 @@ public:
   template <class T,
             class = std::enable_if_t<has_member_func_fields<T, UsageT>::value>>
   constexpr decltype(auto) visit(T &&v, WHEELS_PARAMETER_DISTINGUISH(0)) const {
-    return forward<T>(v).fields(UsageT(), non_const_self());
+    return std::forward<T>(v).fields(UsageT(), non_const_self());
   }
   // has_member_func_fields<T &...> for const T
   template <class T, class = std::enable_if_t<
@@ -270,7 +270,7 @@ public:
                          !has_member_func_fields<T, UsageT>::value &&
                          has_member_func_fields_simple<T>::value>>
   constexpr decltype(auto) visit(T &&v, WHEELS_PARAMETER_DISTINGUISH(1)) const {
-    return forward<T>(v).fields(non_const_self());
+    return std::forward<T>(v).fields(non_const_self());
   }
   // has_member_func_fields_simple<T &...> for const T
   template <class T, class = std::enable_if_t<
@@ -289,7 +289,7 @@ public:
                          !has_member_func_fields_simple<T>::value &&
                          has_global_func_fields<T, UsageT>::value>>
   constexpr decltype(auto) visit(T &&v, WHEELS_PARAMETER_DISTINGUISH(2)) const {
-    return ::wheels::fields(forward<T>(v), UsageT(), non_const_self());
+    return ::wheels::fields(std::forward<T>(v), UsageT(), non_const_self());
   }
   // has_global_func_fields<T&...> for const T
   template <class T, class = std::enable_if_t<
@@ -311,7 +311,7 @@ public:
                          !has_global_func_fields<T, UsageT>::value &&
                          has_global_func_fields_simple<T>::value>>
   constexpr decltype(auto) visit(T &&v, WHEELS_PARAMETER_DISTINGUISH(3)) const {
-    return ::wheels::fields(forward<T>(v), non_const_self());
+    return ::wheels::fields(std::forward<T>(v), non_const_self());
   }
   // has_global_func_fields_simple<T &...> for const T
   template <class T, class = std::enable_if_t<
@@ -335,14 +335,14 @@ public:
                          !has_global_func_fields<T, UsageT>::value &&
                          !has_global_func_fields_simple<T>::value>>
   constexpr decltype(auto) visit(T &&v, WHEELS_PARAMETER_DISTINGUISH(4)) const {
-    return _process(forward<T>(v));
+    return _process(std::forward<T>(v));
   }
 
 #undef WHEELS_PARAMETER_DISTINGUISH
 
   // pack all members
   template <class... Ts> decltype(auto) operator()(Ts &&... vs) {
-    return _pack(visit(forward<Ts>(vs))...);
+    return _pack(visit(std::forward<Ts>(vs))...);
   }
   template <class... Ts>
   constexpr decltype(auto)
@@ -360,7 +360,7 @@ private:
 template <class UU, class PP, class RR>
 constexpr auto make_field_visitor(PP &&pack, RR &&proc) {
   return field_visitor<std::decay_t<PP>, std::decay_t<RR>, UU>(
-      forward<PP>(pack), forward<RR>(proc));
+      std::forward<PP>(pack), std::forward<RR>(proc));
 }
 
 struct visit_to_tuplize {};
@@ -371,7 +371,7 @@ struct pack_as_tuple {
   }
   template <class... ArgTs>
   constexpr decltype(auto) operator()(ArgTs &&... args) const {
-    return std::tuple<ArgTs...>(forward<ArgTs>(args)...);
+    return std::tuple<ArgTs...>(std::forward<ArgTs>(args)...);
   }
 };
 struct process_direct_pass {
@@ -384,7 +384,7 @@ struct process_direct_pass {
 template <class T> constexpr auto tuplize(T &&data) {
   return make_field_visitor<visit_to_tuplize>(pack_as_tuple(),
                                               process_direct_pass())
-      .visit(forward<T>(data));
+      .visit(std::forward<T>(data));
 }
 
 // traverse_fields
@@ -418,7 +418,7 @@ template <class FunT> struct process_by_traverse {
     return nullptr;
   }
   template <class ArgT> auto operator()(ArgT &&arg) const {
-    fun(forward<ArgT>(arg));
+    fun(std::forward<ArgT>(arg));
     return nullptr;
   }
   FunT fun;
@@ -427,7 +427,7 @@ template <class T, class FunT>
 constexpr void traverse_fields(T &&data, FunT fun) {
   make_field_visitor<visit_to_traverse>(pack_nothing(),
                                         process_by_traverse<FunT>(fun))
-      .visit(forward<T>(data));
+      .visit(std::forward<T>(data));
 }
 
 // randomize_fields
@@ -475,7 +475,7 @@ template <class T, class RNG> inline void randomize_fields(T &data, RNG &rng) {
 // any_of_fields
 struct pack_by_any {
   template <class... ArgTs> constexpr bool operator()(ArgTs &&... args) const {
-    return any(forward<ArgTs>(args)...);
+    return any(std::forward<ArgTs>(args)...);
   }
 };
 template <class CheckFunT> struct process_by_any {
@@ -504,7 +504,7 @@ constexpr bool none_of_fields(const T &data, CheckFunT checker) {
 // all_of_fields
 struct pack_by_all {
   template <class... ArgTs> constexpr bool operator()(ArgTs &&... args) const {
-    return all(forward<ArgTs>(args)...);
+    return all(std::forward<ArgTs>(args)...);
   }
 };
 template <class CheckFunT> struct process_by_all {

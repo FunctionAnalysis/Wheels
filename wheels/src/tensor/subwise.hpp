@@ -18,7 +18,7 @@ class subtensor_view
 public:
   template <class... SubTs>
   constexpr subtensor_view(InputT &&in, const SubTs &... subs)
-      : input(forward<InputT>(in)), fixed_subs{{(size_t)subs...}} {}
+      : input(std::forward<InputT>(in)), fixed_subs{{(size_t)subs...}} {}
 
   // operator=
   template <class AnotherT>
@@ -121,15 +121,15 @@ constexpr auto _subtensor_at(const tensor_base<ET, ShapeT, T> &, TT &&input,
                          const SubTs &... subs) {
   static_assert(sizeof...(SubTs) < ShapeT::rank, "two many subscripts");
   using shape_t = _tail_of_shape_t<ShapeT, sizeof...(SubTs)>;
-  return subtensor_view<ET, shape_t, TT, sizeof...(SubTs)>(forward<TT>(input),
+  return subtensor_view<ET, shape_t, TT, sizeof...(SubTs)>(std::forward<TT>(input),
                                                            subs...);
 }
 }
 
 template <class T, class... SubTs>
 constexpr auto subtensor_at(T &&input, const SubTs &... subs)
-    -> decltype(details::_subtensor_at(input, forward<T>(input), subs...)) {
-  return details::_subtensor_at(input, forward<T>(input), subs...);
+    -> decltype(details::_subtensor_at(input, std::forward<T>(input), subs...)) {
+  return details::_subtensor_at(input, std::forward<T>(input), subs...);
 }
 
 // tensor_subwise_view
@@ -143,7 +143,7 @@ class tensor_subwise_view
 
 public:
   constexpr explicit tensor_subwise_view(InputT &&in)
-      : input(forward<InputT>(in)) {}
+      : input(std::forward<InputT>(in)) {}
 
   // operator=
   template <class AnotherT>
@@ -211,7 +211,7 @@ namespace details {
 template <class ET, class ShapeT, class InputT, class TT, size_t FixedRank>
 constexpr auto _subwise(const tensor_base<ET, ShapeT, InputT> &, TT &&input,
                         const const_size<FixedRank> &) {
-  return tensor_subwise_view<ET, ShapeT, TT, FixedRank>(forward<TT>(input));
+  return tensor_subwise_view<ET, ShapeT, TT, FixedRank>(std::forward<TT>(input));
 }
 // subwise an extended tensor
 template <class ET, class ShapeT, class InputT, class ExtShapeT, class TT>
@@ -219,14 +219,14 @@ constexpr decltype(auto)
 _subwise(const extend_result<ET, ShapeT, InputT, ExtShapeT,
                              extend_result_ops::as_subtensor> &,
          TT &&input, const const_size<ExtShapeT::rank> &) {
-  return forward<TT>(input).input;
+  return std::forward<TT>(input).input;
 }
 }
 template <class InputT, class K, K FixedRank>
 constexpr auto subwise(InputT &&input, const const_ints<K, FixedRank> &r)
-    -> decltype(details::_subwise(input, forward<InputT>(input),
+    -> decltype(details::_subwise(input, std::forward<InputT>(input),
                                   const_size<(size_t)FixedRank>())) {
-  return details::_subwise(input, forward<InputT>(input),
+  return details::_subwise(input, std::forward<InputT>(input),
                            const_size<(size_t)FixedRank>());
 }
 

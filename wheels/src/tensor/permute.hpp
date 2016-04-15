@@ -1,6 +1,8 @@
 #pragma once
 
-#include "tensor.hpp"
+#include "base.hpp"
+
+#include "permute_fwd.hpp"
 
 namespace wheels {
 
@@ -15,7 +17,7 @@ class permute_result
 public:
   using value_type = ET;
   using shape_type = ShapeT;
-  constexpr explicit permute_result(T &&in) : input(forward<T>(in)) {}
+  constexpr explicit permute_result(T &&in) : input(std::forward<T>(in)) {}
 
 public:
   T input;
@@ -52,21 +54,21 @@ element_at(const permute_result<ET, ShapeT, T, Inds...> &m,
 template <class FunT, class ET, class ShapeT, class T, size_t... Inds>
 bool for_each_element(behavior_flag<unordered> o, FunT &&fun,
                       const permute_result<ET, ShapeT, T, Inds...> &m) {
-  return for_each_element(o, forward<FunT>(fun), m.input);
+  return for_each_element(o, std::forward<FunT>(fun), m.input);
 }
 
 // break_on_false
 template <class FunT, class ET, class ShapeT, class T, size_t... Inds>
 bool for_each_element(behavior_flag<break_on_false> o, FunT &&fun,
                       const permute_result<ET, ShapeT, T, Inds...> &m) {
-  return for_each_element(o, forward<FunT>(fun), m.input);
+  return for_each_element(o, std::forward<FunT>(fun), m.input);
 }
 
 // nonzero_only
 template <class FunT, class ET, class ShapeT, class T, size_t... Inds>
 bool for_each_element(behavior_flag<nonzero_only> o, FunT &&fun,
                       const permute_result<ET, ShapeT, T, Inds...> &m) {
-  return for_each_element(o, forward<FunT>(fun), m.input);
+  return for_each_element(o, std::forward<FunT>(fun), m.input);
 }
 
 // size_t nonzero_elements_count(t)
@@ -81,7 +83,7 @@ template <class ET, class ShapeT, class T, class E, class ReduceT,
           size_t... Inds>
 constexpr E reduce_elements(const permute_result<ET, ShapeT, T, Inds...> &t,
                             E initial, ReduceT &&red) {
-  return reduce_elements(t.input, move(initial), forward<ReduceT>(red));
+  return reduce_elements(t.input, move(initial), std::forward<ReduceT>(red));
 }
 
 // norm_squared
@@ -133,7 +135,7 @@ constexpr decltype(auto) _permute(const tensor_base<ET, ShapeT, T> &, TT &&t,
                 "invalid number of inds in permute");
   using shape_t = decltype(::wheels::permute(t.shape(), IndexTs()...));
   return details::_simplify_permute(
-      permute_result<ET, shape_t, TT, IndexTs::value...>(forward<TT>(t)));
+      permute_result<ET, shape_t, TT, IndexTs::value...>(std::forward<TT>(t)));
 }
 
 // permute a permuted tensor
@@ -145,30 +147,9 @@ _permute(const permute_result<ET, ShapeT, T, Inds...> &, TT &&t,
   static_assert(sizeof...(Inds) == sizeof...(IndexTs),
                 "invalid indices number");
   return _permute(
-      t.input, forward<TT>(t).input,
+      t.input, std::forward<TT>(t).input,
       const_index<(
           details::_element<IndexTs::value, size_t, Inds...>::value)>()...);
 }
-}
-
-template <class T, class... IndexTs>
-constexpr auto permute(T &&t, const IndexTs &... inds)
-    -> decltype(details::_permute(t, forward<T>(t), inds...)) {
-  return details::_permute(t, forward<T>(t), inds...);
-}
-
-// transpose
-namespace details {
-template <class ST, class MT, class NT, class ET, class T, class TT>
-constexpr auto _transpose(const tensor_base<ET, tensor_shape<ST, MT, NT>, T> &,
-                          TT &&t)
-    -> decltype(permute(forward<TT>(t), const_index<1>(), const_index<0>())) {
-  return permute(forward<TT>(t), const_index<1>(), const_index<0>());
-}
-}
-template <class T>
-constexpr auto transpose(T &&t)
-    -> decltype(details::_transpose(t, forward<T>(t))) {
-  return details::_transpose(t, forward<T>(t));
 }
 }

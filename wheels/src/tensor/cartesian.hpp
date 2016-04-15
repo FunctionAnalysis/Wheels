@@ -3,6 +3,8 @@
 #include "base.hpp"
 #include "tensor.hpp"
 
+#include "cartesian_fwd.hpp"
+
 namespace wheels {
 
 /// meshgrid
@@ -94,7 +96,7 @@ class cart_prod_result
     : public tensor_base<TupleT, ShapeT,
                          cart_prod_result<TupleT, ShapeT, Ts...>> {
 public:
-  constexpr cart_prod_result(Ts &&... ins) : inputs(forward<Ts>(ins)...) {}
+  constexpr cart_prod_result(Ts &&... ins) : inputs(std::forward<Ts>(ins)...) {}
 
 public:
   std::tuple<Ts...> inputs;
@@ -138,12 +140,12 @@ namespace details {
 template <class... Ts, class... TTs> constexpr auto _cart_prod(TTs &&... tts) {
   using shape_t = decltype(make_shape(tts.numel()...));
   return cart_prod_result<std::tuple<type_t(tts.get_value_type())...>, shape_t,
-                          TTs...>(forward<TTs>(tts)...);
+                          TTs...>(std::forward<TTs>(tts)...);
 }
 }
 template <class... TTs>
 constexpr auto cart_prod(TTs &&... ts)
-    -> decltype(details::_cart_prod(forward<TTs>(ts)...)) {
-  return details::_cart_prod(forward<TTs>(ts)...);
+    -> decltype(details::_cart_prod(std::forward<TTs>(ts)...)) {
+  return details::_cart_prod(std::forward<TTs>(ts)...);
 }
 }

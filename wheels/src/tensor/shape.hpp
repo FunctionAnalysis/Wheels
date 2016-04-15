@@ -3,9 +3,9 @@
 #include "../core/const_ints.hpp"
 #include "../core/utility.hpp"
 
-namespace wheels {
+#include "shape_fwd.hpp"
 
-template <class T, class... SizeTs> class tensor_shape;
+namespace wheels {
 
 // tensor_shape
 template <class T> class tensor_shape<T> {
@@ -355,7 +355,7 @@ template <class T, class IndexT, class FunT, class... SubTs>
 constexpr decltype(auto) invoke_with_subs(const tensor_shape<T> &shape,
                                           const IndexT &ind, FunT &&fun,
                                           const SubTs &... subs) {
-  return forward<FunT>(fun)(subs...);
+  return std::forward<FunT>(fun)(subs...);
 }
 template <class T, class IndexT, class FunT, class SizeT, class... SizeTs,
           class... SubTs>
@@ -363,7 +363,7 @@ constexpr decltype(auto)
 invoke_with_subs(const tensor_shape<T, SizeT, SizeTs...> &shape,
                  const IndexT &ind, FunT &&fun, const SubTs &... subs) {
   return invoke_with_subs(shape.rest(), ind % shape.rest().magnitude(),
-                          forward<FunT>(fun), subs...,
+                          std::forward<FunT>(fun), subs...,
                           ind / shape.rest().magnitude());
 }
 

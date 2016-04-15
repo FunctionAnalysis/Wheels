@@ -1,15 +1,11 @@
 #pragma once
 
 #include "base.hpp"
-#include "ewise_ops.hpp"
 #include "tensor.hpp"
 
-namespace wheels {
+#include "remap_fwd.hpp"
 
-// interpolate_method
-enum interpolate_method_enum { round_interpolate, linear_interpolate };
-template <interpolate_method_enum IM>
-using interpolate_method = const_ints<interpolate_method_enum, IM>;
+namespace wheels {
 
 // remap_result
 template <class ET, class ShapeT, class T, class MapFunT,
@@ -19,7 +15,7 @@ class remap_result
           ET, ShapeT, void, remap_result<ET, ShapeT, T, MapFunT, IPMethod>> {
 public:
   constexpr remap_result(T &&in, const ShapeT &s, MapFunT m, ET o)
-      : _input(forward<T>(in)), _output_shape(s), _subs_output2input(m),
+      : _input(std::forward<T>(in)), _output_shape(s), _subs_output2input(m),
         _outlier_val(o) {}
 
   constexpr const ShapeT &shape() const { return _output_shape; }
@@ -59,7 +55,7 @@ constexpr ET _element_at_remap_result_seq(
 
 template <class T1, class T2>
 constexpr auto _linear_interpolate(T1 &&p1, T2 &&p2, double c) {
-  return forward<T1>(p1) * (1.0 - c) + forward<T2>(p2) * c;
+  return std::forward<T1>(p1) * (1.0 - c) + std::forward<T2>(p2) * c;
 }
 
 // _linear_interpolate
@@ -90,7 +86,7 @@ _element_at_ceil_or_floor_helper(T &t, E &&otherwise, SubsInputT &subs,
                                  NoYesTupleT &noyes,
                                  const_ints<size_t, Is...>) {
   return t.at_or(
-      forward<E>(otherwise),
+      std::forward<E>(otherwise),
       static_cast<size_t>(conditional(std::get<Is>(noyes), std::ceil(subs[Is]),
                                       std::floor(subs[Is])))...);
 }
@@ -132,28 +128,24 @@ constexpr ET element_at(const remap_result<ET, ShapeT, T, MapFunT, IPMethod> &r,
 
 // remap
 template <class ToST, class... ToSizeTs, class ET, class ShapeT, class T,
-          class MapFunT, class ET2 = ET,
-          interpolate_method_enum IPMethod = linear_interpolate>
-constexpr auto
-remap(const tensor_base<ET, ShapeT, T> &t,
-      const tensor_shape<ToST, ToSizeTs...> &toshape, MapFunT mapfun,
-      ET2 &&outlier = types<ET2>::zero(),
-      interpolate_method<IPMethod> = interpolate_method<IPMethod>()) {
+          class MapFunT, class ET2, interpolate_method_enum IPMethod>
+constexpr auto remap(const tensor_base<ET, ShapeT, T> &t,
+                     const tensor_shape<ToST, ToSizeTs...> &toshape,
+                     MapFunT mapfun, ET2 &&outlier,
+                     interpolate_method<IPMethod>) {
   return remap_result<ET, tensor_shape<ToST, ToSizeTs...>, const T &, MapFunT,
                       IPMethod>(t.derived(), toshape, mapfun,
-                                forward<ET2>(outlier));
+                                std::forward<ET2>(outlier));
 }
 
 template <class ToST, class... ToSizeTs, class ET, class ShapeT, class T,
-          class MapFunT, class ET2 = ET,
-          interpolate_method_enum IPMethod = linear_interpolate>
-constexpr auto
-remap(tensor_base<ET, ShapeT, T> &&t,
-      const tensor_shape<ToST, ToSizeTs...> &toshape, MapFunT mapfun,
-      ET2 &&outlier = types<ET2>::zero(),
-      interpolate_method<IPMethod> = interpolate_method<IPMethod>()) {
+          class MapFunT, class ET2, interpolate_method_enum IPMethod>
+constexpr auto remap(tensor_base<ET, ShapeT, T> &&t,
+                     const tensor_shape<ToST, ToSizeTs...> &toshape,
+                     MapFunT mapfun, ET2 &&outlier,
+                     interpolate_method<IPMethod>) {
   return remap_result<ET, tensor_shape<ToST, ToSizeTs...>, T, MapFunT,
                       IPMethod>(move(t.derived()), toshape, mapfun,
-                                forward<ET2>(outlier));
+                                std::forward<ET2>(outlier));
 }
 }

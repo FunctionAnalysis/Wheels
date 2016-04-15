@@ -2,11 +2,9 @@
 
 #include "aligned.hpp"
 
-namespace wheels {
+#include "map_fwd.hpp"
 
-// tensor_map_storage
-template <class ET, class ShapeT, class PtrT, class T, bool StaticShape>
-class tensor_map_storage;
+namespace wheels {
 
 template <class ET, class ShapeT, class PtrT, class T>
 class tensor_map_storage<ET, ShapeT, PtrT, T, true>

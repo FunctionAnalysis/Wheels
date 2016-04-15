@@ -44,4 +44,6 @@
   claz &operator=(claz &&) = default;                                          \
   claz &operator=(const claz &) = delete;
 
-#define wheels_forward(v) std::forward<decltype(v)>(v)
+// parenthesize v to make it an expression
+// http://en.cppreference.com/w/cpp/language/decltype
+#define wheels_forward(v) std::forward<decltype((v))>(v)

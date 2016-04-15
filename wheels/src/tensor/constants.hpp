@@ -18,7 +18,7 @@ public:
   using value_type = ET;
   template <class EE>
   constexpr explicit constant_result(const ShapeT &s, EE &&v)
-      : _shape(s), _val(forward<EE>(v)) {}
+      : _shape(s), _val(std::forward<EE>(v)) {}
   const ShapeT &shape() const { return _shape; }
   const ET &value() const { return _val; }
   ET &value() { return _val; }
@@ -76,8 +76,8 @@ bool for_each_element(behavior_flag<nonzero_only> o, FunT &&fun,
                       const constant_result<ET, ShapeT, OpT> &t, Ts &&... ts) {
   assert(all_same(shape_of(t), shape_of(ts)...));
   if (!is_zero(t.value())) {
-    return for_each_element(behavior_flag<unordered>(), forward<FunT>(fun), t,
-                            forward<Ts>(ts)...);
+    return for_each_element(behavior_flag<unordered>(), std::forward<FunT>(fun), t,
+                            std::forward<Ts>(ts)...);
   }
   return false;
 }
@@ -128,7 +128,7 @@ constexpr bool any_of(const constant_result<ET, ShapeT, OpT> &t) {
 template <class ET, class ST, class... SizeTs>
 constexpr auto constants(const tensor_shape<ST, SizeTs...> &shape, ET &&v) {
   return constant_result<std::decay_t<ET>, tensor_shape<ST, SizeTs...>, void>(
-      shape, forward<ET>(v));
+      shape, std::forward<ET>(v));
 }
 
 // zeros
@@ -156,7 +156,7 @@ template <class ET, class ST, class... SizeTs, class OpT>
 constexpr auto _constants(const tensor_shape<ST, SizeTs...> &shape, ET &&v,
                           OpT &&) {
   return constant_result<std::decay_t<ET>, tensor_shape<ST, SizeTs...>,
-                         std::decay_t<OpT>>(shape, forward<ET>(v));
+                         std::decay_t<OpT>>(shape, std::forward<ET>(v));
 }
 }
 
@@ -210,7 +210,7 @@ constexpr auto _constants(const tensor_shape<ST, SizeTs...> &shape, ET &&v,
 //    void> {
 //  template <class T1, class T2>
 //  constexpr auto operator()(T1 &&t1, T2 &&t2) const {
-//    return details::_constants(t1.shape(), OpT()(t1.value(), forward<T2>(t2)),
+//    return details::_constants(t1.shape(), OpT()(t1.value(), std::forward<T2>(t2)),
 //                               OpT());
 //  }
 //};
@@ -221,7 +221,7 @@ constexpr auto _constants(const tensor_shape<ST, SizeTs...> &shape, ET &&v,
 //    category_tensor<EleT, ShapeT, constant_result<EleT, ShapeT, COpT>>> {
 //  template <class T1, class T2>
 //  constexpr auto operator()(T1 &&t1, T2 &&t2) const {
-//    return details::_constants(t2.shape(), OpT()(forward<T1>(t1), t2.value()),
+//    return details::_constants(t2.shape(), OpT()(std::forward<T1>(t1), t2.value()),
 //                               OpT());
 //  }
 //};

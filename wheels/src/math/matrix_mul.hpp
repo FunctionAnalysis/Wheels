@@ -17,7 +17,7 @@ public:
   using value_type = EleT;
   using shape_type = ShapeT;
   constexpr matrix_mul_result(A &&aa, B &&bb)
-      : _a(forward<A>(aa)), _b(forward<B>(bb)) {}
+      : _a(std::forward<A>(aa)), _b(std::forward<B>(bb)) {}
   constexpr auto shape() const {
     return make_shape(size_at(_a, const_index<0>()),
                       size_at(_b, const_index<1>()));
@@ -45,7 +45,7 @@ public:
   using value_type = EleT;
   using shape_type = ShapeT;
   constexpr matrix_mul_result(A &&aa, B &&bb)
-      : _a(forward<A>(aa)), _b(forward<B>(bb)) {}
+      : _a(std::forward<A>(aa)), _b(std::forward<B>(bb)) {}
   constexpr auto shape() const {
     return make_shape(size_at(_a, const_index<0>()));
   }
@@ -71,7 +71,7 @@ public:
   using value_type = EleT;
   using shape_type = ShapeT;
   constexpr matrix_mul_result(A &&aa, B &&bb)
-      : _a(forward<A>(aa)), _b(forward<B>(bb)) {}
+      : _a(std::forward<A>(aa)), _b(std::forward<B>(bb)) {}
   constexpr auto shape() const {
     return make_shape(size_at(_b, const_index<1>()));
   }
@@ -113,7 +113,7 @@ struct overloaded<binary_op_mul,
     using shape_t = std::decay_t<decltype(make_shape(
         size_at(a, const_index<0>()), size_at(b, const_index<1>())))>;
     return matrix_mul_result<std::common_type_t<E1, E2>, shape_t, A, B, true,
-                             true>(forward<A>(a), forward<B>(b));
+                             true>(std::forward<A>(a), std::forward<B>(b));
   }
 };
 
@@ -126,7 +126,7 @@ struct overloaded<binary_op_mul,
     assert(size_at(a, const_index<1>()) == size_at(b, const_index<0>()));
     using shape_t = tensor_shape<ST1, MT1>;
     return matrix_mul_result<std::common_type_t<E1, E2>, shape_t, A, B, true,
-                             false>(forward<A>(a), forward<B>(b));
+                             false>(std::forward<A>(a), std::forward<B>(b));
   }
 };
 
@@ -139,7 +139,7 @@ struct overloaded<binary_op_mul,
     assert(size_at(a, const_index<0>()) == size_at(b, const_index<0>()));
     using shape_t = tensor_shape<ST2, NT2>;
     return matrix_mul_result<std::common_type_t<E1, E2>, shape_t, A, B, false,
-                             true>(forward<A>(a), forward<B>(b));
+                             true>(std::forward<A>(a), std::forward<B>(b));
   }
 };
 }

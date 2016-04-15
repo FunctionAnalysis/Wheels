@@ -2,6 +2,8 @@
 
 #include "shape.hpp"
 
+#include "storage_fwd.hpp"
+
 namespace wheels {
 
 namespace details {
@@ -21,14 +23,6 @@ void _load_shape(ArcT &ar, tensor_shape<ST, SS...> &s) {
   s = stdshape;
 }
 }
-
-constexpr struct _with_elements {
-} with_elements;
-constexpr struct _with_iterators {
-} with_iterators;
-
-template <class T, class ShapeT, bool ShapeIsStatic = ShapeT::is_static>
-class storage;
 
 namespace details {
 // init_std_array
@@ -62,7 +56,7 @@ public:
   template <class... EleTs>
   constexpr storage(const shape_type &, const _with_elements &,
                     EleTs &&... eles)
-      : _data{{(value_type)forward<EleTs>(eles)...}} {}
+      : _data{{(value_type)std::forward<EleTs>(eles)...}} {}
   template <class IterT>
   storage(const shape_type &, const _with_iterators &, IterT begin, IterT end)
       : _data{{value_type()}} {
@@ -134,7 +128,7 @@ inline void _construct_each_by(T *data, AllocT &alloc) {}
 template <class T, class AllocT, class EleT, class... EleTs>
 inline void _construct_each_by(T *data, AllocT &alloc, EleT &&ele,
                                EleTs &&... eles) {
-  alloc.construct(data, forward<EleT>(ele));
+  alloc.construct(data, std::forward<EleT>(ele));
   _construct_each_by(data + 1, alloc, std::forward<EleTs>(eles)...);
 }
 }
@@ -167,7 +161,7 @@ public:
   storage(const shape_type &s, _with_elements, EleTs &&... eles) : _shape(s) {
     _capacity = _shape.magnitude();
     _data = _alloc.allocate(_capacity);
-    details::_construct_each_by(_data, _alloc, forward<EleTs>(eles)...);
+    details::_construct_each_by(_data, _alloc, std::forward<EleTs>(eles)...);
     for (size_t i = sizeof...(EleTs); i < _capacity; i++) {
       _alloc.construct(_data + i);
     }

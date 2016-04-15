@@ -3,6 +3,8 @@
 #include "base.hpp"
 #include "tensor.hpp"
 
+#include "index_fwd.hpp"
+
 namespace wheels {
 
 template <class ET, class ShapeT, class IndexTensorT, class InputTensorT>
@@ -11,8 +13,8 @@ class index_view
                          index_view<ET, ShapeT, IndexTensorT, InputTensorT>> {
 public:
   index_view(IndexTensorT &&indt, InputTensorT &&inpt)
-      : index_tensor(forward<IndexTensorT>(indt)),
-        input_tensor(forward<InputTensorT>(inpt)) {}
+      : index_tensor(std::forward<IndexTensorT>(indt)),
+        input_tensor(std::forward<InputTensorT>(inpt)) {}
 
   // operator=
   template <class AnotherT>
@@ -68,15 +70,8 @@ _at_indices(const tensor_base<InputET, InputShapeT, InputTensorT> &,
             const tensor_base<IndexET, IndexShapeT, IndexTensorT> &,
             IndexTensorTT &&index) {
   return index_view<InputET, IndexShapeT, IndexTensorTT, InputTensorTT>(
-      forward<IndexTensorTT>(index), forward<InputTensorTT>(input));
+      std::forward<IndexTensorTT>(index), std::forward<InputTensorTT>(input));
 }
-}
-template <class InputTensorT, class IndexTensorT>
-constexpr auto at_indices(InputTensorT &&input, IndexTensorT &&index)
-    -> decltype(details::_at_indices(input, forward<InputTensorT>(input), index,
-                                     forward<IndexTensorT>(index))) {
-  return details::_at_indices(input, forward<InputTensorT>(input), index,
-                              forward<IndexTensorT>(index));
 }
 
 // where

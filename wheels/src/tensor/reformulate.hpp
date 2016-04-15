@@ -12,7 +12,7 @@ class reformulate_result
 public:
   constexpr explicit reformulate_result(const ShapeT &s, SubsMapFunT f,
                                         InputT &&in)
-      : _shape(s), _subs_map_fun(f), _input(forward<InputT>(in)) {}
+      : _shape(s), _subs_map_fun(f), _input(std::forward<InputT>(in)) {}
 
   constexpr const ShapeT &shape() const { return _shape; }
   constexpr const InputT &input() const & { return _input; }
@@ -60,15 +60,15 @@ template <class ET, class ShapeT, class T, class TT, class NewShapeT,
 constexpr auto _reformulate(const tensor_base<ET, ShapeT, T> &, TT &&t,
                             const NewShapeT &s, SubsMapFunT fun) {
   return reformulate_result<ET, NewShapeT, TT, SubsMapFunT>(s, fun,
-                                                            forward<TT>(t));
+                                                            std::forward<TT>(t));
 }
 }
 // reformulate
 template <class T, class ST, class... SizeTs, class SubsMapFunT>
 constexpr auto reformulate(T &&t, const tensor_shape<ST, SizeTs...> &shape,
                            SubsMapFunT fun)
-    -> decltype(details::_reformulate(t, forward<T>(t), shape, fun)) {
-  return details::_reformulate(t, forward<T>(t), shape, fun);
+    -> decltype(details::_reformulate(t, std::forward<T>(t), shape, fun)) {
+  return details::_reformulate(t, std::forward<T>(t), shape, fun);
 }
 
 // repeat
@@ -95,7 +95,7 @@ constexpr auto _repeat_impl(const tensor_base<ET, ShapeT, T> &, TT &&t,
                             const const_ints<size_t, Is...> &) {
   static_assert(sizeof...(Is) == ShapeT::rank, "wrong number of repeats");
   return _reformulate(
-      t, forward<T>(t),
+      t, std::forward<T>(t),
       make_shape((std::get<Is>(rps) * t.size(const_index<Is>()))...),
       _repeat_subs_functor<ShapeT>(t.shape()));
 }
@@ -103,10 +103,10 @@ constexpr auto _repeat_impl(const tensor_base<ET, ShapeT, T> &, TT &&t,
 
 template <class T, class... RepTs>
 constexpr auto repeat(T &&t, const RepTs &... reps)
-    -> decltype(details::_repeat_impl(t, forward<T>(t),
+    -> decltype(details::_repeat_impl(t, std::forward<T>(t),
                                       std::forward_as_tuple(reps...),
                                       make_const_sequence_for<RepTs...>())) {
-  return details::_repeat_impl(t, forward<T>(t), std::forward_as_tuple(reps...),
+  return details::_repeat_impl(t, std::forward<T>(t), std::forward_as_tuple(reps...),
                                make_const_sequence_for<RepTs...>());
 }
 }

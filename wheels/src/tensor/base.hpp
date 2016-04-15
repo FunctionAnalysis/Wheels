@@ -13,8 +13,10 @@
 #include "shape.hpp"
 
 #include "base_fwd.hpp"
-#include "aligned_fwd.hpp"
 
+#include "aligned_fwd.hpp"
+#include "block_fwd.hpp"
+#include "cat_fwd.hpp"
 
 namespace wheels {
 
@@ -29,7 +31,7 @@ namespace details {
 template <class E, class SizeT,
           class = std::enable_if_t<is_const_expr<std::decay_t<E>>::value>>
 constexpr decltype(auto) _eval_index_expr(E &&e, const SizeT &sz) {
-  return forward<E>(e)(sz);
+  return std::forward<E>(e)(sz);
 }
 template <class T, class SizeT,
           class = std::enable_if_t<!is_const_expr<std::decay_t<T>>::value>,
@@ -40,25 +42,27 @@ constexpr T &&_eval_index_expr(T &&t, const SizeT &) {
 
 // _brackets
 template <class T, class E, class EE>
-constexpr decltype(auto) _brackets_impl(T &&t, const category::other<E> &id, EE &&ind) {
-  return ::wheels::element_at_index(forward<T>(t), forward<EE>(ind));
+constexpr decltype(auto) _brackets_impl(T &&t, const category::other<E> &id,
+                                        EE &&ind) {
+  return ::wheels::element_at_index(std::forward<T>(t), std::forward<EE>(ind));
 }
 
 template <class T, class TensorT, class TensorTT>
 constexpr auto _brackets_impl(T &&t, const tensor_core<TensorT> &id,
                               TensorTT &&inds) {
-  return ::wheels::at_indices(forward<T>(t), forward<TensorTT>(inds));
+  return ::wheels::at_indices(std::forward<T>(t), std::forward<TensorTT>(inds));
 }
 
 template <class T, class TensorTT>
 constexpr decltype(auto) _brackets(T &&t, TensorTT &&inds) {
-  return _brackets_impl(forward<T>(t), category::identify(inds), forward<TensorTT>(inds));
+  return _brackets_impl(std::forward<T>(t), category::identify(inds),
+                        std::forward<TensorTT>(inds));
 }
 
 // _all_as_tensor
 template <class E, class EE>
 constexpr auto _all_as_tensor_impl(const category::other<E> &id, EE &&s) {
-  return ::wheels::constants(make_shape(), forward<EE>(s));
+  return ::wheels::constants(make_shape(), std::forward<EE>(s));
 }
 template <class TensorT, class TensorTT>
 constexpr TensorTT &&_all_as_tensor_impl(const tensor_core<TensorT> &id,
@@ -67,8 +71,8 @@ constexpr TensorTT &&_all_as_tensor_impl(const tensor_core<TensorT> &id,
 }
 template <class T>
 constexpr auto _all_as_tensor(T &&t)
-    -> decltype(_all_as_tensor_impl(category::identify(t), forward<T>(t))) {
-  return _all_as_tensor_impl(category::identify(t), forward<T>(t));
+    -> decltype(_all_as_tensor_impl(category::identify(t), std::forward<T>(t))) {
+  return _all_as_tensor_impl(category::identify(t), std::forward<T>(t));
 }
 
 // _block_seq
@@ -76,12 +80,12 @@ template <class T, size_t... Is, class... SubsTensorOrIntTs>
 constexpr auto _block_seq(T &&t, const const_ints<size_t, Is...> &,
                           SubsTensorOrIntTs &&... subs)
     -> decltype(::wheels::at_block(
-        forward<T>(t), _all_as_tensor(_eval_index_expr(
-                           forward<SubsTensorOrIntTs>(subs),
+        std::forward<T>(t), _all_as_tensor(_eval_index_expr(
+                           std::forward<SubsTensorOrIntTs>(subs),
                            (int64_t)size_at(t, const_index<Is>())))...)) {
-  return ::wheels::at_block(forward<T>(t),
+  return ::wheels::at_block(std::forward<T>(t),
                             _all_as_tensor(_eval_index_expr(
-                                forward<SubsTensorOrIntTs>(subs),
+                                std::forward<SubsTensorOrIntTs>(subs),
                                 (int64_t)size_at(t, const_index<Is>())))...);
 }
 }
@@ -109,7 +113,7 @@ template <class T> struct tensor_core : category::object<T> {
   // at_or(otherwisev, subs ...)
   template <class E, class... SubTs>
   constexpr decltype(auto) at_or(E &&otherwise, const SubTs &... subs) const {
-    return _at_or_seq(forward<E>(otherwise),
+    return _at_or_seq(std::forward<E>(otherwise),
                       make_const_sequence_for<SubTs...>(), subs...);
   }
 
@@ -125,15 +129,15 @@ template <class T> struct tensor_core : category::object<T> {
   // operator[](index/{index tensor})
   template <class E> constexpr decltype(auto) operator[](E &&e) const & {
     return details::_brackets(
-        derived(), details::_eval_index_expr(forward<E>(e), numel()));
+        derived(), details::_eval_index_expr(std::forward<E>(e), numel()));
   }
   template <class E> decltype(auto) operator[](E &&e) & {
     return details::_brackets(
-        derived(), details::_eval_index_expr(forward<E>(e), numel()));
+        derived(), details::_eval_index_expr(std::forward<E>(e), numel()));
   }
   template <class E> decltype(auto) operator[](E &&e) && {
     return details::_brackets(
-        move(derived()), details::_eval_index_expr(forward<E>(e), numel()));
+        move(derived()), details::_eval_index_expr(std::forward<E>(e), numel()));
   }
 
   // block
@@ -141,18 +145,18 @@ template <class T> struct tensor_core : category::object<T> {
   constexpr auto block(TensorOrIndexTs &&... tois) const & {
     return details::_block_seq(derived(),
                                make_const_sequence_for<TensorOrIndexTs...>(),
-                               forward<TensorOrIndexTs>(tois)...);
+                               std::forward<TensorOrIndexTs>(tois)...);
   }
   template <class... TensorOrIndexTs> auto block(TensorOrIndexTs &&... tois) & {
     return details::_block_seq(derived(),
                                make_const_sequence_for<TensorOrIndexTs...>(),
-                               forward<TensorOrIndexTs>(tois)...);
+                               std::forward<TensorOrIndexTs>(tois)...);
   }
   template <class... TensorOrIndexTs>
   auto block(TensorOrIndexTs &&... tois) && {
     return details::_block_seq(move(derived()),
                                make_const_sequence_for<TensorOrIndexTs...>(),
-                               forward<TensorOrIndexTs>(tois)...);
+                               std::forward<TensorOrIndexTs>(tois)...);
   }
 
   // for_each
@@ -161,14 +165,6 @@ template <class T> struct tensor_core : category::object<T> {
   }
   template <class FunT> void for_each(FunT &fun) {
     ::wheels::for_each_element(behavior_flag<unordered>(), fun, derived());
-  }
-
-  // transform
-  template <class FunT> constexpr auto transform(FunT &&fun) const & {
-    return ::wheels::transform(derived(), forward<FunT>(fun));
-  }
-  template <class FunT> auto transform(FunT &&fun) && {
-    return ::wheels::transform(std::move(derived()), forward<FunT>(fun));
   }
 
   // reshape
@@ -239,7 +235,7 @@ private:
                                       const_ints<size_t, Is...> seq,
                                       const SubEs &... subes) const {
     return _valid_subs_seq(seq, subes...) ? _parenthesis_seq(seq, subes...)
-                                          : forward<E>(otherwise);
+                                          : std::forward<E>(otherwise);
   }
 
   template <class... SubEs, size_t... Is>

@@ -29,7 +29,7 @@ public:
   constexpr transform_iterator() : current(), fun() {}
   template <class F>
   constexpr transform_iterator(IterT it, F &&f)
-      : current(it), fun(forward<F>(f)) {}
+      : current(it), fun(std::forward<F>(f)) {}
   constexpr IterT base() const { return current; }
 
   decltype(auto) operator*() const { return fun(*current); }

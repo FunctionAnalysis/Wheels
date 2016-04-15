@@ -6,27 +6,19 @@
 
 namespace wheels {
 
-// ewise_base
-template <class EleT, class ShapeT, class OpT, class T>
-class ewise_base
-    : public tensor_base<EleT, ShapeT, T> {};
-
 // ewise_wrapper
 template <class EleT, class ShapeT, class T>
 class ewise_wrapper
-    : public ewise_base<EleT, ShapeT, void, ewise_wrapper<EleT, ShapeT, T>> {
+    : public ewise_base<EleT, ShapeT, ewise_wrapper<EleT, ShapeT, T>> {
 public:
-    explicit ewise_wrapper(T && h) : host(std::forward<T>(h)) {}
-public:
-    T host;
+  explicit ewise_wrapper(T &&h) : host(std::forward<T>(h)) {}
+  T host;
 };
-
 
 // -- necessary tensor functions
 // Shape shape_of(ts);
 template <class EleT, class ShapeT, class T>
-constexpr decltype(auto)
-shape_of(const ewise_wrapper<EleT, ShapeT, T> &t) {
+constexpr decltype(auto) shape_of(const ewise_wrapper<EleT, ShapeT, T> &t) {
   return shape_of(t.host);
 }
 
@@ -61,37 +53,98 @@ void reserve_shape(ewise_wrapper<EleT, ShapeT, T> &t,
   reserve_shape(t.host, shape);
 }
 
+// for_each_element
+template <behavior_flag_enum F, class FunT, class EleT, class ShapeT, class T,
+          class... Ts>
+bool for_each_element(behavior_flag<F> f, FunT &fun,
+                      const ewise_wrapper<EleT, ShapeT, T> &t, Ts &... ts) {
+  return for_each_element(f, fun, t.host, ts...);
+}
 
+// fill_elements_with
+template <class EleT, class ShapeT, class T, class E>
+void fill_elements_with(ewise_wrapper<EleT, ShapeT, T> &t, const E &e) {
+  fill_elements_with(t.host, e);
+}
 
+// size_t nonzero_elements_count(t)
+template <class EleT, class ShapeT, class T>
+size_t nonzero_elements_count(const ewise_wrapper<EleT, ShapeT, T> &t) {
+  return nonzero_elements_count(t.host);
+}
 
+// Scalar reduce_elements(ts, initial, functor);
+template <class EleT, class ShapeT, class T, class E, class ReduceT>
+E reduce_elements(const ewise_wrapper<EleT, ShapeT, T> &t, E initial,
+                  ReduceT &red) {
+  return reduce_elements(t.host, initial, red);
+}
 
+// Scalar norm_squared(ts)
+template <class ET, class ShapeT, class T>
+ET norm_squared(const ewise_wrapper<ET, ShapeT, T> &t) {
+  return norm_squared(t.host);
+}
 
+// Scalar norm(ts)
+template <class ET, class ShapeT, class T>
+constexpr auto norm(const ewise_wrapper<ET, ShapeT, T> &t) {
+  return norm(t.host);
+}
 
+// bool all(s)
+template <class ET, class ShapeT, class T>
+constexpr bool all_of(const ewise_wrapper<ET, ShapeT, T> &t) {
+  return all_of(t.host);
+}
+
+// bool any(s)
+template <class ET, class ShapeT, class T>
+constexpr bool any_of(const ewise_wrapper<ET, ShapeT, T> &t) {
+  return any_of(t.host);
+}
+
+// equals_result_of
+template <class ET, class ShapeT, class T>
+constexpr bool equals_result_of(const ewise_wrapper<ET, ShapeT, T> &t) {
+  return equals_result_of(t.host);
+}
+
+// not_equals_result_of
+template <class ET, class ShapeT, class T>
+constexpr bool not_equals_result_of(const ewise_wrapper<ET, ShapeT, T> &t) {
+  return not_equals_result_of(t.host);
+}
+
+// Scalar sum(s)
+template <class ET, class ShapeT, class T>
+ET sum_of(const ewise_wrapper<ET, ShapeT, T> &t) {
+  return sum_of(t.host);
+}
 
 namespace details {
 template <class EleT, class ShapeT, class T, class TT>
 constexpr auto _ewise(const tensor_base<EleT, ShapeT, T> &, TT &&host) {
   return ewise_wrapper<EleT, ShapeT, TT>(std::forward<TT>(host));
 }
-template <class EleT, class ShapeT, class OpT, class T, class TT>
-constexpr decltype(auto) _ewise(const ewise_base<EleT, ShapeT, OpT, T> &,
+template <class EleT, class ShapeT, class T, class TT>
+constexpr decltype(auto) _ewise(const ewise_base<EleT, ShapeT, T> &,
                                 TT &&host) {
   return std::forward<TT>(host).derived();
 }
 }
 
-
 // ewise ops
 template <class EleT, class ShapeT, class OpT, class InputT, class... InputTs>
 class ewise_op_result
-    : public tensor_op_result_base<
-          EleT, ShapeT, OpT,
-          ewise_op_result<EleT, ShapeT, OpT, InputT, InputTs...>> {
+    : public ewise_base<EleT, ShapeT, ewise_op_result<EleT, ShapeT, OpT, InputT,
+                                                      InputTs...>> {
 public:
   using shape_type = ShapeT;
   using value_type = EleT;
   constexpr explicit ewise_op_result(OpT o, InputT &&in, InputTs &&... ins)
-      : op(o), inputs(forward<InputT>(in), forward<InputTs>(ins)...) {}
+      : op(o), inputs(std::forward<InputT>(in), std::forward<InputTs>(ins)...) {
+  }
 
 public:
   OpT op;
@@ -103,7 +156,7 @@ template <class ET, class ShapeT, class OpT, class InputT, class... InputTs>
 constexpr ewise_op_result<ET, ShapeT, OpT, InputT, InputTs...>
 make_ewise_op_result(OpT op, InputT &&input, InputTs &&... inputs) {
   return ewise_op_result<ET, ShapeT, OpT, InputT, InputTs...>(
-      op, forward<InputT>(input), forward<InputTs>(inputs)...);
+      op, std::forward<InputT>(input), std::forward<InputTs>(inputs)...);
 }
 
 // shape_of
@@ -183,100 +236,82 @@ constexpr decltype(auto) element_at_index(
       ts, make_const_sequence_for<InputT, InputTs...>(), index);
 }
 
-
-
 // other ops are overloaded as ewise operation results defaultly
 // all tensors
-template <class OpT, class EleT, class ShapeT, class T, class... ShapeTs,
-          class... EleTs, class... Ts>
-struct overloaded<OpT, category_tensor<EleT, ShapeT, T>,
-                  category_tensor<EleTs, ShapeTs, Ts>...> {
-  template <class TT, class... TTs>
-  constexpr decltype(auto) operator()(TT &&t, TTs &&... ts) const {
-    assert((std::is_same<OpT, binary_op_eq>::value ||
-            std::is_same<OpT, binary_op_neq>::value ||
-            all_same(shape_of(t), shape_of(ts)...)));
-    using ele_t = std::decay_t<decltype(
-        OpT()(std::declval<EleT>(), std::declval<EleTs>()...))>;
-    return make_ewise_op_result<ele_t, ShapeT>(OpT(), forward<TT>(t),
-                                               forward<TTs>(ts)...);
-  }
-};
-
-template <class EleT, class ShapeT, class T, class ShapeT2, class EleT2,
-          class T2>
-struct overloaded<binary_op_mul, category_tensor<EleT, ShapeT, T>,
-                  category_tensor<EleT2, ShapeT2, T2>> {
-  template <class TT, class TT2>
-  constexpr int operator()(TT &&t, TT2 &&t2) const {
-    static_assert(always<bool, false, TT, TT2>::value,
-                  "use ewise_mul(t1, t2) if you want to compute element-wise "
-                  "product of two tensors");
-  }
-};
-
-template <class EleT, class ShapeT, class T, class ShapeT2, class EleT2,
-          class T2>
-struct overloaded<ewised<binary_op_mul>, category_tensor<EleT, ShapeT, T>,
-                  category_tensor<EleT2, ShapeT2, T2>> {
-  template <class TT, class TT2>
-  constexpr decltype(auto) operator()(TT &&t, TT2 &&t2) const {
-    using ele_t = decltype(std::declval<EleT>() * std::declval<EleT2>());
-    return make_ewise_op_result<ele_t, ShapeT>(binary_op_mul(), forward<TT>(t),
-                                               forward<TT2>(t2));
-  }
-};
+template <class OpT, class EleT1, class ShapeT1, class T1, class EleT2,
+          class ShapeT2, class T2>
+constexpr auto overload_as(const func_base<OpT> &op,
+                           const ewise_base<EleT1, ShapeT1, T1> &,
+                           const ewise_base<EleT2, ShapeT2, T2> &) {
+  assert((std::is_same<OpT, binary_op_eq>::value ||
+          std::is_same<OpT, binary_op_neq>::value ||
+          all_same(t.shape(), ts.shape()...)));
+  using ele_t = std::decay_t<decltype(
+      OpT()(std::declval<EleT1>(), std::declval<EleT2>()))>;
+  return [](auto &&t1, auto &&t2) {
+    return make_ewise_op_result<ele_t, ShapeT1>(OpT(), wheels_forward(t1),
+                                                wheels_forward(t2));
+  };
+}
 
 // tensor vs scalar
-template <class OpT, class EleT, class ShapeT, class T>
-struct overloaded<OpT, category_tensor<EleT, ShapeT, T>, void> {
-  template <class T1, class T2>
-  constexpr decltype(auto) operator()(T1 &&t1, T2 &&t2) const {
-    using ele_t =
-        std::decay_t<decltype(OpT()(std::declval<EleT>(), std::declval<T2>()))>;
-    return make_ewise_op_result<ele_t, ShapeT>(
-        OpT()(const_symbol<0>(), forward<T2>(t2)), forward<T1>(t1));
-  }
-};
-// scalar vs tensor
-template <class OpT, class EleT, class ShapeT, class T>
-struct overloaded<OpT, void, category_tensor<EleT, ShapeT, T>> {
-  template <class T1, class T2>
-  constexpr decltype(auto) operator()(T1 &&t1, T2 &&t2) const {
-    using ele_t =
-        std::decay_t<decltype(OpT()(std::declval<T1>(), std::declval<EleT>()))>;
-    return make_ewise_op_result<ele_t, ShapeT>(
-        OpT()(forward<T1>(t1), const_symbol<0>()), forward<T2>(t2));
-  }
-};
-// tensor vs const_expr
-template <class OpT, class EleT, class ShapeT, class T>
-struct overloaded<OpT, category_tensor<EleT, ShapeT, T>, category_const_expr> {
-  template <class T1, class T2>
-  constexpr decltype(auto) operator()(T1 &&t1, T2 &&t2) const {
-    return const_binary_op<OpT, const_coeff<std::decay_t<T1>>, T2>(
-        OpT(), as_const_coeff(forward<T1>(t1)), forward<T2>(t2));
-  }
-};
-// const_expr vs tensor
-template <class OpT, class EleT, class ShapeT, class T>
-struct overloaded<OpT, category_const_expr, category_tensor<EleT, ShapeT, T>> {
-  template <class T1, class T2>
-  constexpr decltype(auto) operator()(T1 &&t1, T2 &&t2) const {
-    return const_binary_op<OpT, T1, const_coeff<std::decay_t<T2>>>(
-        OpT(), forward<T1>(t1), as_const_coeff(forward<T2>(t2)));
-  }
-};
+template <class OpT, class EleT1, class ShapeT1, class T1, class T2>
+constexpr auto overload_as(const func_base<OpT> &op,
+                           const ewise_base<EleT1, ShapeT1, T1> &,
+                           const category::other<T2> &) {
+  using ele_t =
+      std::decay_t<decltype(OpT()(std::declval<EleT1>(), std::declval<T2>()))>;
+  return [](auto &&t1, auto &&t2) {
+    return make_ewise_op_result<ele_t, ShapeT1>(
+        OpT()(const_symbol<0>(), wheels_forward(t2)), wheels_forward(t1));
+  };
+}
 
+// scalar vs tensor
+template <class OpT, class T1, class EleT2, class ShapeT2, class T2>
+constexpr auto overload_as(const func_base<OpT> &op,
+                           const category::other<T1> &,
+                           const ewise_base<EleT2, ShapeT2, T2> &) {
+  using ele_t =
+      std::decay_t<decltype(OpT()(std::declval<T1>(), std::declval<EleT2>()))>;
+  return [](auto &&t1, auto &&t2) {
+    return make_ewise_op_result<ele_t, ShapeT2>(
+        OpT()(wheels_forward(t1), const_symbol<0>()), wheels_forward(t2));
+  };
+}
+
+// tensor vs const_expr
+template <class OpT, class EleT1, class ShapeT1, class T1, class T2>
+constexpr auto overload_as(const func_base<OpT> &op,
+                           const ewise_base<EleT1, ShapeT1, T1> &,
+                           const const_expr_base<T2> &) {
+  return [](auto &&t1, auto &&t2) {
+    return make_binary_op_expr(OpT(), as_const_coeff(wheels_forward(t1)),
+                               wheels_forward(t2));
+  };
+}
+
+// const_expr vs tensor
+template <class OpT, class T1, class EleT2, class ShapeT2, class T2>
+constexpr auto overload_as(const func_base<OpT> &op,
+                           const const_expr_base<T1> &,
+                           const ewise_base<EleT2, ShapeT2, T2> &) {
+  return [](auto &&t1, auto &&t2) {
+    return make_binary_op_expr(OpT(), wheels_forward(t1),
+                               as_const_coeff(wheels_forward(t2)));
+  };
+}
+
+namespace details {
 // auto transform(ts)
 template <class EleT, class ShapeT, class T, class FunT>
-constexpr auto transform(const tensor_base<EleT, ShapeT, T> &t, FunT &&fun) {
+constexpr auto _transform(const tensor_base<EleT, ShapeT, T> &t, FunT &&fun) {
   using ele_t = std::decay_t<decltype(fun(std::declval<EleT>()))>;
   return make_ewise_op_result<ele_t, ShapeT>(std::forward<FunT>(fun),
                                              t.derived());
 }
 template <class EleT, class ShapeT, class T, class FunT>
-constexpr auto transform(tensor_base<EleT, ShapeT, T> &&t, FunT &&fun) {
+constexpr auto _transform(tensor_base<EleT, ShapeT, T> &&t, FunT &&fun) {
   using ele_t = std::decay_t<decltype(fun(std::declval<EleT>()))>;
   return make_ewise_op_result<ele_t, ShapeT>(std::forward<FunT>(fun),
                                              std::move(t.derived()));
@@ -284,18 +319,58 @@ constexpr auto transform(tensor_base<EleT, ShapeT, T> &&t, FunT &&fun) {
 
 // cast
 template <class TargetEleT, class EleT, class ShapeT, class T>
-constexpr auto static_ecast(const tensor_base<EleT, ShapeT, T> &t) {
-  return transform(t.derived(),
-                   [](const auto &e) { return static_cast<TargetEleT>(e); })
+constexpr auto _static_ecast(const tensor_base<EleT, ShapeT, T> &t) {
+  return _transform(t.derived(),
+                    [](const auto &e) { return static_cast<TargetEleT>(e); })
 }
 template <class TargetEleT, class EleT, class ShapeT, class T>
-constexpr auto static_ecast(tensor_base<EleT, ShapeT, T> &&t) {
-  return transform(std::move(t.derived()),
-                   [](const auto &e) { return static_cast<TargetEleT>(e); });
+constexpr auto _static_ecast(tensor_base<EleT, ShapeT, T> &&t) {
+  return _transform(std::move(t.derived()),
+                    [](const auto &e) { return static_cast<TargetEleT>(e); });
+}
 }
 
-// auto normalize(ts)
-template <class T> constexpr auto normalize(T &&t) {
-  return forward<T>(t) / norm(t);
+// transform
+template <class EleT, class ShapeT, class T>
+template <class FunT>
+inline constexpr auto
+ewise_base<EleT, ShapeT, T>::transform(FunT &&fun) const & {
+  return details::_transform(derived(), std::forward<FunT>(fun));
 }
+template <class EleT, class ShapeT, class T>
+template <class FunT>
+inline auto ewise_base<EleT, ShapeT, T>::transform(FunT &&fun) & {
+  return details::_transform(derived(), std::forward<FunT>(fun));
+}
+template <class EleT, class ShapeT, class T>
+template <class FunT>
+inline auto ewise_base<EleT, ShapeT, T>::transform(FunT &&fun) && {
+  return details::_transform(std::move(derived()), std::forward<FunT>(fun));
+}
+
+// cast
+template <class EleT, class ShapeT, class T>
+template <class TargetEleT>
+inline constexpr auto ewise_base<EleT, ShapeT, T>::cast() const & {
+  return details::_static_ecast<TargetEleT>(derived());
+}
+template <class EleT, class ShapeT, class T>
+template <class TargetEleT>
+inline constexpr auto ewise_base<EleT, ShapeT, T>::cast() && {
+  return details::_static_ecast<TargetEleT>(std::move(derived()));
+}
+
+// make_tuple for ewised tensors
+//namespace details {
+//template <class EleT, class ShapeT, class InputT, class... EleTs,
+//          class... ShapeTs, class... InputTs>
+//constexpr auto
+//_make_tuple_derive_type(const ewise_base<EleT, ShapeT, InputT> &,
+//                        const ewise_base<EleTs, ShapeTs, InputTs> &...);
+//}
+//template <class T, class ... Ts>
+//constexpr auto make_tuple(T && t, Ts && ... ts) {
+//    //return 
+//}
+
 }

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "aligned.hpp"
-#include "ewise_ops.hpp"
+#include "ewise.hpp"
 #include "storage.hpp"
 
 namespace wheels {
@@ -41,7 +41,7 @@ public:
   // tensor(shape, with_elements, e1, e2, e3 ...)
   template <class... EleTs>
   constexpr tensor(const ShapeT &shape, _with_elements we, EleTs &&... eles)
-      : _storage(shape, we, forward<EleTs>(eles)...) {}
+      : _storage(shape, we, std::forward<EleTs>(eles)...) {}
 
   // tensor({e1, e2, e3 ...})
   template <class EleT,
@@ -87,7 +87,7 @@ public:
                       ::wheels::all(std::is_convertible<EleTs, ET>::value...)),
             class = std::enable_if_t<B>>
   constexpr tensor(EleTs &&... eles)
-      : _storage(ShapeT(), with_elements, forward<EleTs>(eles)...) {}
+      : _storage(ShapeT(), with_elements, std::forward<EleTs>(eles)...) {}
 
   template <class... EleTs, class = void,
             bool B = (ShapeT::dynamic_size_num == 1 &&
@@ -97,7 +97,7 @@ public:
       : _storage(details::_make_shape_from_magnitude_seq<ShapeT>(
                      sizeof...(EleTs),
                      make_const_sequence(const_size<ShapeT::rank>())),
-                 with_elements, forward<EleTs>(eles)...) {}
+                 with_elements, std::forward<EleTs>(eles)...) {}
 
   tensor(const tensor &) = default;
   tensor(tensor &&) = default;

@@ -11,7 +11,7 @@ class extend_result
           extend_result<ET, ShapeT, InputT, ExtShapeT, ExtFunT>> {
 public:
   extend_result(InputT &&in, const ExtShapeT &es, ExtFunT ef)
-      : input(forward<InputT>(in)), ext_shape(es), ext_fun(ef) {}
+      : input(std::forward<InputT>(in)), ext_shape(es), ext_fun(ef) {}
 
 public:
   InputT input;
@@ -73,7 +73,7 @@ struct as_subtensor {
   template <class SubTensorT, class... SubTs>
   constexpr decltype(auto) operator()(SubTensorT &&e,
                                       const SubTs &... subs) const {
-    return element_at(forward<SubTensorT>(e), subs...);
+    return element_at(std::forward<SubTensorT>(e), subs...);
   }
 };
 }
@@ -89,7 +89,7 @@ _extend_tensor_by(const tensor_base<InputET, InputShapeT, InputT> &,
   using shape_t = std::decay_t<decltype(
       cat2(std::declval<InputShapeT>(), std::declval<ExtShapeT>()))>;
   return extend_result<ele_t, shape_t, InputTT, ExtShapeT, ExtFunT>(
-      forward<InputTT>(input), extshape, extfun);
+      std::forward<InputTT>(input), extshape, extfun);
 }
 }
 
@@ -97,10 +97,10 @@ _extend_tensor_by(const tensor_base<InputET, InputShapeT, InputT> &,
 template <class ET, class InputT, class ST, class... SizeTs, class ExtFunT>
 constexpr auto extend_by(InputT &&input, const tensor_shape<ST, SizeTs...> &es,
                          ExtFunT ef)
-    -> decltype(details::_extend_tensor_by<ET>(input, forward<InputT>(input),
+    -> decltype(details::_extend_tensor_by<ET>(input, std::forward<InputT>(input),
                                                es, ef,
                                                make_rank_sequence(es))) {
-  return details::_extend_tensor_by<ET>(input, forward<InputT>(input), es, ef,
+  return details::_extend_tensor_by<ET>(input, std::forward<InputT>(input), es, ef,
                                         make_rank_sequence(es));
 }
 
@@ -111,14 +111,14 @@ template <class ET, class ShapeT, class T, class InputT, class ST,
 constexpr auto _extend_as_repeated(const tensor_base<ET, ShapeT, T> &,
                                    InputT &&input,
                                    const tensor_shape<ST, SizeTs...> &es) {
-  return extend_by<ET>(forward<InputT>(input), es,
+  return extend_by<ET>(std::forward<InputT>(input), es,
                        extend_result_ops::as_repeated());
 }
 }
 template <class InputT, class ST, class... SizeTs>
 constexpr auto extend_as_repeated(InputT &&input,
                                   const tensor_shape<ST, SizeTs...> &es) {
-  return details::_extend_as_repeated(input, forward<InputT>(input), es);
+  return details::_extend_as_repeated(input, std::forward<InputT>(input), es);
 }
 
 template <class ET, class ShapeT, class T, size_t FixedRank>
@@ -133,7 +133,7 @@ template <class ET, class ShapeT, class T, class ET2, class ShapeT2, class T2,
 constexpr decltype(auto)
 _extend_as_subtensor(const tensor_base<ET, ShapeT, T> &et,
                      const tensor_base<ET2, ShapeT2, T2> &, InputT &&input) {
-  return extend_by<ET>(forward<InputT>(input), et.shape(),
+  return extend_by<ET>(std::forward<InputT>(input), et.shape(),
                        extend_result_ops::as_subtensor());
 }
 // extend a subwised tensor
@@ -143,13 +143,13 @@ constexpr decltype(auto)
 _extend_as_subtensor(const subtensor_view<ET, ShapeT, T, FixedRank> &et,
                      const tensor_subwise_view<ET, ShapeT2, T2, FixedRank> &,
                      InputT &&input) {
-  return forward<InputT>(input).input;
+  return std::forward<InputT>(input).input;
 }
 }
 template <class InputT>
 inline decltype(auto) extend_as_subtensor(InputT &&input) {
   assert(input.numel() > 0);
   return details::_extend_as_subtensor(element_at_index(input, 0), input,
-                                       forward<InputT>(input));
+                                       std::forward<InputT>(input));
 }
 }
