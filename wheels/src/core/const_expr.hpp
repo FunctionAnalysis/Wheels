@@ -18,7 +18,7 @@ struct is_const_expr : std::is_base_of<const_expr_base<T>, T> {};
 template <size_t Idx> struct const_symbol : const_expr_base<const_symbol<Idx>> {
   constexpr const_symbol() {}
   template <class... ArgTs> constexpr auto operator()(ArgTs &&... args) const {
-    return std::get<Idx>(std::forward_as_tuple(forward<ArgTs>(args)...));
+    return std::get<Idx>(std::forward_as_tuple(std::forward<ArgTs>(args)...));
   }
 };
 
@@ -32,7 +32,8 @@ template <char... Cs> constexpr auto operator"" _symbol() {
 // const_coeff
 template <class T> struct const_coeff : const_expr_base<const_coeff<T>> {
   T val;
-  template <class TT> constexpr const_coeff(TT &&v) : val(forward<TT>(v)) {}
+  template <class TT>
+  constexpr const_coeff(TT &&v) : val(std::forward<TT>(v)) {}
   template <class... ArgTs> constexpr T operator()(ArgTs &&...) const {
     return val;
   }
@@ -41,7 +42,7 @@ template <class T> struct const_coeff : const_expr_base<const_coeff<T>> {
 
 template <class T>
 constexpr const_coeff<std::decay_t<T>> as_const_coeff(T &&v) {
-  return const_coeff<std::decay_t<T>>(forward<T>(v));
+  return const_coeff<std::decay_t<T>>(std::forward<T>(v));
 }
 
 // const_unary_op
@@ -51,9 +52,9 @@ struct const_unary_op : const_expr_base<const_unary_op<Op, E>> {
   E e;
   template <class OpT, class T>
   constexpr const_unary_op(OpT &&op, T &&e)
-      : op(forward<OpT>(op)), e(forward<T>(e)) {}
+      : op(std::forward<OpT>(op)), e(std::forward<T>(e)) {}
   template <class... ArgTs> constexpr auto operator()(ArgTs &&... args) const {
-    return op(e(forward<ArgTs>(args)...));
+    return op(e(std::forward<ArgTs>(args)...));
   }
   template <class V> decltype(auto) fields(V &&visitor) {
     return visitor(op, e);
@@ -73,9 +74,11 @@ struct const_binary_op : const_expr_base<const_binary_op<Op, E1, E2>> {
   E2 e2;
   template <class OpT, class T1, class T2>
   constexpr const_binary_op(OpT &&op, T1 &&e1, T2 &&e2)
-      : op(forward<OpT>(op)), e1(forward<T1>(e1)), e2(forward<T2>(e2)) {}
+      : op(std::forward<OpT>(op)), e1(std::forward<T1>(e1)),
+        e2(std::forward<T2>(e2)) {}
   template <class... ArgTs> constexpr auto operator()(ArgTs &&... args) const {
-    return op(e1(forward<ArgTs>(args)...), e2(forward<ArgTs>(args)...));
+    return op(e1(std::forward<ArgTs>(args)...),
+              e2(std::forward<ArgTs>(args)...));
   }
   template <class V> decltype(auto) fields(V &&visitor) {
     return visitor(op, e1, e2);
@@ -117,97 +120,5 @@ constexpr auto overload_as(const func_base<OpT> &, const category::other<T1> &,
     return make_binary_op_expr(OpT(), as_const_coeff(wheels_forward(v1)),
                                wheels_forward(v2));
   };
-}
-
-namespace details {
-// _has_const_expr
-template <class T, class... ArgTs>
-constexpr auto _has_const_expr(const const_expr_base<T> &, ArgTs &...) {
-  return yes();
-}
-template <class T, class = std::enable_if_t<!is_const_expr<T>::value>,
-          class... ArgTs>
-constexpr auto _has_const_expr(const T &, ArgTs &... args) {
-  return _has_const_expr(args...);
-}
-constexpr auto _has_const_expr() { return no(); }
-
-// _pass_or_evaluate
-template <class T, class TT, class... ArgTs>
-constexpr decltype(auto) _pass_or_evaluate(const const_expr_base<T> &,
-                                           TT &&expr, ArgTs &&... args) {
-  return expr(forward<ArgTs>(args)...);
-}
-template <class T, class = std::enable_if_t<!is_const_expr<T>::value>, class TT,
-          class... ArgTs>
-constexpr TT &&_pass_or_evaluate(const T &, TT &&expr, ArgTs &&...) {
-  return static_cast<TT &&>(expr);
-}
-
-// _functor_expr
-template <class FunT, class... ArgTs> struct _functor_expr;
-template <class FunT, class... ArgTs, class FT, size_t... Is, class... NewArgTs>
-constexpr decltype(auto)
-_call_functor_expr_seq(const _functor_expr<FunT, ArgTs...> &, FT &&f,
-                       const const_ints<size_t, Is...> &,
-                       NewArgTs &&... nargs) {
-  return forward<FT>(f).fun(_pass_or_evaluate(
-      std::forward<ArgTs>(std::get<Is>(forward<FT>(f).args)),
-      std::get<Is>(forward<FT>(f).args), forward<NewArgTs>(nargs)...)...);
-}
-
-template <class FunT, class... ArgTs>
-struct _functor_expr : const_expr_base<_functor_expr<FunT, ArgTs...>> {
-  FunT fun;
-  std::tuple<ArgTs...> args;
-
-  constexpr explicit _functor_expr(FunT &&f, ArgTs &&... args)
-      : fun(forward<FunT>(f)), args(forward<ArgTs>(args)...) {}
-
-  template <class... NewArgTs>
-  inline decltype(auto) operator()(NewArgTs &&... nargs) & {
-    return _call_functor_expr_seq(*this, *this,
-                                  make_const_sequence_for<ArgTs...>(),
-                                  std::forward<NewArgTs>(nargs)...);
-  }
-  template <class... NewArgTs>
-  constexpr decltype(auto) operator()(NewArgTs &&... nargs) const & {
-    return _call_functor_expr_seq(*this, *this,
-                                  make_const_sequence_for<ArgTs...>(),
-                                  std::forward<NewArgTs>(nargs)...);
-  }
-  template <class... NewArgTs>
-  inline decltype(auto) operator()(NewArgTs &&... nargs) && {
-    return _call_functor_expr_seq(*this, std::move(*this),
-                                  make_const_sequence_for<ArgTs...>(),
-                                  std::forward<NewArgTs>(nargs)...);
-  }
-
-  template <class V> decltype(auto) fields(V &&visitor) {
-    return visitor(fun, args);
-  }
-};
-
-// _smart_invoke
-template <class FunT, class... ArgTs>
-constexpr _functor_expr<FunT, ArgTs...>
-_smart_invoke(FunT &&fun, yes there_are_const_exprs, ArgTs &&... args) {
-  return _functor_expr<FunT, ArgTs...>(forward<FunT>(fun),
-                                       forward<ArgTs>(args)...);
-}
-template <class FunT, class... ArgTs>
-constexpr decltype(auto) _smart_invoke(FunT &&fun, no there_are_const_exprs,
-                                       ArgTs &&... args) {
-  return fun(forward<ArgTs>(args)...);
-}
-}
-
-// smart_invoke
-// migrate const_exprs into arguments
-template <class FunT, class... ArgTs>
-constexpr decltype(auto) smart_invoke(FunT &&fun, ArgTs &&... args) {
-  return details::_smart_invoke(forward<FunT>(fun),
-                                details::_has_const_expr(args...),
-                                forward<ArgTs>(args)...);
 }
 }

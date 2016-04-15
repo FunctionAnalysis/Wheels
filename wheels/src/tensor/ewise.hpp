@@ -1,8 +1,85 @@
 #pragma once
 
-#include "tensor.hpp"
+#include "base.hpp"
+
+#include "ewise_fwd.hpp"
 
 namespace wheels {
+
+// ewise_base
+template <class EleT, class ShapeT, class OpT, class T>
+class ewise_base
+    : public tensor_base<EleT, ShapeT, T> {};
+
+// ewise_wrapper
+template <class EleT, class ShapeT, class T>
+class ewise_wrapper
+    : public ewise_base<EleT, ShapeT, void, ewise_wrapper<EleT, ShapeT, T>> {
+public:
+    explicit ewise_wrapper(T && h) : host(std::forward<T>(h)) {}
+public:
+    T host;
+};
+
+
+// -- necessary tensor functions
+// Shape shape_of(ts);
+template <class EleT, class ShapeT, class T>
+constexpr decltype(auto)
+shape_of(const ewise_wrapper<EleT, ShapeT, T> &t) {
+  return shape_of(t.host);
+}
+
+// Scalar element_at(ts, subs ...);
+template <class EleT, class ShapeT, class T, class... SubTs>
+constexpr decltype(auto) element_at(const ewise_wrapper<EleT, ShapeT, T> &t,
+                                    const SubTs &... subs) {
+  return element_at(t.host, subs);
+}
+template <class EleT, class ShapeT, class T, class... SubTs>
+decltype(auto) element_at(ewise_wrapper<EleT, ShapeT, T> &t,
+                          const SubTs &... subs) {
+  return element_at(t.host, subs);
+}
+
+// Scalar element_at_index(ts, index);
+template <class EleT, class ShapeT, class T, class IndexT>
+constexpr decltype(auto)
+element_at_index(const ewise_wrapper<EleT, ShapeT, T> &t, const IndexT &ind) {
+  return element_at_index(t.host, ind);
+}
+template <class EleT, class ShapeT, class T, class IndexT>
+decltype(auto) element_at_index(ewise_wrapper<EleT, ShapeT, T> &t,
+                                const IndexT &ind) {
+  return element_at_index(t.host, ind);
+}
+
+// void reserve_shape(ts, shape);
+template <class EleT, class ShapeT, class T, class ST, class... SizeTs>
+void reserve_shape(ewise_wrapper<EleT, ShapeT, T> &t,
+                   const tensor_shape<ST, SizeTs...> &shape) {
+  reserve_shape(t.host, shape);
+}
+
+
+
+
+
+
+
+
+namespace details {
+template <class EleT, class ShapeT, class T, class TT>
+constexpr auto _ewise(const tensor_base<EleT, ShapeT, T> &, TT &&host) {
+  return ewise_wrapper<EleT, ShapeT, TT>(std::forward<TT>(host));
+}
+template <class EleT, class ShapeT, class OpT, class T, class TT>
+constexpr decltype(auto) _ewise(const ewise_base<EleT, ShapeT, OpT, T> &,
+                                TT &&host) {
+  return std::forward<TT>(host).derived();
+}
+}
+
 
 // ewise ops
 template <class EleT, class ShapeT, class OpT, class InputT, class... InputTs>

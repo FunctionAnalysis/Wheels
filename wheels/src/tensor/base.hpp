@@ -13,6 +13,8 @@
 #include "shape.hpp"
 
 #include "base_fwd.hpp"
+#include "aligned_fwd.hpp"
+
 
 namespace wheels {
 

@@ -2,16 +2,16 @@
 
 #include <algorithm>
 #include <numeric>
-#include <thread>
 #include <vector>
+
+#include "parallel_fwd.hpp"
 
 namespace wheels {
 
 // parallel_for_each
 template <class FunT>
-void parallel_for_each(
-    size_t n, FunT &&fun, size_t batch_num = 1,
-    size_t concurrency_num = std::thread::hardware_concurrency()) {
+void parallel_for_each(size_t n, FunT &&fun, size_t batch_num,
+                       size_t concurrency_num) {
   std::vector<std::thread> threads;
   threads.reserve(concurrency_num);
   for (size_t bid = 0; bid < n / batch_num + 1; bid++) {
@@ -34,9 +34,8 @@ void parallel_for_each(
 }
 
 template <class IterT, class FunT>
-void parallel_for_each(
-    IterT begin, IterT end, FunT &&fun, size_t batch_num = 1,
-    size_t concurrency_num = std::thread::hardware_concurrency()) {
+void parallel_for_each(IterT begin, IterT end, FunT &&fun, size_t batch_num,
+                       size_t concurrency_num) {
   std::vector<std::thread> threads;
   threads.reserve(concurrency_num);
 
@@ -63,10 +62,8 @@ void parallel_for_each(
 
 // parallel_reduce
 template <class IterT, class T, class ReduceT>
-T parallel_reduce(
-    IterT begin, IterT end, const T &initial, ReduceT &&redux,
-    size_t batch_num = 1,
-    size_t concurrency_num = std::thread::hardware_concurrency()) {
+T parallel_reduce(IterT begin, IterT end, const T &initial, ReduceT &&redux,
+                  size_t batch_num, size_t concurrency_num) {
   std::vector<std::future<T>> futures;
   futures.reserve(concurrency_num);
 

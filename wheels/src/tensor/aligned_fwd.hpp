@@ -19,13 +19,16 @@ element_at(const tensor_aligned_data_base<ET, ShapeT, T> &t,
 // tensor_continuous_data_base
 template <class ET, class ShapeT, class T> class tensor_continuous_data_base;
 
+// sub_scale_of
 template <class ET, class ShapeT, class T>
 constexpr auto sub_scale_of(const tensor_continuous_data_base<ET, ShapeT, T> &);
 
+// sub_offset_of
 template <class ET, class ShapeT, class T>
 constexpr auto
 sub_offset_of(const tensor_continuous_data_base<ET, ShapeT, T> &);
 
+// element_at
 template <class ET, class ShapeT, class T, class... SubTs>
 constexpr decltype(auto)
 element_at(const tensor_continuous_data_base<ET, ShapeT, T> &t,

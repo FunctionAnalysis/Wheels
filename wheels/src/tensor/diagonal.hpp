@@ -3,6 +3,8 @@
 #include "base.hpp"
 #include "constants.hpp"
 
+#include "diagonal_fwd.hpp"
+
 namespace wheels {
 
 // make_diag_result
@@ -11,7 +13,7 @@ class make_diag_result
     : public tensor_base<ET, ShapeT, make_diag_result<ET, ShapeT, T>> {
 public:
   constexpr explicit make_diag_result(const ShapeT &s, T &&in)
-      : _shape(s), _input(forward<T>(in)) {
+      : _shape(s), _input(std::forward<T>(in)) {
     assert(_input.numel() == min_shape_size(_shape));
   }
   constexpr const ShapeT &shape() const { return _shape; }
@@ -73,7 +75,7 @@ constexpr bool any_of(const make_diag_result<ET, ShapeT, T> &r) {
 template <class ET, class ShapeT, class T>
 class diag_view : public tensor_base<ET, ShapeT, diag_view<ET, ShapeT, T>> {
 public:
-  constexpr explicit diag_view(T &&in) : _input(forward<T>(in)) {}
+  constexpr explicit diag_view(T &&in) : _input(std::forward<T>(in)) {}
   constexpr auto shape() const {
     return make_shape(min_shape_size(_input.shape()));
   }
@@ -143,34 +145,20 @@ template <class ET, class ShapeT, class T, class TT, class NewShapeT>
 constexpr auto _make_diag(const tensor_base<ET, ShapeT, T> &, TT &&t,
                           const NewShapeT &nshape) {
   assert(t.numel() == min_shape_size(nshape));
-  return make_diag_result<ET, NewShapeT, TT>(nshape, forward<TT>(t));
+  return make_diag_result<ET, NewShapeT, TT>(nshape, std::forward<TT>(t));
 }
-}
-template <class T, class ST, class... SizeTs>
-constexpr auto make_diag(T &&t, const tensor_shape<ST, SizeTs...> &ns)
-    -> decltype(details::_make_diag(t, forward<T>(t), ns)) {
-  return details::_make_diag(t, forward<T>(t), ns);
-}
-template <class T>
-constexpr auto make_diag(T &&t)
-    -> decltype(details::_make_diag(t, forward<T>(t),
-                                    make_shape(t.numel(), t.numel()))) {
-  return details::_make_diag(t, forward<T>(t),
-                             make_shape(t.numel(), t.numel()));
 }
 
 // eye
-template <class ET = double, class ST, class... SizeTs>
+template <class ET, class ST, class... SizeTs>
 constexpr auto eye(const tensor_shape<ST, SizeTs...> &s) {
   return make_diag(ones<ET>(make_shape(min_shape_size(s))), s);
 }
-template <class ET = double, class MT, class NT>
+template <class ET, class MT, class NT>
 constexpr auto eye(const MT &m, const NT &n) {
   return make_diag(ones<ET>(make_shape(min(m, n))), make_shape(m, n));
 }
-template <class ET = double, class NT,
-          class = std::enable_if_t<!is_tensor_shape<NT>::value>>
-constexpr auto eye(const NT &n) {
+template <class ET, class NT, class> constexpr auto eye(const NT &n) {
   return make_diag(ones<ET>(make_shape(n)), make_shape(n, n));
 }
 
@@ -179,16 +167,12 @@ namespace details {
 template <class ET, class ShapeT, class T, class TT>
 constexpr auto _diag(const tensor_base<ET, ShapeT, T> &, TT &&t) {
   using shape_t = decltype(make_shape(min_shape_size(t.shape())));
-  return diag_view<ET, shape_t, TT>(forward<TT>(t));
+  return diag_view<ET, shape_t, TT>(std::forward<TT>(t));
 }
 template <class ET, class ShapeT, class T, class TT>
 constexpr decltype(auto) _diag(const make_diag_result<ET, ShapeT, T> &,
                                TT &&t) {
-  return forward<TT>(t).input();
+  return std::forward<TT>(t).input();
 }
-}
-template <class T>
-constexpr auto diag(T &&t) -> decltype(details::_diag(t, forward<T>(t))) {
-  return details::_diag(t, forward<T>(t));
 }
 }

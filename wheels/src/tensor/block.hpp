@@ -2,6 +2,8 @@
 
 #include "base.hpp"
 
+#include "block_fwd.hpp"
+
 namespace wheels {
 
 template <class ET, class ShapeT, class InputTensorT,
@@ -11,8 +13,8 @@ class block_view
                                                 SubscriptTensorTs...>> {
 public:
   constexpr block_view(InputTensorT &&in, SubscriptTensorTs &&... subts)
-      : input_tensor(forward<InputTensorT>(in)),
-        subs_tensors(forward<SubscriptTensorTs>(subts)...) {}
+      : input_tensor(std::forward<InputTensorT>(in)),
+        subs_tensors(std::forward<SubscriptTensorTs>(subts)...) {}
 
   // operator=
   template <class AnotherT>
@@ -76,14 +78,7 @@ constexpr auto _at_block(const tensor_base<InET, InShapeT, InT> &, InTT &&in,
                          SubsTensorTs &&... sts) {
   using shape_t = std::decay_t<decltype(make_shape(sts.numel()...))>;
   return block_view<InET, shape_t, InTT, SubsTensorTs...>(
-      forward<InTT>(in), forward<SubsTensorTs>(sts)...);
+      std::forward<InTT>(in), std::forward<SubsTensorTs>(sts)...);
 }
-}
-template <class InT, class... SubsTensorTs>
-constexpr auto at_block(InT &&in, SubsTensorTs &&... sts)
-    -> decltype(details::_at_block(in, forward<InT>(in),
-                                   forward<SubsTensorTs>(sts)...)) {
-  return details::_at_block(in, forward<InT>(in),
-                            forward<SubsTensorTs>(sts)...);
 }
 }

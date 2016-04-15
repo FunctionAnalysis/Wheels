@@ -1,6 +1,8 @@
 #pragma once
 
-#include "tensor.hpp"
+#include "base.hpp"
+
+#include "cat_fwd.hpp"
 
 namespace wheels {
 
@@ -31,7 +33,7 @@ public:
   using shape_type = ShapeT;
 
   constexpr cat_result(T1 &&in1, T2 &&in2)
-      : _input1(forward<T1>(in1)), _input2(forward<T2>(in2)),
+      : _input1(std::forward<T1>(in1)), _input2(std::forward<T2>(in2)),
         _shape(details::_make_cat_shape_seq(
             _input1.shape(), _input2.shape(), const_index<Axis>(),
             make_rank_sequence(_input1.shape()))) {}
@@ -58,23 +60,9 @@ constexpr auto _cat_tensor_at(const const_index<Axis> &axis,
       in1.shape(), in2.shape(), const_index<Axis>(),
       make_rank_sequence(in1.shape())));
   using ele_t = std::common_type_t<ET1, ET2>;
-  return cat_result<ele_t, shape_t, Axis, TT1, TT2>(forward<TT1>(in1),
-                                                    forward<TT2>(in2));
+  return cat_result<ele_t, shape_t, Axis, TT1, TT2>(std::forward<TT1>(in1),
+                                                    std::forward<TT2>(in2));
 }
-}
-template <size_t Axis, class T1, class T2>
-constexpr auto cat_at(const const_index<Axis> &axis, T1 &&in1, T2 &&in2)
-    -> decltype(details::_cat_tensor_at(axis, in1, in2, forward<T1>(in1),
-                                        forward<T2>(in2))) {
-  return details::_cat_tensor_at(axis, in1, in2, forward<T1>(in1),
-                                 forward<T2>(in2));
-}
-
-// cat2 (cat_at 0)
-template <class T1, class T2>
-constexpr auto cat2(T1 &&in1, T2 &&in2)
-    -> decltype(cat_at(const_index<0>(), forward<T1>(in1), forward<T2>(in2))) {
-  return cat_at(const_index<0>(), forward<T1>(in1), forward<T2>(in2));
 }
 
 // shape_of

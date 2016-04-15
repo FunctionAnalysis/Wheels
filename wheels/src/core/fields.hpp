@@ -19,7 +19,6 @@
 
 namespace wheels {
 
-
 //// fields implementations
 
 // empty classes -> nullptr_t
@@ -526,7 +525,7 @@ constexpr bool all_of_fields(const T &data, CheckFunT checker) {
 }
 
 // comparable
-template <class T, class Kind = T> struct comparable {
+template <class T, class Kind> struct comparable {
   constexpr decltype(auto) as_tuple() const {
     using result_t = decltype(tuplize(static_cast<const T &>(*this)));
     static_assert(!std::is_same<T, result_t>::value, "tuplization failed");
