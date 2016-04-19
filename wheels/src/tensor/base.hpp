@@ -16,7 +16,9 @@
 
 #include "aligned_fwd.hpp"
 #include "block_fwd.hpp"
+#include "cartesian_fwd.hpp"
 #include "cat_fwd.hpp"
+#include "ewise_fwd.hpp"
 
 namespace wheels {
 
@@ -71,7 +73,8 @@ constexpr TensorTT &&_all_as_tensor_impl(const tensor_core<TensorT> &id,
 }
 template <class T>
 constexpr auto _all_as_tensor(T &&t)
-    -> decltype(_all_as_tensor_impl(category::identify(t), std::forward<T>(t))) {
+    -> decltype(_all_as_tensor_impl(category::identify(t),
+                                    std::forward<T>(t))) {
   return _all_as_tensor_impl(category::identify(t), std::forward<T>(t));
 }
 
@@ -81,8 +84,8 @@ constexpr auto _block_seq(T &&t, const const_ints<size_t, Is...> &,
                           SubsTensorOrIntTs &&... subs)
     -> decltype(::wheels::at_block(
         std::forward<T>(t), _all_as_tensor(_eval_index_expr(
-                           std::forward<SubsTensorOrIntTs>(subs),
-                           (int64_t)size_at(t, const_index<Is>())))...)) {
+                                std::forward<SubsTensorOrIntTs>(subs),
+                                (int64_t)size_at(t, const_index<Is>())))...)) {
   return ::wheels::at_block(std::forward<T>(t),
                             _all_as_tensor(_eval_index_expr(
                                 std::forward<SubsTensorOrIntTs>(subs),
@@ -137,8 +140,14 @@ template <class T> struct tensor_core : category::object<T> {
   }
   template <class E> decltype(auto) operator[](E &&e) && {
     return details::_brackets(
-        move(derived()), details::_eval_index_expr(std::forward<E>(e), numel()));
+        move(derived()),
+        details::_eval_index_expr(std::forward<E>(e), numel()));
   }
+
+  // ewise
+  constexpr decltype(auto) ewised() const & { return ewise(derived()); }
+  decltype(auto) ewised() & { return ewise(derived()); }
+  constexpr decltype(auto) ewised() && { return ewise(std::move(derived())); }
 
   // block
   template <class... TensorOrIndexTs>
@@ -253,6 +262,20 @@ private:
         derived(), details::_eval_index_expr(subes, size(const_size<Is>()))...);
   }
 };
+
+template <class T1, class T2>
+constexpr bool operator==(const tensor_core<T1> &a, const tensor_core<T2> &b) {
+  return a.shape() == b.shape()
+             ? for_each_element(
+                   behavior_flag<break_on_false>(),
+                   [](auto &e1, auto &e2) -> bool { return e1 == e2; },
+                   a.derived(), b.derived())
+             : false;
+}
+template <class T1, class T2>
+constexpr bool operator!=(const tensor_core<T1> &a, const tensor_core<T2> &b) {
+  return !(a == b);
+}
 
 // tensor_iterator
 template <class T> struct tensor_iterator {
@@ -438,24 +461,6 @@ constexpr auto category_for_overloading(const tensor_base<ET, ShapeT, T> &,
 // tensor_op_result_base
 template <class EleT, class ShapeT, class OpT, class T>
 struct tensor_op_result_base : tensor_base<EleT, ShapeT, T> {};
-
-// t1 == t2
-template <class ShapeT, class T>
-struct tensor_op_result_base<bool, ShapeT, binary_op_eq, T>
-    : tensor_base<bool, ShapeT, T> {
-  constexpr operator bool() const {
-    return ::wheels::equals_result_of(derived());
-  }
-};
-
-// t1 != t2
-template <class ShapeT, class T>
-struct tensor_op_result_base<bool, ShapeT, binary_op_neq, T>
-    : tensor_base<bool, ShapeT, T> {
-  constexpr operator bool() const {
-    return ::wheels::not_equals_result_of(derived());
-  }
-};
 
 // -- necessary tensor functions
 // Shape shape_of(ts);

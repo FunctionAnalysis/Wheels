@@ -46,7 +46,7 @@ constexpr auto meshgrid(const tensor_shape<ST, SizeTs...> &s,
 namespace details {
 template <class ET, class ShapeT, size_t... Is>
 constexpr auto _meshgrid(const ShapeT &s, const const_ints<size_t, Is...> &) {
-  return safe_forward_as_tuple(meshgrid_result<ET, ShapeT, Is>(s)...);
+  return as_tuple(meshgrid_result<ET, ShapeT, Is>(s)...);
 }
 }
 template <class ET = size_t, class ST, class... SizeTs>
@@ -124,7 +124,7 @@ template <class CartProdT, class SubsTupleT, size_t... Is>
 constexpr auto
 _element_at_cart_prod_result_seq(CartProdT &t, SubsTupleT &subs,
                                  const const_ints<size_t, Is...> &) {
-  return safe_forward_as_tuple(
+  return as_tuple(
       element_at_index(std::get<Is>(t.inputs), std::get<Is>(subs))...);
 }
 }

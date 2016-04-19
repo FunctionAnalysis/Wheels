@@ -1,8 +1,8 @@
 #pragma once
 
-#include "base.hpp"
-
 #include "ewise_fwd.hpp"
+
+#include "base.hpp"
 
 namespace wheels {
 
@@ -128,9 +128,8 @@ constexpr auto _ewise(const tensor_base<EleT, ShapeT, T> &, TT &&host) {
   return ewise_wrapper<EleT, ShapeT, TT>(std::forward<TT>(host));
 }
 template <class EleT, class ShapeT, class T, class TT>
-constexpr decltype(auto) _ewise(const ewise_base<EleT, ShapeT, T> &,
-                                TT &&host) {
-  return std::forward<TT>(host).derived();
+constexpr TT &&_ewise(const ewise_base<EleT, ShapeT, T> &, TT &&host) {
+  return static_cast<TT &&>(host);
 }
 }
 
@@ -360,17 +359,19 @@ inline constexpr auto ewise_base<EleT, ShapeT, T>::cast() && {
   return details::_static_ecast<TargetEleT>(std::move(derived()));
 }
 
-// make_tuple for ewised tensors
-//namespace details {
-//template <class EleT, class ShapeT, class InputT, class... EleTs,
-//          class... ShapeTs, class... InputTs>
-//constexpr auto
-//_make_tuple_derive_type(const ewise_base<EleT, ShapeT, InputT> &,
-//                        const ewise_base<EleTs, ShapeTs, InputTs> &...);
-//}
-//template <class T, class ... Ts>
-//constexpr auto make_tuple(T && t, Ts && ... ts) {
-//    //return 
-//}
-
+// _as_tuple_seq
+namespace details {
+template <class FirstTT, class... TTs, size_t... Is, class FirstEleT,
+          class... EleTs, class FirstShapeT, class... ShapeTs, class FirstT,
+          class... Ts>
+constexpr auto _as_tuple_seq(std::tuple<FirstTT, TTs...> &&ts,
+                             const const_index<Is...> &,
+                             const ewise_base<FirstEleT, FirstShapeT, FirstT> &,
+                             const ewise_base<EleTs, ShapeTs, Ts> &...) {
+  using result_ele_t = std::tuple<FirstEleT, EleTs...>;
+  return make_ewise_op_result<result_ele_t, FirstShapeT>(
+      [](auto &&... es) { return as_tuple(wheels_forward(es)...); },
+      std::get<0>(ts), std::get<Is + 1>(ts)...);
+}
+}
 }

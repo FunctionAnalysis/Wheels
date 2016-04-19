@@ -3,24 +3,15 @@
 #include <iostream>
 #include <tuple>
 
-#include "macros.hpp"
 #include "const_ints.hpp"
+#include "macros.hpp"
 
 namespace wheels {
 
-using std::forward;
-using std::move;
 template <class T> constexpr T copy(const T &t) { return t; }
 
-template <class... Ts>
-constexpr std::tuple<Ts...> safe_forward_as_tuple(Ts &&... ts) {
+template <class... Ts> constexpr std::tuple<Ts...> as_tuple(Ts &&... ts) {
   return std::tuple<Ts...>(std::forward<Ts>(ts)...);
-}
-
-using std::get;
-template <size_t Idx, class T, size_t N> constexpr T &get(T (&arr)[N]) {
-  static_assert(Idx < N, "index overflow");
-  return arr[Idx];
 }
 
 using ignore_t = decltype(std::ignore);
