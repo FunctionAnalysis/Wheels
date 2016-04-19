@@ -6,9 +6,8 @@ namespace wheels {
 
 template <class ET, class ShapeT, class InputT, class ExtShapeT, class ExtFunT>
 class extend_result
-    : public tensor_op_result_base<
-          ET, ShapeT, void,
-          extend_result<ET, ShapeT, InputT, ExtShapeT, ExtFunT>> {
+    : public tensor_base<
+          ET, ShapeT, extend_result<ET, ShapeT, InputT, ExtShapeT, ExtFunT>> {
 public:
   extend_result(InputT &&in, const ExtShapeT &es, ExtFunT ef)
       : input(std::forward<InputT>(in)), ext_shape(es), ext_fun(ef) {}

@@ -7,57 +7,8 @@ namespace wheels {
 // make_diag_result
 template <class ET, class ShapeT, class T> class make_diag_result;
 
-// shape_of
-template <class ET, class ShapeT, class T>
-constexpr decltype(auto) shape_of(const make_diag_result<ET, ShapeT, T> &t);
-
-// element_at
-template <class ET, class ShapeT, class T, class SubT, class... SubTs>
-constexpr decltype(auto) element_at(const make_diag_result<ET, ShapeT, T> &t,
-                                    const SubT &sub, const SubTs &... subs);
-
-// for_each(nonzero)
-template <class FunT, class ET, class ShapeT, class T>
-bool for_each_element(behavior_flag<nonzero_only> o, FunT &fun,
-                      const make_diag_result<ET, ShapeT, T> &r);
-
-// sum_of
-template <class ET, class ShapeT, class T>
-constexpr auto sum_of(const make_diag_result<ET, ShapeT, T> &r);
-
-// norm_squared
-template <class ET, class ShapeT, class T>
-constexpr auto norm_squared(const make_diag_result<ET, ShapeT, T> &r);
-
-// all_of
-template <class ET, class ShapeT, class T>
-constexpr bool all_of(const make_diag_result<ET, ShapeT, T> &r);
-
-// any_of
-template <class ET, class ShapeT, class T>
-constexpr bool any_of(const make_diag_result<ET, ShapeT, T> &r);
-
 // diag_view
 template <class ET, class ShapeT, class T> class diag_view;
-
-// shape_of
-template <class ET, class ShapeT, class T>
-constexpr decltype(auto) shape_of(const diag_view<ET, ShapeT, T> &t);
-
-// element_at_index
-
-template <class ET, class ShapeT, class T, class IndexT>
-constexpr decltype(auto) element_at_index(const diag_view<ET, ShapeT, T> &t,
-                                          const IndexT &ind);
-template <class ET, class ShapeT, class T, class IndexT>
-decltype(auto) element_at_index(diag_view<ET, ShapeT, T> &t, const IndexT &ind);
-
-// element_at
-template <class ET, class ShapeT, class T, class SubT>
-constexpr decltype(auto) element_at(const diag_view<ET, ShapeT, T> &t,
-                                    const SubT &ind);
-template <class ET, class ShapeT, class T, class SubT>
-decltype(auto) element_at(diag_view<ET, ShapeT, T> &t, const SubT &ind);
 
 // make_diag
 namespace details {

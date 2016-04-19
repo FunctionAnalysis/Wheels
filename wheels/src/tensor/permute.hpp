@@ -9,8 +9,7 @@ namespace wheels {
 // permute_result
 template <class ET, class ShapeT, class T, size_t... Inds>
 class permute_result
-    : public tensor_op_result_base<ET, ShapeT, void,
-                                   permute_result<ET, ShapeT, T, Inds...>> {
+    : public tensor_base<ET, ShapeT, permute_result<ET, ShapeT, T, Inds...>> {
   static_assert(sizeof...(Inds) == ShapeT::rank,
                 "invalid number of inds in permute");
 

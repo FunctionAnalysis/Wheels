@@ -26,8 +26,7 @@ constexpr auto _make_cat_shape_seq(const ShapeT1 &s1, const ShapeT2 &s2,
 // cat_result
 template <class ET, class ShapeT, size_t Axis, class T1, class T2>
 class cat_result
-    : public tensor_op_result_base<ET, ShapeT, void,
-                                   cat_result<ET, ShapeT, Axis, T1, T2>> {
+    : public tensor_base<ET, ShapeT, cat_result<ET, ShapeT, Axis, T1, T2>> {
 public:
   using value_type = ET;
   using shape_type = ShapeT;

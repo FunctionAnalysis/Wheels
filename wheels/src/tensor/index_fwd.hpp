@@ -7,25 +7,6 @@ namespace wheels {
 template <class ET, class ShapeT, class IndexTensorT, class InputTensorT>
 class index_view;
 
-// shape_of
-template <class ET, class ShapeT, class IndexTensorT, class InputTensorT>
-constexpr decltype(auto)
-shape_of(const index_view<ET, ShapeT, IndexTensorT, InputTensorT> &ir);
-
-// element_at
-template <class ET, class ShapeT, class IndexTensorT, class InputTensorT,
-          class... SubTs>
-constexpr decltype(auto)
-element_at(const index_view<ET, ShapeT, IndexTensorT, InputTensorT> &ir,
-           const SubTs &... subs);
-
-// element_at_index
-template <class ET, class ShapeT, class IndexTensorT, class InputTensorT,
-          class IndexT>
-constexpr decltype(auto)
-element_at_index(const index_view<ET, ShapeT, IndexTensorT, InputTensorT> &ir,
-                 const IndexT &ind);
-
 // at_indices
 namespace details {
 template <class InputShapeT, class InputET, class InputTensorT,

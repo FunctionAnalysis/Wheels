@@ -328,7 +328,7 @@ constexpr std::enable_if_t<Val, ThenT &&>
 conditional(const const_ints<T, Val> &, ThenT &&thenv, ElseT &&elsev) {
   return static_cast<ThenT &&>(thenv);
 }
-template <class T, T Val, class ThenT, class ElseT, bool _B = Val>
+template <class T, T Val, class ThenT, class ElseT, bool _B>
 constexpr std::enable_if_t<!_B, ElseT &&>
 conditional(const const_ints<T, Val> &, ThenT &&thenv, ElseT &&elsev) {
   return static_cast<ElseT &&>(elsev);

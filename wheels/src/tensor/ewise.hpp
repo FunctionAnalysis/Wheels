@@ -106,18 +106,6 @@ constexpr bool any_of(const ewise_wrapper<ET, ShapeT, T> &t) {
   return any_of(t.host);
 }
 
-// equals_result_of
-template <class ET, class ShapeT, class T>
-constexpr bool equals_result_of(const ewise_wrapper<ET, ShapeT, T> &t) {
-  return equals_result_of(t.host);
-}
-
-// not_equals_result_of
-template <class ET, class ShapeT, class T>
-constexpr bool not_equals_result_of(const ewise_wrapper<ET, ShapeT, T> &t) {
-  return not_equals_result_of(t.host);
-}
-
 // Scalar sum(s)
 template <class ET, class ShapeT, class T>
 ET sum_of(const ewise_wrapper<ET, ShapeT, T> &t) {
@@ -237,9 +225,12 @@ constexpr decltype(auto) element_at_index(
       ts, make_const_sequence_for<InputT, InputTs...>(), index);
 }
 
-// all tensors
-template <class OpT, class EleT, class ShapeT, class T, class... EleTs,
-          class... ShapeTs, class... Ts>
+// all tensors (not overload == and !=)
+template <class OpT,
+          class = std::enable_if_t<!std::is_same<OpT, binary_op_eq>::value &&
+                                   !std::is_same<OpT, binary_op_neq>::value>,
+          class EleT, class ShapeT, class T, class... EleTs, class... ShapeTs,
+          class... Ts>
 constexpr auto overload_as(const func_base<OpT> &op,
                            const ewise_base<EleT, ShapeT, T> &t,
                            const ewise_base<EleTs, ShapeTs, Ts> &... ts) {

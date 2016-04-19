@@ -11,8 +11,8 @@ namespace wheels {
 template <class ET, class ShapeT, class T, class MapFunT,
           interpolate_method_enum IPMethod>
 class remap_result
-    : public tensor_op_result_base<
-          ET, ShapeT, void, remap_result<ET, ShapeT, T, MapFunT, IPMethod>> {
+    : public tensor_base<ET, ShapeT,
+                         remap_result<ET, ShapeT, T, MapFunT, IPMethod>> {
 public:
   constexpr remap_result(T &&in, const ShapeT &s, MapFunT m, ET o)
       : _input(std::forward<T>(in)), _output_shape(s), _subs_output2input(m),

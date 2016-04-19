@@ -12,13 +12,21 @@
 
 #include "shape.hpp"
 
-#include "base_fwd.hpp"
-
 #include "aligned_fwd.hpp"
+#include "base_fwd.hpp"
 #include "block_fwd.hpp"
 #include "cartesian_fwd.hpp"
 #include "cat_fwd.hpp"
+#include "constants_fwd.hpp"
+#include "diagonal_fwd.hpp"
 #include "ewise_fwd.hpp"
+#include "index_fwd.hpp"
+#include "iota_fwd.hpp"
+#include "map_fwd.hpp"
+#include "permute_fwd.hpp"
+#include "remap_fwd.hpp"
+#include "reshape_fwd.hpp"
+#include "tensor_fwd.hpp"
 
 namespace wheels {
 
@@ -449,18 +457,6 @@ struct tensor_base<ET, tensor_shape<ST, MT, NT>, T> : tensor_core<T> {
   decltype(auto) t() & { return ::wheels::transpose(derived()); }
   decltype(auto) t() && { return ::wheels::transpose(std::move(derived())); }
 };
-
-// category_for_overloading
-// common_func
-template <class ET, class ShapeT, class T, class OpT>
-constexpr auto category_for_overloading(const tensor_base<ET, ShapeT, T> &,
-                                        const common_func<OpT> &) {
-  return category_tensor<ET, ShapeT, T>();
-}
-
-// tensor_op_result_base
-template <class EleT, class ShapeT, class OpT, class T>
-struct tensor_op_result_base : tensor_base<EleT, ShapeT, T> {};
 
 // -- necessary tensor functions
 // Shape shape_of(ts);

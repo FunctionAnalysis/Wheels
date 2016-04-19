@@ -2,9 +2,7 @@
 
 #include <iostream>
 
-#include "../core/const_ints.hpp"
-
-#include "shape.hpp"
+#include "shape_fwd.hpp"
 
 namespace wheels {
 
@@ -16,9 +14,6 @@ template <class T1, class T2>
 constexpr bool operator!=(const tensor_core<T1> &a, const tensor_core<T2> &b);
 
 template <class ET, class ShapeT, class T> struct tensor_base;
-
-template <class EleT, class ShapeT, class OpT, class T>
-struct tensor_op_result_base;
 
 // -- necessary tensor functions
 // Shape shape_of(ts);
@@ -123,13 +118,6 @@ constexpr bool all_of(const tensor_base<ET, ShapeT, T> &t);
 // bool any(s)
 template <class ET, class ShapeT, class T>
 constexpr bool any_of(const tensor_base<ET, ShapeT, T> &t);
-// equals_result_of
-template <class ET, class ShapeT, class T>
-constexpr bool equals_result_of(const tensor_base<ET, ShapeT, T> &t);
-
-// not_equals_result_of
-template <class ET, class ShapeT, class T>
-constexpr bool not_equals_result_of(const tensor_base<ET, ShapeT, T> &t);
 
 // Scalar sum(s)
 template <class ET, class ShapeT, class T>

@@ -55,7 +55,7 @@ private:
 };
 
 // tensor_map
-template <class ET, class ShapeT, class PtrT = ET *>
+template <class ET, class ShapeT, class PtrT>
 class tensor_map
     : public tensor_map_storage<ET, ShapeT, PtrT, tensor_map<ET, ShapeT, PtrT>,
                                 ShapeT::is_static> {
