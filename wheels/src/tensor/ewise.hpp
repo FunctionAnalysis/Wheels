@@ -2,6 +2,8 @@
 
 #include "ewise_fwd.hpp"
 
+#include "../core/overloads.hpp"
+
 #include "base.hpp"
 
 namespace wheels {
@@ -235,21 +237,18 @@ constexpr decltype(auto) element_at_index(
       ts, make_const_sequence_for<InputT, InputTs...>(), index);
 }
 
-// other ops are overloaded as ewise operation results defaultly
 // all tensors
-template <class OpT, class EleT1, class ShapeT1, class T1, class EleT2,
-          class ShapeT2, class T2>
+template <class OpT, class EleT, class ShapeT, class T, class... EleTs,
+          class... ShapeTs, class... Ts>
 constexpr auto overload_as(const func_base<OpT> &op,
-                           const ewise_base<EleT1, ShapeT1, T1> &,
-                           const ewise_base<EleT2, ShapeT2, T2> &) {
-  assert((std::is_same<OpT, binary_op_eq>::value ||
-          std::is_same<OpT, binary_op_neq>::value ||
-          all_same(t.shape(), ts.shape()...)));
+                           const ewise_base<EleT, ShapeT, T> &t,
+                           const ewise_base<EleTs, ShapeTs, Ts> &... ts) {
+  assert(all_same(t.shape(), ts.shape()...));
   using ele_t = std::decay_t<decltype(
-      OpT()(std::declval<EleT1>(), std::declval<EleT2>()))>;
-  return [](auto &&t1, auto &&t2) {
-    return make_ewise_op_result<ele_t, ShapeT1>(OpT(), wheels_forward(t1),
-                                                wheels_forward(t2));
+      OpT()(std::declval<EleT>(), std::declval<EleTs>()...))>;
+  return [](auto &&t, auto &&... ts) {
+    return make_ewise_op_result<ele_t, ShapeT>(OpT(), wheels_forward(t),
+                                               wheels_forward(ts)...);
   };
 }
 

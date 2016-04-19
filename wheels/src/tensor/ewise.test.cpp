@@ -1,6 +1,9 @@
 #include <gtest/gtest.h>
 
-#include "../../tensor"
+#include "ewise.hpp"
+
+#include "constants.hpp"
+#include "tensor.hpp"
 
 using namespace wheels;
 using namespace wheels::literals;
@@ -20,8 +23,8 @@ TEST(tensor, ewise_ops1) {
 
 TEST(tensor, ewise_ops2) {
   auto t1 = ones(10, 100).eval();
-  auto r1 = sin(t1);
-  auto r2 = r1 + t1 * 2.0;
+  auto r1 = sin(t1.ewised());
+  auto r2 = r1 + t1.ewised() * 2.0;
   auto rr = min(t1, r2);
 
   rr.for_each([](double e) { ASSERT_EQ(e, min(1.0, sin(1) + 2)); });
