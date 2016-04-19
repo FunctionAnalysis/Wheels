@@ -17,20 +17,22 @@ int main(){
 ```
 We can do more with the string:
 ```cpp
- // show only letters
-println(greeting[where('a' <= greeting && greeting <= 'Z')]);
+auto greeting = "hello world! 123456"_ts;
+println(greeting);
+// show only letters
+println(greeting[where('a' <= greeting && greeting <= 'z' ||
+                       'A' <= greeting && greeting <= 'Z')]);
 
 // reverse the string
-println(greeting[last - iota(greeting.numel())]); 
-println(greeting[range(greeting.numel(), -1, -1)]);
+println(greeting[last - iota(length)]);
+println(greeting[range(length, -1, -1)]);
 
 // concatenate the strings
-println(cat(greeting, " "_ts, "let's rock!"_ts)); 
+println(cat(greeting, " "_ts, "let's rock!"_ts));
 
-// promote the string from a vector to a matrix, 
+// promote the string from a vector to a matrix,
 // repeat it along rows, and transpose it
-println(repeat(promote(1_c, greeting), 3, 1).t()); 
-
+println(repeat(promote(1_c, greeting), 3, 1).t());
 ```
 
 ## Features
