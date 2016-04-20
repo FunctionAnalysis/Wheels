@@ -1,6 +1,7 @@
 #pragma once
 
 #include "base_fwd.hpp"
+#include "tensor_fwd.hpp"
 
 namespace wheels {
 

@@ -8,19 +8,6 @@ template <class ET, class ShapeT, class InputTensorT,
           class... SubscriptTensorTs>
 class block_view;
 
-// shape_of
-template <class ET, class ShapeT, class InputTensorT,
-          class... SubscriptTensorTs>
-constexpr auto
-shape_of(const block_view<ET, ShapeT, InputTensorT, SubscriptTensorTs...> &t);
-
-// element_at
-template <class ET, class ShapeT, class InputTensorT,
-          class... SubscriptTensorTs, class... SubTs>
-constexpr decltype(auto)
-element_at(const block_view<ET, ShapeT, InputTensorT, SubscriptTensorTs...> &t,
-           const SubTs &... subs);
-
 // at_block
 namespace details {
 template <class InET, class InShapeT, class InT, class InTT,

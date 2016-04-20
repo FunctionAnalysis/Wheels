@@ -3,6 +3,9 @@
 #include "ewise.hpp"
 
 #include "constants.hpp"
+#include "permute.hpp"
+#include "block.hpp"
+#include "iota.hpp"
 #include "tensor.hpp"
 
 using namespace wheels;
@@ -25,7 +28,7 @@ TEST(tensor, ewise_ops2) {
   auto t1 = ones(10, 100).eval();
   auto r1 = sin(t1.ewised());
   auto r2 = r1 + t1.ewised() * 2.0;
-  auto rr = min(t1, r2);
+  auto rr = min(t1.ewised(), r2);
 
   rr.for_each([](double e) { ASSERT_EQ(e, min(1.0, sin(1) + 2)); });
   rr.eval().for_each([](double e) { ASSERT_EQ(e, min(1.0, sin(1) + 2)); });
@@ -48,14 +51,14 @@ TEST(tensor, ewise_ops2) {
       rr(length / 2, (length - 20) / 2);  // same with rr(100/2, (200-20)/2)
   auto e3 = rr(9, (length / 10 + 2) * 2); // same with rr(10, (200/10+2)*2)
   auto e4 = rr(last, last / 3);           // last = length-1
-  ASSERT_TRUE((vecx(e1, e2, e3, e4) == efirst).all());
+  ASSERT_TRUE(vecx(e1, e2, e3, e4).ewised().equals(efirst).all());
 }
 
 TEST(tensor, ewise_ops3) {
   auto fun = max(0_symbol + 1, 1_symbol * 2);
   auto result1 = fun(3, 2); // 0_symbol->3, 1_symbol->2, result1 = 4 of int
   ASSERT_EQ(result1, max(4, 4));
-  auto result2 = fun(vec3(2, 3, 4), ones(3) * 2); // 0_symbol->vec3(2, 3, 4),
+  auto result2 = fun(vec3(2, 3, 4).ewised(), ones(3).ewised() * 2); // 0_symbol->vec3(2, 3, 4),
   auto e0 = element_at(result2, 0ull);
   auto e1 = element_at(result2, 1ull);
   auto e2 = element_at(result2, 2ull);

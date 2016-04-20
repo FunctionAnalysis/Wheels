@@ -155,7 +155,7 @@ template <class T> struct tensor_core : category::object<T> {
   // ewise
   constexpr decltype(auto) ewised() const & { return ewise(derived()); }
   decltype(auto) ewised() & { return ewise(derived()); }
-  constexpr decltype(auto) ewised() && { return ewise(std::move(derived())); }
+  decltype(auto) ewised() && { return ewise(std::move(derived())); }
 
   // block
   template <class... TensorOrIndexTs>
@@ -276,7 +276,7 @@ constexpr bool operator==(const tensor_core<T1> &a, const tensor_core<T2> &b) {
   return a.shape() == b.shape()
              ? for_each_element(
                    behavior_flag<break_on_false>(),
-                   [](auto &e1, auto &e2) -> bool { return e1 == e2; },
+                   [](auto &&e1, auto &&e2) -> bool { return e1 == e2; },
                    a.derived(), b.derived())
              : false;
 }
@@ -445,17 +445,19 @@ struct tensor_base<ET, tensor_shape<ST, MT, NT>, T> : tensor_core<T> {
   const tensor_base &base() const { return *this; }
 
   constexpr tensor_type eval() const & { return tensor_type(derived()); }
-  tensor_type eval() && { return tensor_type(move(derived())); }
+  tensor_type eval() && { return tensor_type(std::move(derived())); }
   constexpr operator tensor_type() const { return eval(); }
 
   constexpr auto rows() const { return size(const_index<0>()); }
   constexpr auto cols() const { return size(const_index<1>()); }
 
   constexpr decltype(auto) t() const & {
-    return ::wheels::transpose(derived());
+    return ::wheels::transpose(this->derived());
   }
-  decltype(auto) t() & { return ::wheels::transpose(derived()); }
-  decltype(auto) t() && { return ::wheels::transpose(std::move(derived())); }
+  decltype(auto) t() & { return ::wheels::transpose(this->derived()); }
+  decltype(auto) t() && {
+    return ::wheels::transpose(std::move(this->derived()));
+  }
 };
 
 // -- necessary tensor functions
@@ -578,7 +580,7 @@ template <class FunT, class T, class... Ts>
 bool for_each_element(behavior_flag<break_on_false>, FunT &fun,
                       const tensor_core<T> &t, Ts &... ts) {
   assert(all_same(t.shape(), ts.shape()...));
-  return for_each_subscript_if(t.shape(), [&](auto &... subs) {
+  return for_each_subscript_if(t.shape(), [&](auto &&... subs) {
     return fun(element_at(t.derived(), subs...),
                element_at(ts.derived(), subs...)...);
   });
@@ -588,7 +590,7 @@ template <class FunT, class T, class... Ts>
 bool for_each_element(behavior_flag<break_on_false>, FunT &fun,
                       tensor_core<T> &t, Ts &... ts) {
   assert(all_same(t.shape(), ts.shape()...));
-  return for_each_subscript_if(t.shape(), [&](auto &... subs) {
+  return for_each_subscript_if(t.shape(), [&](auto &&... subs) {
     return fun(element_at(t.derived(), subs...),
                element_at(ts.derived(), subs...)...);
   });
@@ -616,7 +618,7 @@ bool for_each_element(behavior_flag<nonzero_only>, FunT &fun, tensor_core<T> &t,
                       Ts &... ts) {
   assert(all_same(t.shape(), ts.shape()...));
   bool visited_all = true;
-  for_each_subscript(t.shape(), [&](auto &... subs) {
+  for_each_subscript(t.shape(), [&](auto &&... subs) {
     decltype(auto) e = element_at(t.derived(), subs...);
     if (!is_zero(e)) {
       fun(e, element_at(ts.derived(), subs...)...);
@@ -663,7 +665,7 @@ template <class T> size_t nonzero_elements_count(const tensor_core<T> &t) {
 template <class T, class E, class ReduceT>
 E reduce_elements(const tensor_core<T> &t, E initial, ReduceT &red) {
   for_each_element(behavior_flag<unordered>(),
-                   [&initial, &red](auto &e) { initial = red(initial, e); },
+                   [&initial, &red](auto &&e) { initial = red(initial, e); },
                    t.derived());
   return initial;
 }
