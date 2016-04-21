@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "const_expr.hpp"
+#include "smart_invoke.hpp"
 #include "types.hpp"
 
 using namespace wheels;

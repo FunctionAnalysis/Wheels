@@ -1,7 +1,8 @@
 #pragma once
 
+#include "const_ints_fwd.hpp"
 #include "object_fwd.hpp"
-#include "overloads.hpp"
+#include "overloads_fwd.hpp"
 
 #include "const_expr_fwd.hpp"
 
@@ -53,7 +54,8 @@ struct const_unary_op : const_expr_base<const_unary_op<Op, E>> {
   template <class OpT, class T>
   constexpr const_unary_op(OpT &&op, T &&e)
       : op(std::forward<OpT>(op)), e(std::forward<T>(e)) {}
-  template <class... ArgTs> constexpr auto operator()(ArgTs &&... args) const {
+  template <class... ArgTs>
+  constexpr decltype(auto) operator()(ArgTs &&... args) const {
     return op(e(std::forward<ArgTs>(args)...));
   }
   template <class V> decltype(auto) fields(V &&visitor) {
@@ -76,7 +78,8 @@ struct const_binary_op : const_expr_base<const_binary_op<Op, E1, E2>> {
   constexpr const_binary_op(OpT &&op, T1 &&e1, T2 &&e2)
       : op(std::forward<OpT>(op)), e1(std::forward<T1>(e1)),
         e2(std::forward<T2>(e2)) {}
-  template <class... ArgTs> constexpr auto operator()(ArgTs &&... args) const {
+  template <class... ArgTs>
+  constexpr decltype(auto) operator()(ArgTs &&... args) const {
     return op(e1(std::forward<ArgTs>(args)...),
               e2(std::forward<ArgTs>(args)...));
   }
@@ -121,4 +124,28 @@ constexpr auto overload_as(const func_base<OpT> &, const category::other<T1> &,
                                wheels_forward(v2));
   };
 }
+
+// const_call_list
+template <class FunT, class... RecordedArgTs>
+struct const_call_list
+    : const_expr_base<const_call_list<FunT, RecordedArgTs...>> {
+  FunT functor;
+  std::tuple<RecordedArgTs...> args;
+
+  constexpr explicit const_call_list(FunT f, RecordedArgTs &&... as)
+      : functor(f), args(std::forward<RecordedArgTs>(as)...) {}
+  template <class... ArgTs>
+  constexpr decltype(auto) operator()(ArgTs &&... as) const {
+    return const_cast<const_call_list &>(*this)
+        ._call_seq(make_const_sequence_for<RecordedArgTs...>(),
+                   std::forward<ArgTs>(as)...);
+  }
+
+private:
+  template <size_t... Is, class... ArgTs>
+  constexpr decltype(auto) _call_seq(const const_ints<size_t, Is...> &,
+                                     ArgTs &&... as) {
+    return functor(std::get<Is>(args)(std::forward<ArgTs>(as)...)...);
+  }
+};
 }

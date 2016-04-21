@@ -33,7 +33,7 @@ namespace details {
 template <class TupleT, class V, size_t... Is>
 auto _fields_of_tuple_seq(TupleT &&t, V &&visitor,
                           const const_ints<size_t, Is...> &) {
-  return std::forward<V>(visitor)(get<Is>(std::forward<TupleT>(t))...);
+  return std::forward<V>(visitor)(std::get<Is>(std::forward<TupleT>(t))...);
 }
 }
 

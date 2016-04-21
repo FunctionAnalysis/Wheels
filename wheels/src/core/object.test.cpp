@@ -19,5 +19,4 @@ TEST(core, object) {
   ASSERT_TRUE(get_kind_name(category::identify(1_symbol)) == "object");
   int a[5];
   category::identify(a);
-  get<0>(a);
 }
