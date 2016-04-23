@@ -143,7 +143,7 @@ struct const_call_list
 
 private:
   template <size_t... Is, class... ArgTs>
-  constexpr decltype(auto) _call_seq(const const_ints<size_t, Is...> &,
+  decltype(auto) _call_seq(const const_ints<size_t, Is...> &,
                                      ArgTs &&... as) {
     return functor(std::get<Is>(args)(std::forward<ArgTs>(as)...)...);
   }

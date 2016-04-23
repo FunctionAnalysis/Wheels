@@ -1,8 +1,9 @@
 #include <gtest/gtest.h>
+#include <random>
 
-#include "../../core"
+#include "../core/fields.hpp"
 
-#include "ewise_ops.hpp"
+#include "ewise.hpp"
 #include "index.hpp"
 #include "iota.hpp"
 #include "tensor.hpp"

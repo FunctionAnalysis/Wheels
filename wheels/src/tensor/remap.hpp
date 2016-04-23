@@ -132,7 +132,7 @@ template <class ToST, class... ToSizeTs, class ET, class ShapeT, class T,
 constexpr auto remap(const tensor_base<ET, ShapeT, T> &t,
                      const tensor_shape<ToST, ToSizeTs...> &toshape,
                      MapFunT mapfun, ET2 &&outlier,
-                     interpolate_method<IPMethod>) {
+                     const interpolate_method<IPMethod> &) {
   return remap_result<ET, tensor_shape<ToST, ToSizeTs...>, const T &, MapFunT,
                       IPMethod>(t.derived(), toshape, mapfun,
                                 std::forward<ET2>(outlier));

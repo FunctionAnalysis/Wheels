@@ -496,9 +496,7 @@ constexpr auto _to_size_rep(const const_ints<K, Val> &) {
 }
 
 // make_shape
-template <class T = size_t> constexpr auto make_shape() {
-  return tensor_shape<T>();
-}
+template <class T> constexpr auto make_shape() { return tensor_shape<T>(); }
 template <class SizeT, class... SizeTs>
 constexpr auto make_shape(const SizeT &s, const SizeTs &... sizes) {
   using value_t = std::common_type_t<typename int_traits<SizeT>::type,
@@ -535,13 +533,11 @@ constexpr auto cat2(const const_ints<K, Vs...> &a,
                     const tensor_shape<T, Ss...> &b) {
   return cat(make_shape(const_ints<K, Vs>()...), b);
 }
-template <class T, class... Ss, class IntT,
-          class = std::enable_if_t<std::is_integral<IntT>::value>>
+template <class T, class... Ss, class IntT, class>
 constexpr auto cat2(const tensor_shape<T, Ss...> &a, const IntT &b) {
   return cat(a, make_shape(b));
 }
-template <class T, class... Ss, class IntT,
-          class = std::enable_if_t<std::is_integral<IntT>::value>>
+template <class T, class... Ss, class IntT, class>
 constexpr auto cat2(const IntT &a, const tensor_shape<T, Ss...> &b) {
   return cat(make_shape(a), b);
 }

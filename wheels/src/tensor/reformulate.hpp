@@ -2,6 +2,8 @@
 
 #include "base.hpp"
 
+#include "reformulate_fwd.hpp"
+
 namespace wheels {
 
 // reformulate_result
@@ -59,16 +61,9 @@ template <class ET, class ShapeT, class T, class TT, class NewShapeT,
           class SubsMapFunT>
 constexpr auto _reformulate(const tensor_base<ET, ShapeT, T> &, TT &&t,
                             const NewShapeT &s, SubsMapFunT fun) {
-  return reformulate_result<ET, NewShapeT, TT, SubsMapFunT>(s, fun,
-                                                            std::forward<TT>(t));
+  return reformulate_result<ET, NewShapeT, TT, SubsMapFunT>(
+      s, fun, std::forward<TT>(t));
 }
-}
-// reformulate
-template <class T, class ST, class... SizeTs, class SubsMapFunT>
-constexpr auto reformulate(T &&t, const tensor_shape<ST, SizeTs...> &shape,
-                           SubsMapFunT fun)
-    -> decltype(details::_reformulate(t, std::forward<T>(t), shape, fun)) {
-  return details::_reformulate(t, std::forward<T>(t), shape, fun);
 }
 
 // repeat
@@ -99,14 +94,5 @@ constexpr auto _repeat_impl(const tensor_base<ET, ShapeT, T> &, TT &&t,
       make_shape((std::get<Is>(rps) * t.size(const_index<Is>()))...),
       _repeat_subs_functor<ShapeT>(t.shape()));
 }
-}
-
-template <class T, class... RepTs>
-constexpr auto repeat(T &&t, const RepTs &... reps)
-    -> decltype(details::_repeat_impl(t, std::forward<T>(t),
-                                      std::forward_as_tuple(reps...),
-                                      make_const_sequence_for<RepTs...>())) {
-  return details::_repeat_impl(t, std::forward<T>(t), std::forward_as_tuple(reps...),
-                               make_const_sequence_for<RepTs...>());
 }
 }

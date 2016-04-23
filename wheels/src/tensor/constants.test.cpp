@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "constants.hpp"
-#include "ewise_ops.hpp"
+#include "ewise.hpp"
 
 using namespace wheels;
 using namespace wheels::literals;

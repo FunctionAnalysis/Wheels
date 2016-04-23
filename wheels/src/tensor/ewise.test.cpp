@@ -13,22 +13,22 @@ using namespace wheels::literals;
 using namespace wheels::index_tags;
 
 TEST(tensor, ewise_ops1) {
-  ASSERT_TRUE(ewise(cube2()) * ewise(cube2()) == cube2());
-  ASSERT_TRUE(ewise(ones(50, 50)) * ewise(zeros(50, 50)) == zeros(50, 50));
+  ASSERT_TRUE(cube2().ewised() * cube2() == cube2());
+  ASSERT_TRUE(ones(50, 50).ewised() * zeros(50, 50) == zeros(50, 50));
   auto t1 = zeros(100, 100, 100);
-  auto t2 = ewise(t1) + 1;
+  auto t2 = t1 + 1;
   ASSERT_TRUE(t2 == ones(100, 100, 100));
 
   auto a = ones(50, 30);
-  auto b = a.t().t().ewised().ewised() + 1;
-  ASSERT_TRUE(b == a.ewised() * 2);
+  auto b = a.t().t() + 1;
+  ASSERT_TRUE(b == a * 2);
 }
 
 TEST(tensor, ewise_ops2) {
   auto t1 = ones(10, 100).eval();
-  auto r1 = sin(t1.ewised());
-  auto r2 = r1 + t1.ewised() * 2.0;
-  auto rr = min(t1.ewised(), r2);
+  auto r1 = sin(t1);
+  auto r2 = r1 + t1 * 2.0;
+  auto rr = min(t1, r2);
 
   rr.for_each([](double e) { ASSERT_EQ(e, min(1.0, sin(1) + 2)); });
   rr.eval().for_each([](double e) { ASSERT_EQ(e, min(1.0, sin(1) + 2)); });

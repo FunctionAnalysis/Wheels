@@ -2,6 +2,7 @@
 
 #include "map.hpp"
 #include "reshape.hpp"
+#include "shape.hpp"
 #include "tensor.hpp"
 
 using namespace wheels;

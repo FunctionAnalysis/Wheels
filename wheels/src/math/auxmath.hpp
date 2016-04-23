@@ -11,6 +11,16 @@
 namespace wheels {
 namespace auxmath {
 
+// matrix mul A * B
+template <class ET, class ST1, class MT1, class NT1, class T1, class ST2,
+          class MT2, class NT2, class T2>
+auto matrix_mul(const tensor_base<ET, tensor_shape<ST1, MT1, NT1>, T1> &A,
+        const tensor_base<ET, tensor_shape<ST2, MT2, NT2>, T2> &B,
+        bool *succeed = nullptr) {
+    // todo
+}
+
+
 // solve min |AX - B|
 // A: m x n
 // B: m x nrhs

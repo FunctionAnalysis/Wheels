@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "diagonal.hpp"
-#include "ewise_ops.hpp"
+#include "ewise.hpp"
 #include "iota.hpp"
 #include "map.hpp"
 #include "tensor.hpp"

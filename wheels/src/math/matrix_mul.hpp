@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../tensor/shape.hpp"
 #include "../tensor/base.hpp"
 
 namespace wheels {
@@ -10,9 +11,8 @@ class matrix_mul_result;
 // matrix + matrix -> matrix
 template <class EleT, class ShapeT, class A, class B>
 class matrix_mul_result<EleT, ShapeT, A, B, true, true>
-    : public tensor_op_result_base<
-          EleT, ShapeT, binary_op_mul,
-          matrix_mul_result<EleT, ShapeT, A, B, true, true>> {
+    : public tensor_base<EleT, ShapeT,
+                         matrix_mul_result<EleT, ShapeT, A, B, true, true>> {
 public:
   using value_type = EleT;
   using shape_type = ShapeT;
@@ -35,11 +35,13 @@ private:
   A _a;
   B _b;
 };
-// matrix + vector -> vector
+
+
+// matrix * vector -> vector
 template <class EleT, class ShapeT, class A, class B>
 class matrix_mul_result<EleT, ShapeT, A, B, true, false>
-    : public tensor_op_result_base<
-          EleT, ShapeT, binary_op_mul,
+    : public tensor_base<
+          EleT, ShapeT,
           matrix_mul_result<EleT, ShapeT, A, B, true, false>> {
 public:
   using value_type = EleT;
@@ -61,11 +63,11 @@ private:
   A _a;
   B _b;
 };
-// vector + matrix -> vector
+// vector * matrix -> vector
 template <class EleT, class ShapeT, class A, class B>
 class matrix_mul_result<EleT, ShapeT, A, B, false, true>
-    : public tensor_op_result_base<
-          EleT, ShapeT, binary_op_mul,
+    : public tensor_base<
+          EleT, ShapeT, 
           matrix_mul_result<EleT, ShapeT, A, B, false, true>> {
 public:
   using value_type = EleT;
@@ -105,10 +107,10 @@ element_at(const matrix_mul_result<EleT, ShapeT, A, B, AIsMat, BIsMat> &m,
 
 template <class ST1, class MT1, class NT1, class E1, class T1, class ST2,
           class MT2, class NT2, class E2, class T2>
-struct overloaded<binary_op_mul,
-                  category_tensor<E1, tensor_shape<ST1, MT1, NT1>, T1>,
-                  category_tensor<E2, tensor_shape<ST2, MT2, NT2>, T2>> {
-  template <class A, class B> constexpr auto operator()(A &&a, B &&b) const {
+auto overload_as(const func_base<binary_op_mul> &,
+                  const tensor_base<E1, tensor_shape<ST1, MT1, NT1>, T1> &,
+                  const tensor_base<E2, tensor_shape<ST2, MT2, NT2>, T2> &) {
+  return [](auto && a, auto && b) {
     assert(size_at(a, const_index<1>()) == size_at(b, const_index<0>()));
     using shape_t = std::decay_t<decltype(make_shape(
         size_at(a, const_index<0>()), size_at(b, const_index<1>())))>;

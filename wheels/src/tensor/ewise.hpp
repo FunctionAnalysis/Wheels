@@ -79,15 +79,36 @@ constexpr decltype(auto) element_at_index(
       ts, make_const_sequence_for<InputT, InputTs...>(), index);
 }
 
-// all tensors (not overload == and !=)
+// most ewise binray ops apply on two tensors (except certain ops like below)
+namespace details {
+template <class T> struct _op_naturally_ewise : yes {};
+template <> struct _op_naturally_ewise<binary_op_eq> : no {};
+template <> struct _op_naturally_ewise<binary_op_neq> : no {};
+template <> struct _op_naturally_ewise<binary_op_mul> : no {};
+}
 template <class OpT,
-          class = std::enable_if_t<!std::is_same<OpT, binary_op_eq>::value &&
-                                   !std::is_same<OpT, binary_op_neq>::value>,
+          class = std::enable_if_t<details::_op_naturally_ewise<OpT>::value>,
           class EleT, class ShapeT, class T, class... EleTs, class... ShapeTs,
           class... Ts>
 constexpr auto overload_as(const func_base<OpT> &op,
-                           const ewise_base<EleT, ShapeT, T> &t,
-                           const ewise_base<EleTs, ShapeTs, Ts> &... ts) {
+                           const tensor_base<EleT, ShapeT, T> &t,
+                           const tensor_base<EleTs, ShapeTs, Ts> &... ts) {
+  assert(all_same(t.shape(), ts.shape()...));
+  using ele_t = std::decay_t<decltype(
+      OpT()(std::declval<EleT>(), std::declval<EleTs>()...))>;
+  return [](auto &&t, auto &&... ts) {
+    return make_ewise_op_result<ele_t, ShapeT>(OpT(), wheels_forward(t),
+                                               wheels_forward(ts)...);
+  };
+}
+
+// all ewise binary ops apply on ewised tensor
+// t1.ewise() == t2, t1.ewise() * t2
+template <class OpT, class EleT, class ShapeT, class T, class... EleTs,
+          class... ShapeTs, class... Ts>
+constexpr auto overload_as(const func_base<OpT> &op,
+                           const ewise_wrapper<EleT, ShapeT, T> &t,
+                           const tensor_base<EleTs, ShapeTs, Ts> &... ts) {
   assert(all_same(t.shape(), ts.shape()...));
   using ele_t = std::decay_t<decltype(
       OpT()(std::declval<EleT>(), std::declval<EleTs>()...))>;
@@ -100,7 +121,7 @@ constexpr auto overload_as(const func_base<OpT> &op,
 // tensor vs scalar
 template <class OpT, class EleT1, class ShapeT1, class T1, class T2>
 constexpr auto overload_as(const func_base<OpT> &op,
-                           const ewise_base<EleT1, ShapeT1, T1> &,
+                           const tensor_base<EleT1, ShapeT1, T1> &,
                            const category::other<T2> &) {
   using ele_t =
       std::decay_t<decltype(OpT()(std::declval<EleT1>(), std::declval<T2>()))>;
@@ -114,7 +135,7 @@ constexpr auto overload_as(const func_base<OpT> &op,
 template <class OpT, class T1, class EleT2, class ShapeT2, class T2>
 constexpr auto overload_as(const func_base<OpT> &op,
                            const category::other<T1> &,
-                           const ewise_base<EleT2, ShapeT2, T2> &) {
+                           const tensor_base<EleT2, ShapeT2, T2> &) {
   using ele_t =
       std::decay_t<decltype(OpT()(std::declval<T1>(), std::declval<EleT2>()))>;
   return [](auto &&t1, auto &&t2) {
@@ -126,7 +147,7 @@ constexpr auto overload_as(const func_base<OpT> &op,
 // tensor vs const_expr
 template <class OpT, class EleT1, class ShapeT1, class T1, class T2>
 constexpr auto overload_as(const func_base<OpT> &op,
-                           const ewise_base<EleT1, ShapeT1, T1> &,
+                           const tensor_base<EleT1, ShapeT1, T1> &,
                            const const_expr_base<T2> &) {
   return [](auto &&t1, auto &&t2) {
     return make_binary_op_expr(OpT(), as_const_coeff(wheels_forward(t1)),
@@ -138,7 +159,7 @@ constexpr auto overload_as(const func_base<OpT> &op,
 template <class OpT, class T1, class EleT2, class ShapeT2, class T2>
 constexpr auto overload_as(const func_base<OpT> &op,
                            const const_expr_base<T1> &,
-                           const ewise_base<EleT2, ShapeT2, T2> &) {
+                           const tensor_base<EleT2, ShapeT2, T2> &) {
   return [](auto &&t1, auto &&t2) {
     return make_binary_op_expr(OpT(), wheels_forward(t1),
                                as_const_coeff(wheels_forward(t2)));

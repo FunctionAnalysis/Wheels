@@ -34,6 +34,10 @@ public:
 template <class EleT, class ShapeT, class T>
 using ewise_base = tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>;
 
+template <class EleT, class ShapeT, class T>
+using ewise_wrapper =
+    tensor_extension_wrapper<extension_tag_ewise, EleT, ShapeT, T>;
+
 // ewise
 template <class T>
 constexpr auto ewise(T &&t)

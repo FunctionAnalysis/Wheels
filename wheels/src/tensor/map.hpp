@@ -1,6 +1,7 @@
 #pragma once
 
 #include "aligned.hpp"
+#include "base.hpp"
 
 #include "map_fwd.hpp"
 

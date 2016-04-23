@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "remap.hpp"
+#include "tensor.hpp"
 
 using namespace wheels;
 

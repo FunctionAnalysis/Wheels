@@ -3,11 +3,12 @@
 #include "../../core"
 
 #include "cat.hpp"
-#include "ewise_ops.hpp"
+#include "downgrade.hpp"
+#include "ewise.hpp"
 #include "permute.hpp"
 #include "reformulate.hpp"
-#include "subwise.hpp"
 #include "tensor.hpp"
+#include "upgrade.hpp"
 
 using namespace wheels;
 using namespace wheels::literals;

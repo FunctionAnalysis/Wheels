@@ -45,8 +45,8 @@ TEST(tensor, tensor) {
           .numel() == 8);
 
   static_assert(tensor_of_rank<double, 5>::rank == 5, "");
-  auto t = zeros(3, 3, 3, 3, 3).transform([](double e) { return e + 1; });
-  auto tt = static_ecast<int>(std::move(t));
+  auto t = zeros(3, 3, 3, 3, 3).ewised().transform([](double e) { return e + 1; });
+  auto tt = std::move(t).ewised().cast<int>();
   tt.eval().for_each([](int e) { ASSERT_EQ(e, 1); });
 }
 
