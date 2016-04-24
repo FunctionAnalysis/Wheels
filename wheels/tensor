@@ -20,3 +20,5 @@
 #include "./src/tensor/upgrade.hpp"
 #include "./src/tensor/downgrade.hpp"
 #include "./src/tensor/tensor.hpp"
+#include "./src/tensor/matrix.hpp"
+#include "./src/tensor/vector.hpp"

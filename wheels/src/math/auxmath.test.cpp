@@ -4,7 +4,6 @@
 #include "../../tensor"
 
 #include "auxmath.hpp"
-#include "matrix_mul.hpp"
 
 using namespace wheels;
 

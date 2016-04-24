@@ -82,7 +82,7 @@ template <class ET, class ShapeT, class T, class E, class ReduceT,
           size_t... Inds>
 constexpr E reduce_elements(const permute_result<ET, ShapeT, T, Inds...> &t,
                             E initial, ReduceT &&red) {
-  return reduce_elements(t.input, move(initial), std::forward<ReduceT>(red));
+  return reduce_elements(t.input, std::move(initial), std::forward<ReduceT>(red));
 }
 
 // norm_squared

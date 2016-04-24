@@ -148,7 +148,7 @@ template <class T> struct tensor_core : category::object<T> {
   }
   template <class E> decltype(auto) operator[](E &&e) && {
     return details::_brackets(
-        move(derived()),
+        std::move(derived()),
         details::_eval_index_expr(std::forward<E>(e), numel()));
   }
 
@@ -171,7 +171,7 @@ template <class T> struct tensor_core : category::object<T> {
   }
   template <class... TensorOrIndexTs>
   auto block(TensorOrIndexTs &&... tois) && {
-    return details::_block_seq(move(derived()),
+    return details::_block_seq(std::move(derived()),
                                make_const_sequence_for<TensorOrIndexTs...>(),
                                std::forward<TensorOrIndexTs>(tois)...);
   }
@@ -360,105 +360,6 @@ struct tensor_base<ET, tensor_shape<ST>, T> : tensor_core<T> {
   }
 };
 
-// 1 dimensional tensor (vector)
-template <class ET, class ST, class NT, class T>
-struct tensor_base<ET, tensor_shape<ST, NT>, T> : tensor_core<T> {
-  using value_type = ET;
-  using shape_type = tensor_shape<ST, NT>;
-  static constexpr size_t rank = 1;
-  using tensor_type = tensor<value_type, shape_type>;
-  static_assert(!is_tensor_shape<ET>::value,
-                "value_type should not be a tensor_shape");
-
-  static constexpr auto get_value_type() { return types<value_type>(); }
-  static constexpr auto get_shape_type() { return types<shape_type>(); }
-
-  const tensor_base &base() const { return *this; }
-
-  constexpr tensor_type eval() const & { return tensor_type(this->derived()); }
-  tensor_type eval() && { return tensor_type(std::move(this->derived())); }
-  constexpr operator tensor_type() const { return eval(); }
-
-  // xyzw
-  constexpr decltype(auto) x() const {
-    return ::wheels::element_at(this->derived(), 0);
-  }
-  constexpr decltype(auto) y() const {
-    return ::wheels::element_at(this->derived(), 1);
-  }
-  constexpr decltype(auto) z() const {
-    return ::wheels::element_at(this->derived(), 2);
-  }
-  constexpr decltype(auto) w() const {
-    return ::wheels::element_at(this->derived(), 3);
-  }
-
-  decltype(auto) x() { return ::wheels::element_at(this->derived(), 0); }
-  decltype(auto) y() { return ::wheels::element_at(this->derived(), 1); }
-  decltype(auto) z() { return ::wheels::element_at(this->derived(), 2); }
-  decltype(auto) w() { return ::wheels::element_at(this->derived(), 3); }
-
-  // rgba
-  constexpr decltype(auto) r() const {
-    return ::wheels::element_at(this->derived(), 0);
-  }
-  constexpr decltype(auto) g() const {
-    return ::wheels::element_at(this->derived(), 1);
-  }
-  constexpr decltype(auto) b() const {
-    return ::wheels::element_at(this->derived(), 2);
-  }
-  constexpr decltype(auto) a() const {
-    return ::wheels::element_at(this->derived(), 3);
-  }
-
-  decltype(auto) r() { return ::wheels::element_at(derived(), 0); }
-  decltype(auto) g() { return ::wheels::element_at(derived(), 1); }
-  decltype(auto) b() { return ::wheels::element_at(derived(), 2); }
-  decltype(auto) a() { return ::wheels::element_at(derived(), 3); }
-
-  template <class ST2, class NT2, class ET2, class T2>
-  constexpr decltype(auto)
-  dot(const tensor_base<ET2, tensor_shape<ST2, NT2>, T2> &t) const {
-    return ::wheels::dot(*this, t);
-  }
-  template <class ST2, class NT2, class ET2, class T2>
-  constexpr decltype(auto)
-  cross(const tensor_base<ET2, tensor_shape<ST2, NT2>, T2> &t) const {
-    return ::wheels::cross(*this, t);
-  }
-};
-
-// 2 dimensional tensor (matrix)
-template <class ET, class ST, class MT, class NT, class T>
-struct tensor_base<ET, tensor_shape<ST, MT, NT>, T> : tensor_core<T> {
-  using value_type = ET;
-  using shape_type = tensor_shape<ST, MT, NT>;
-  static constexpr size_t rank = 2;
-  using tensor_type = tensor<value_type, shape_type>;
-  static_assert(!is_tensor_shape<ET>::value,
-                "value_type should not be a tensor_shape");
-
-  static constexpr auto get_value_type() { return types<value_type>(); }
-  static constexpr auto get_shape_type() { return types<shape_type>(); }
-
-  const tensor_base &base() const { return *this; }
-
-  constexpr tensor_type eval() const & { return tensor_type(derived()); }
-  tensor_type eval() && { return tensor_type(std::move(derived())); }
-  constexpr operator tensor_type() const { return eval(); }
-
-  constexpr auto rows() const { return size(const_index<0>()); }
-  constexpr auto cols() const { return size(const_index<1>()); }
-
-  constexpr decltype(auto) t() const & {
-    return ::wheels::transpose(this->derived());
-  }
-  decltype(auto) t() & { return ::wheels::transpose(this->derived()); }
-  decltype(auto) t() && {
-    return ::wheels::transpose(std::move(this->derived()));
-  }
-};
 
 // -- necessary tensor functions
 // Shape shape_of(ts);

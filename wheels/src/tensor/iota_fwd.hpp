@@ -1,5 +1,7 @@
 #pragma once
 
+#include "base_fwd.hpp"
+
 namespace wheels {
 
 template <class ET, class ShapeT, bool StaticShape = ShapeT::is_static>

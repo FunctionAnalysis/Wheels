@@ -145,7 +145,7 @@ constexpr auto remap(tensor_base<ET, ShapeT, T> &&t,
                      MapFunT mapfun, ET2 &&outlier,
                      interpolate_method<IPMethod>) {
   return remap_result<ET, tensor_shape<ToST, ToSizeTs...>, T, MapFunT,
-                      IPMethod>(move(t.derived()), toshape, mapfun,
+                      IPMethod>(std::move(t.derived()), toshape, mapfun,
                                 std::forward<ET2>(outlier));
 }
 }

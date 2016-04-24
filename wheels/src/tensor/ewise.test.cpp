@@ -7,6 +7,7 @@
 #include "block.hpp"
 #include "iota.hpp"
 #include "tensor.hpp"
+#include "matrix.hpp"
 
 using namespace wheels;
 using namespace wheels::literals;

@@ -1,12 +1,14 @@
 #include <gtest/gtest.h>
 
 #include "block.hpp"
+#include "cartesian.hpp"
 #include "constants.hpp"
 #include "ewise.hpp"
 #include "iota.hpp"
-#include "cartesian.hpp"
+#include "matrix.hpp"
 #include "permute.hpp"
 #include "tensor.hpp"
+#include "vector.hpp"
 
 using namespace wheels;
 using namespace wheels::index_tags;
@@ -21,7 +23,7 @@ TEST(tensor, meshgrid) {
     ASSERT_TRUE(yy.block(range(0, last), i) == ones(4, 1) * i);
   }
   std::tie(xx, yy) = meshgrid<double>(make_shape(40, 40));
-  ASSERT_TRUE(xx.t() == yy);
+  ASSERT_TRUE(transpose(xx) == yy);
 }
 
 TEST(tensor, coordinate) {

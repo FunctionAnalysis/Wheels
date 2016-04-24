@@ -5,6 +5,7 @@
 #include "constants.hpp"
 #include "permute.hpp"
 #include "tensor.hpp"
+#include "matrix.hpp"
 
 using namespace wheels;
 using namespace wheels::literals;
