@@ -29,14 +29,14 @@ public:
     assign_elements(*this, another.derived());
     return *this;
   }
-  template <class InputT2, class = std::enable_if_t<details::_is_same_intrinsic<
-                               InputT, InputT2>::value>>
-  subtensor_view &
-  operator=(const subtensor_view<ET, SubShapeT, InputT2, FixedRank> &t) {
-    input = t.input;
-    fixed_subs = t.fixed_subs;
-    return *this;
-  }
+  //template <class InputT2, class = std::enable_if_t<details::_is_same_intrinsic<
+  //                             InputT, InputT2>::value>>
+  //subtensor_view &
+  //operator=(const subtensor_view<ET, SubShapeT, InputT2, FixedRank> &t) {
+  //  input = t.input;
+  //  fixed_subs = t.fixed_subs;
+  //  return *this;
+  //}
 
 public:
   InputT input;

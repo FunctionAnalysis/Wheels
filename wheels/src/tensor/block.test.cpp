@@ -19,14 +19,17 @@ TEST(tensor, block) {
   matx a(make_shape(4, 5), with_elements, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
          13, 14, 15, 16, 17, 18, 19, 20);
 
+  auto r = range(0, 5);
+  auto s = r.shape();
+
   println(a.size(const_index<1>()));
   println(range(0, 5));
   println(a.block(0, range(0, last)).shape());
-  ASSERT_TRUE(a.block(0, range(0, last)) == rowvecx(1.0, 2.0, 3.0, 4.0, 5.0));
-  ASSERT_TRUE(a.block(1, range(0, last)) == rowvecx(6, 7, 8, 9, 10));
+  ASSERT_TRUE(a.block(0, range(0, last)) == rowvecx({1.0, 2.0, 3.0, 4.0, 5.0}));
+  ASSERT_TRUE(a.block(1, range(0, last)) == rowvecx({6, 7, 8, 9, 10}));
 
-  ASSERT_TRUE(a.block(0, range(0, 2, last)) == rowvecx(1, 3, 5));
-  ASSERT_TRUE(a.block(1, range(0, 2, last)) == rowvecx(6, 8, 10));
+  ASSERT_TRUE(a.block(0, range(0, 2, last)) == rowvecx({1, 3, 5}));
+  ASSERT_TRUE(a.block(1, range(0, 2, last)) == rowvecx({6, 8, 10}));
 
   // 1, 3, 5
   // 16, 18, 20

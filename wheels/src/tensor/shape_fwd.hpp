@@ -15,9 +15,7 @@ constexpr auto min_shape_size(const tensor_shape<T, SizeT, SizeTs...> &shape);
 template <class T, class... SizeTs>
 constexpr auto make_rank_sequence(const tensor_shape<T, SizeTs...> &shape);
 
-template <class T = size_t> constexpr auto make_shape();
-template <class SizeT, class... SizeTs>
-constexpr auto make_shape(const SizeT &s, const SizeTs &... sizes);
+template <class... SizeTs> constexpr auto make_shape(const SizeTs &... sizes);
 
 template <class T, class K, class... S1s, class... S2s>
 constexpr auto cat2(const tensor_shape<T, S1s...> &t1,

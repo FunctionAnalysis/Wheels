@@ -496,15 +496,22 @@ constexpr auto _to_size_rep(const const_ints<K, Val> &) {
 }
 
 // make_shape
-template <class T> constexpr auto make_shape() { return tensor_shape<T>(); }
+namespace details {
+template <class T = size_t> constexpr auto _make_shape() {
+  return tensor_shape<T>();
+}
 template <class SizeT, class... SizeTs>
-constexpr auto make_shape(const SizeT &s, const SizeTs &... sizes) {
+constexpr auto _make_shape(const SizeT &s, const SizeTs &... sizes) {
   using value_t = std::common_type_t<typename int_traits<SizeT>::type,
                                      typename int_traits<SizeTs>::type...>;
   return tensor_shape<value_t, decltype(details::_to_size_rep<value_t>(s)),
                       decltype(details::_to_size_rep<value_t>(sizes))...>(
       details::_to_size_rep<value_t>(s),
       details::_to_size_rep<value_t>(sizes)...);
+}
+}
+template <class... SizeTs> constexpr auto make_shape(const SizeTs &... sizes) {
+  return details::_make_shape(sizes...);
 }
 
 // cat2

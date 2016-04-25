@@ -153,30 +153,50 @@ template <class ET, class SizeT> constexpr auto iota(const SizeT &s) {
 
 // range
 namespace details {
-inline intmax_t _range_count(intmax_t t1, intmax_t t2) {
+template <class T1, class T2>
+constexpr size_t
+_range_count(const T1 &t1, const T2 &t2,
+             std::enable_if_t<std::is_floating_point<T1>::value ||
+                              std::is_floating_point<T2>::value> * = nullptr) {
   assert(t2 != 0);
-  return (size_t)conditional((t1 >= 0) != (t2 >= 0), 0, t1 / t2 + 1);
+  return (size_t)conditional(t1 >= 0 != t2 >= 0, 0, std::floor(t1 / t2) + 1.0);
+}
+template <class T1, class T2>
+constexpr size_t _range_count(
+    const T1 &t1, const T2 &t2,
+    std::enable_if_t<is_int<T1>::value && is_int<T2>::value> * = nullptr) {
+  assert(t2 != 0);
+  return (size_t)conditional(t1 >= const_int<0>() != t2 >= const_int<0>(), 0,
+                             t1 / t2 + 1);
 }
 
 struct _range_impl {
-  inline auto operator()(intmax_t b, intmax_t s, intmax_t e) const {
-    return b +
-           iota_result<intmax_t, tensor_shape<size_t, size_t>>(
-               make_shape<size_t>(_range_count(e - b, s))) *
-               s;
+  template <class BeginT, class StepT, class EndT>
+  constexpr auto operator()(BeginT &&b, StepT &&s, EndT &&e) const {
+    using _t =
+        std::common_type_t<typename scalar_traits<std::decay_t<BeginT>>::type,
+                           typename scalar_traits<std::decay_t<StepT>>::type,
+                           typename scalar_traits<std::decay_t<EndT>>::type>;
+    return std::forward<BeginT>(b) +
+           iota<_t>(_range_count(e - b, s)) * std::forward<StepT>(s);
   }
-  inline auto operator()(intmax_t b, intmax_t e) const {
-    return b + iota_result<intmax_t, tensor_shape<size_t, size_t>>(
-                   make_shape<size_t>(e - b + 1));
+  template <class BeginT, class EndT>
+  constexpr auto operator()(BeginT &&b, EndT &&e) const {
+    using _t =
+        std::common_type_t<typename scalar_traits<std::decay_t<BeginT>>::type,
+                           typename scalar_traits<std::decay_t<EndT>>::type>;
+    return std::forward<BeginT>(b) + iota<_t>((size_t)(e - b + const_int<1>()));
   }
 };
 }
 template <class BeginT, class StepT, class EndT>
-constexpr decltype(auto) range(const BeginT &b, const StepT &s, const EndT &e) {
-  return smart_invoke(details::_range_impl(), b, s, e);
+constexpr decltype(auto) range(BeginT &&b, StepT &&s, EndT &&e) {
+  return smart_invoke(details::_range_impl(), std::forward<BeginT>(b),
+                      std::forward<StepT>(s), std::forward<EndT>(e));
 }
 template <class BeginT, class EndT>
-constexpr decltype(auto) range(const BeginT &b, const EndT &e) {
-  return smart_invoke(details::_range_impl(), b, e);
+constexpr decltype(auto) range(BeginT &&b, EndT &&e) {
+  return smart_invoke(details::_range_impl(), std::forward<BeginT>(b),
+                      std::forward<EndT>(e));
 }
 }

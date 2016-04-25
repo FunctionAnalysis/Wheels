@@ -21,7 +21,7 @@ TEST(tensor, cat) {
   ASSERT_TRUE(ab == "12345abcdefg12345"_ts);
 
   auto result =
-      cat(vecx(1, 2, 3), vec2(4, 5), vecx(6, 7, 8, 9, 10), vecx(11)).ewised() ==
-      vecx(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
+      cat(vec3(1, 2, 3), vec2(4, 5), vecx({6, 7, 8, 9, 10}), vecx({11})).ewised() ==
+      vecx({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11});
   result.for_each([](bool b) { ASSERT_TRUE(b); });
 }

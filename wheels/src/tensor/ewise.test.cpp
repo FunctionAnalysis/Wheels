@@ -52,7 +52,7 @@ TEST(tensor, ewise_ops2) {
       rr(length / 2, (length - 20) / 2);  // same with rr(100/2, (200-20)/2)
   auto e3 = rr(9, (length / 10 + 2) * 2); // same with rr(10, (200/10+2)*2)
   auto e4 = rr(last, last / 3);           // last = length-1
-  ASSERT_TRUE(vecx(e1, e2, e3, e4).ewised().equals(efirst).all());
+  ASSERT_TRUE((vecx({e1, e2, e3, e4}).ewised().equals(efirst).all()));
 }
 
 TEST(tensor, ewise_ops3) {

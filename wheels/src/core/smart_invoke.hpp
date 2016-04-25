@@ -10,7 +10,7 @@ namespace wheels {
 namespace details {
 // _has_const_expr
 template <class T, class... ArgTs>
-constexpr auto _has_const_expr(const const_expr_base<T> &, ArgTs &...) {
+constexpr yes _has_const_expr(const const_expr_base<T> &, ArgTs &...) {
   return yes();
 }
 template <class T, class = std::enable_if_t<!is_const_expr<T>::value>,
@@ -18,7 +18,7 @@ template <class T, class = std::enable_if_t<!is_const_expr<T>::value>,
 constexpr auto _has_const_expr(const T &, ArgTs &... args) {
   return _has_const_expr(args...);
 }
-constexpr auto _has_const_expr() { return no(); }
+constexpr no _has_const_expr() { return no(); }
 
 // _pass_or_evaluate
 template <class T, class TT, class... ArgTs>

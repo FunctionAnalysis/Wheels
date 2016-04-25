@@ -16,42 +16,48 @@ TEST(tensor, tensor) {
 
   vec3().for_each([](double e) { ASSERT_EQ(e, 0.0); });
   vec3(5, 5, 5).for_each([](double e) { ASSERT_EQ(e, 5.0); });
-  vecx(6, 6, 6).for_each([](double e) { ASSERT_EQ(e, 6.0); });
-  cubex_<double>(make_shape(3, 4, 5))
-      .for_each([](double e) { ASSERT_EQ(e, 0.0); });
-  matx(make_shape(100, 100), 123)
-      .for_each([](double e) { ASSERT_EQ(e, 123.0); });
-  matx(make_shape(2, 2), with_elements, 7, 7, 7, 7)
-      .for_each([](double e) { ASSERT_EQ(e, 7.0); });
+  vecx({6, 6, 6}).for_each([](double e) { ASSERT_EQ(e, 6.0); });
+  cubex_<double>(make_shape(3, 4, 5)).for_each([](double e) {
+    ASSERT_EQ(e, 0.0);
+  });
+  matx(make_shape(100, 100), 123).for_each([](double e) {
+    ASSERT_EQ(e, 123.0);
+  });
+  matx(make_shape(2, 2), with_elements, 7, 7, 7, 7).for_each([](double e) {
+    ASSERT_EQ(e, 7.0);
+  });
   vec3({15.0, 15.0, 15.0}).for_each([](double e) { ASSERT_EQ(e, 15.0); });
   vecx({16.0, 16.0, 16.0}).for_each([](double e) { ASSERT_EQ(e, 16.0); });
-  matx(make_shape(2, 2), {17.0, 17.0, 17.0, 17.0})
-      .for_each([](double e) { ASSERT_EQ(e, 17.0); });
+  matx(make_shape(2, 2), {17.0, 17.0, 17.0, 17.0}).for_each([](double e) {
+    ASSERT_EQ(e, 17.0);
+  });
 
   double data[] = {8.0, 8.0, 8.0, 8.0};
   vec_<double, 4>(data, data + 4).for_each([](double e) { ASSERT_EQ(e, 8.0); });
   vecx_<double>(data, data + 4).for_each([](double e) { ASSERT_EQ(e, 8.0); });
 
-  matx(make_shape(2, 2), data, data + 4)
-      .for_each([](double e) { ASSERT_EQ(e, 8.0); });
+  matx(make_shape(2, 2), data, data + 4).for_each([](double e) {
+    ASSERT_EQ(e, 8.0);
+  });
 
-  ASSERT_TRUE(vecx(1, 2, 3).numel() == 3);
-  ASSERT_TRUE(vecx(1, 2, 3, 4).numel() == 4);
-  ASSERT_TRUE(vecx(1, 2, 3, 4, 5).numel() == 5);
+  ASSERT_TRUE(vecx({1, 2, 3}).numel() == 3);
+  ASSERT_TRUE(vecx({1, 2, 3, 4}).numel() == 4);
+  ASSERT_TRUE(vecx({1, 2, 3, 4, 5}).numel() == 5);
   ASSERT_TRUE(
       (tensor<double,
               tensor_shape<size_t, const_size<2>, size_t, const_size<2>>>(
-           1, 2, 3, 4, 5, 6, 7, 8))
+           {1, 2, 3, 4, 5, 6, 7, 8}))
           .numel() == 8);
 
   static_assert(tensor_of_rank<double, 5>::rank == 5, "");
-  auto t = zeros(3, 3, 3, 3, 3).ewised().transform([](double e) { return e + 1; });
+  auto t =
+      zeros(3, 3, 3, 3, 3).ewised().transform([](double e) { return e + 1; });
   auto tt = std::move(t).ewised().cast<int>();
   tt.eval().for_each([](int e) { ASSERT_EQ(e, 1); });
 }
 
 TEST(tensor, element) {
-  vecx v1(0, 1, 2, 3, 4, 5, 6, 7, 8);
+  vecx v1({0, 1, 2, 3, 4, 5, 6, 7, 8});
   ASSERT_TRUE(v1.numel() == 9);
   for (size_t i = 0; i < 8; i++) {
     ASSERT_TRUE(v1[i] == i);
@@ -76,7 +82,7 @@ TEST(tensor, demo) {
   // t3: a 3-vector, with static shape, initialized with 1, 2, 3
   vec3 t3(1, 2, 3);
   // t4: a 3-vector, with dynamic shape, initialized with 1, 2, 3
-  vecx t4(1, 2, 3);
+  vecx t4({1, 2, 3});
   // t5: a 5x5 matrix, with dynamic shape, filed with 5's
   matx t5(make_shape(5, 5), 5);
   // static shaped tensor types are stack allocated, and satisfy standard layout
