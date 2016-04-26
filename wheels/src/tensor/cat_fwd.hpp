@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../core/const_ints.hpp"
+
 #include "base_fwd.hpp"
 
 namespace wheels {

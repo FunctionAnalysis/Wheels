@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../core/utility_fwd.hpp"
+
 #include "shape_fwd.hpp"
 #include "base_fwd.hpp"
 

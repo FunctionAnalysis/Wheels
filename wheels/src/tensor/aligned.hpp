@@ -1,6 +1,10 @@
 #pragma once
 
+#include "../core/utility.hpp"
+
 #include "aligned_fwd.hpp"
+
+#include "base.hpp"
 
 namespace wheels {
 
@@ -15,15 +19,15 @@ template <class T> constexpr auto ptr_of(const tensor_core<T> &t) {
 template <class ET, class ShapeT, class T>
 class tensor_aligned_data_base : public tensor_base<ET, ShapeT, T> {
 public:
-  constexpr auto ptr() const { return ::wheels::ptr_of(derived()); }
-  auto ptr() { return ::wheels::ptr_of(derived()); }
+  constexpr auto ptr() const { return ptr_of(this->derived()); }
+  auto ptr() { return ptr_of(this->derived()); }
   template <size_t Idx>
   constexpr auto sub_scale(const const_index<Idx> &i) const {
-    return ::wheels::sub_scale_of(derived(), i);
+    return sub_scale_of(this->derived(), i);
   }
   template <size_t Idx>
   constexpr auto sub_offset(const const_index<Idx> &i) const {
-    return ::wheels::sub_offset_of(derived(), i);
+    return sub_offset_of(this->derived(), i);
   }
 };
 
@@ -100,7 +104,7 @@ element_at_index(tensor_continuous_data_base<ET, ShapeT, T> &t,
 
 // for_each_element
 template <class FunT, class ET, class ShapeT, class T, class... Ts>
-bool for_each_element(behavior_flag<index_ascending>, FunT &fun,
+bool for_each_element(behavior_flag<index_ascending>, FunT fun,
                       const tensor_continuous_data_base<ET, ShapeT, T> &t,
                       Ts &... ts) {
   assert(all_same(t.shape(), ts.shape()...));
@@ -110,7 +114,7 @@ bool for_each_element(behavior_flag<index_ascending>, FunT &fun,
   return true;
 }
 template <class FunT, class ET, class ShapeT, class T, class... Ts>
-bool for_each_element(behavior_flag<index_ascending>, FunT &fun,
+bool for_each_element(behavior_flag<index_ascending>, FunT fun,
                       tensor_continuous_data_base<ET, ShapeT, T> &t,
                       Ts &... ts) {
   assert(all_same(t.shape(), ts.shape()...));
@@ -122,7 +126,7 @@ bool for_each_element(behavior_flag<index_ascending>, FunT &fun,
 
 // for_each_element_with_short_circuit
 template <class FunT, class ET, class ShapeT, class T, class... Ts>
-bool for_each_element(behavior_flag<break_on_false>, FunT &fun,
+bool for_each_element(behavior_flag<break_on_false>, FunT fun,
                       const tensor_continuous_data_base<ET, ShapeT, T> &t,
                       Ts &... ts) {
   assert(all_same(t.shape(), ts.shape()...));
@@ -137,7 +141,7 @@ bool for_each_element(behavior_flag<break_on_false>, FunT &fun,
 }
 
 template <class FunT, class ET, class ShapeT, class T, class... Ts>
-bool for_each_element(behavior_flag<break_on_false>, FunT &fun,
+bool for_each_element(behavior_flag<break_on_false>, FunT fun,
                       tensor_continuous_data_base<ET, ShapeT, T> &t,
                       Ts &... ts) {
   assert(all_same(t.shape(), ts.shape()...));
@@ -153,7 +157,7 @@ bool for_each_element(behavior_flag<break_on_false>, FunT &fun,
 
 // nonzero_only
 template <class FunT, class ET, class ShapeT, class T, class... Ts>
-bool for_each_element(behavior_flag<nonzero_only>, FunT &fun,
+bool for_each_element(behavior_flag<nonzero_only>, FunT fun,
                       const tensor_continuous_data_base<ET, ShapeT, T> &t,
                       Ts &... ts) {
   assert(all_same(t.shape(), ts.shape()...));
@@ -170,7 +174,7 @@ bool for_each_element(behavior_flag<nonzero_only>, FunT &fun,
 }
 
 template <class FunT, class ET, class ShapeT, class T, class... Ts>
-bool for_each_element(behavior_flag<nonzero_only>, FunT &fun,
+bool for_each_element(behavior_flag<nonzero_only>, FunT fun,
                       tensor_continuous_data_base<ET, ShapeT, T> &t,
                       Ts &... ts) {
   assert(all_same(t.shape(), ts.shape()...));

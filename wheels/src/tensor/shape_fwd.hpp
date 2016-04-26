@@ -6,6 +6,9 @@ namespace wheels {
 
 template <class T, class... SizeTs> class tensor_shape;
 
+// is_tensor_shape
+template <class T> struct is_tensor_shape;
+
 template <class T, class SizeT, class... SizeTs>
 constexpr auto max_shape_size(const tensor_shape<T, SizeT, SizeTs...> &shape);
 

@@ -51,7 +51,7 @@ constexpr const ET &element_at_index(const constant_result<ET, ShapeT, OpT> &t,
 template <behavior_flag_enum O, class FunT, class ET, class ShapeT, class OpT>
 bool for_each_element(behavior_flag<O>, FunT &&fun,
                       const constant_result<ET, ShapeT, OpT> &t) {
-  for (size_t i = 0; i < numel(t); i++) {
+  for (size_t i = 0; i < numel_of(t); i++) {
     fun(t.value());
   }
   return true;
@@ -61,7 +61,7 @@ bool for_each_element(behavior_flag<O>, FunT &&fun,
 template <class FunT, class ET, class ShapeT, class OpT>
 bool for_each_element(behavior_flag<break_on_false>, FunT &&fun,
                       const constant_result<ET, ShapeT, OpT> &t) {
-  for (size_t i = 0; i < numel(t); i++) {
+  for (size_t i = 0; i < numel_of(t); i++) {
     if (!fun(t.value())) {
       return false;
     }
@@ -84,14 +84,14 @@ bool for_each_element(behavior_flag<nonzero_only> o, FunT &&fun,
 // size_t nonzero_elements_count(t)
 template <class ET, class ShapeT, class OpT>
 size_t nonzero_elements_count(const constant_result<ET, ShapeT, OpT> &t) {
-  return is_zero(t.value()) ? 0 : numel(t);
+  return is_zero(t.value()) ? 0 : numel_of(t);
 }
 
 // reduce_elements
 template <class ET, class ShapeT, class OpT, class E, class ReduceT>
 E reduce_elements(const constant_result<ET, ShapeT, OpT> &t, E initial,
                   ReduceT &&red) {
-  for (size_t i = 0; i < numel(t); i++) {
+  for (size_t i = 0; i < numel_of(t); i++) {
     initial = red(initial, t.value());
   }
   return initial;
@@ -101,14 +101,14 @@ E reduce_elements(const constant_result<ET, ShapeT, OpT> &t, E initial,
 template <class ET, class ShapeT, class OpT>
 std::enable_if_t<std::is_scalar<ET>::value, ET>
 sum_of(const constant_result<ET, ShapeT, OpT> &t) {
-  return t.value() * numel(t);
+  return t.value() * numel_of(t);
 }
 
 // norm_squared
 template <class ET, class ShapeT, class OpT>
 std::enable_if_t<std::is_scalar<ET>::value, ET>
 norm_squared(const constant_result<ET, ShapeT, OpT> &t) {
-  return t.value() * t.value() * numel(t);
+  return t.value() * t.value() * numel_of(t);
 }
 
 // all_of

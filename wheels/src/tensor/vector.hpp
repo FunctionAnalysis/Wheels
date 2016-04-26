@@ -13,7 +13,7 @@ template <class ET1, class ShapeT1, class T1, class ET2, class ShapeT2,
           class T2>
 constexpr auto distance(const tensor_base<ET1, ShapeT1, T1> &t1,
                         const tensor_base<ET2, ShapeT2, T2> &t2) {
-  return norm(t1.derived() - t2.derived());
+  return norm_of(t1.derived() - t2.derived());
 }
 
 // dot(ts1, ts2);

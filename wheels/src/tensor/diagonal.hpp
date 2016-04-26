@@ -42,7 +42,7 @@ constexpr decltype(auto) element_at(const make_diag_result<ET, ShapeT, T> &t,
 
 // for_each(nonzero)
 template <class FunT, class ET, class ShapeT, class T>
-bool for_each_element(behavior_flag<nonzero_only> o, FunT &fun,
+bool for_each_element(behavior_flag<nonzero_only> o, FunT fun,
                       const make_diag_result<ET, ShapeT, T> &r) {
   return for_each_element(o, fun, r.input());
 }

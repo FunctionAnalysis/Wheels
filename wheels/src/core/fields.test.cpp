@@ -42,14 +42,16 @@ struct C {
   B<int, char> b2;
 };
 
-namespace wheels {
 template <class V> auto fields(C &c, V &&visitor) {
   return visitor(c.b1, c.b2);
 }
-}
+
 
 TEST(core, fields2) {
   C c = {{'1', 1}, {1, '1'}};
+
+  static_assert(wheels::details::_has_global_func_fields_simple<C&>::value, "");
+
   auto ct = tuplize(c);
   static_assert(type_of(ct).decay() ==
                     types<std::tuple<std::tuple<char &, int &>,

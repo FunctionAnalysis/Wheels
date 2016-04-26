@@ -82,7 +82,7 @@ void reserve_shape(tensor_extension_wrapper<ExtensionT, EleT, ShapeT, T> &t,
 template <behavior_flag_enum F, class FunT, class ExtensionT, class EleT,
           class ShapeT, class T, class... Ts>
 constexpr bool
-for_each_element(behavior_flag<F> f, FunT &fun,
+for_each_element(behavior_flag<F> f, FunT fun,
                  const tensor_extension_wrapper<ExtensionT, EleT, ShapeT, T> &t,
                  Ts &... ts) {
   return for_each_element(f, fun, t.host, ts...);
@@ -118,11 +118,11 @@ norm_squared(const tensor_extension_wrapper<ExtensionT, ET, ShapeT, T> &t) {
   return norm_squared(t.host);
 }
 
-// Scalar norm(ts)
+// Scalar norm_of(ts)
 template <class ExtensionT, class ET, class ShapeT, class T>
 constexpr auto
-norm(const tensor_extension_wrapper<ExtensionT, ET, ShapeT, T> &t) {
-  return norm(t.host);
+norm_of(const tensor_extension_wrapper<ExtensionT, ET, ShapeT, T> &t) {
+  return norm_of(t.host);
 }
 
 // bool all(s)

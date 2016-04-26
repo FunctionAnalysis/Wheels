@@ -284,6 +284,11 @@ private:
   T _mag;
 };
 
+// is_tensor_shape
+template <class T> struct is_tensor_shape : no {};
+template <class T, class... SizeTs>
+struct is_tensor_shape<tensor_shape<T, SizeTs...>> : yes {};
+
 // shape_of_rank
 namespace details {
 template <class T, class SeqT> struct _make_shape_of_rank_seq {
@@ -477,11 +482,6 @@ constexpr bool operator!=(const tensor_shape<T1, SizeT1s...> &s1,
                           const tensor_shape<T2, SizeT2s...> &s2) {
   return !(s1 == s2);
 }
-
-// is_tensor_shape
-template <class T> struct is_tensor_shape : no {};
-template <class T, class... SizeTs>
-struct is_tensor_shape<tensor_shape<T, SizeTs...>> : yes {};
 
 namespace details {
 template <class T, class K,

@@ -390,6 +390,15 @@ constexpr auto repeat(const const_ints<T, Val> &v,
 namespace details {
 template <class T, T S, T... Ss, T V>
 constexpr auto _count(const const_ints<T, S, Ss...> &seq,
+                      const const_ints<T, V> &v);
+template <class T, T S, T... Ss>
+constexpr auto _count(const const_ints<T, S, Ss...> &seq,
+                      const const_ints<T, S> &v);
+template <class T, T V>
+constexpr auto _count(const const_ints<T> &, const const_ints<T, V> &);
+
+template <class T, T S, T... Ss, T V>
+constexpr auto _count(const const_ints<T, S, Ss...> &seq,
                       const const_ints<T, V> &v) {
   return _count(const_ints<T, Ss...>(), v);
 }
@@ -411,6 +420,19 @@ constexpr auto count(const const_ints<T, S...> &seq,
 
 // find_first_of
 namespace details {
+template <class T, T S, T... Ss, T V, size_t NotFoundV>
+constexpr auto _find_first_of(const const_ints<T, S, Ss...> &seq,
+                              const const_ints<T, V> &v,
+                              const const_index<NotFoundV> &not_found);
+template <class T, T S, T... Ss, size_t NotFoundV>
+constexpr auto _find_first_of(const const_ints<T, S, Ss...> &seq,
+                              const const_ints<T, S> &v,
+                              const const_index<NotFoundV> &);
+template <class T, T V, size_t NotFoundV>
+constexpr auto _find_first_of(const const_ints<T> &seq,
+                              const const_ints<T, V> &v,
+                              const const_index<NotFoundV> &not_found);
+
 template <class T, T S, T... Ss, T V, size_t NotFoundV>
 constexpr auto _find_first_of(const const_ints<T, S, Ss...> &seq,
                               const const_ints<T, V> &v,
@@ -442,9 +464,9 @@ constexpr auto find_first_of(const const_ints<T, S, Ss...> &seq,
 
 // for_each
 template <class T, class FunT>
-inline void for_each(const const_ints<T> &, FunT &fun) {}
+inline void for_each(const const_ints<T> &, FunT fun) {}
 template <class T, T S, T... Ss, class FunT>
-inline void for_each(const const_ints<T, S, Ss...> &, FunT &fun) {
+inline void for_each(const const_ints<T, S, Ss...> &, FunT fun) {
   fun(const_ints<T, S>());
   for_each(const_ints<T, Ss...>(), fun);
 }

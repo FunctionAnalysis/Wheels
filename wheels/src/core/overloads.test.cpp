@@ -1,7 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "overloads.hpp"
+#include "object.hpp"
 #include "types.hpp"
+#include "overloads.hpp"
 
 using namespace wheels;
 using namespace wheels::literals;
@@ -28,7 +29,7 @@ template <class OpT, class T> auto overload_as(const OpT &, const A<T> &) {
 
 template <class T, class K>
 auto overload_as(const binary_op_plus &, const A<T> &,
-                 const category::other<K> &){
+                 const category::other<K> &) {
   return [](auto &&, auto &&) { return "A<T> + int"; };
 }
 
@@ -46,14 +47,13 @@ TEST(core, overloads) {
   int ia = 0;
   auto nia = -ia;
 
-  const category::other<int> & ic = category::identify(1);
+  const category::other<int> &ic = category::identify(1);
 
-  auto pp = ::wheels::overload_as(binary_op_plus(),     
-                                       ::wheels::category::identify(a), 
-                                       ::wheels::category::identify(1));
+  auto pp =
+      ::wheels::overload_as(binary_op_plus(), ::wheels::category::identify(a),
+                            ::wheels::category::identify(1));
 
   std::cout << a + 1 << std::endl;
   std::cout << 1 + 1 << std::endl;
   std::cout << 1 + a << std::endl;
 }
-

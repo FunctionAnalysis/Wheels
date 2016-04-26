@@ -9,13 +9,13 @@
 #include <utility>
 #include <vector>
 
+#include "fields_fwd.hpp"
+
 #include "const_ints.hpp"
 #include "iterators.hpp"
 #include "object.hpp"
 #include "types.hpp"
 #include "utility.hpp"
-
-#include "fields_fwd.hpp"
 
 namespace wheels {
 
@@ -24,7 +24,8 @@ namespace wheels {
 // empty classes -> nullptr_t
 template <class TT, class T, class U, class V,
           class = std::enable_if_t<std::is_empty<TT>::value>>
-constexpr decltype(auto) fields_impl(const category::other<TT> &, T &&, U &&, V &&) {
+constexpr decltype(auto) fields_impl(const category::other<TT> &, T &&, U &&,
+                                     V &&) {
   return nullptr;
 }
 
@@ -153,13 +154,11 @@ constexpr decltype(auto) fields_impl(const category::std_container<TT> &, T &&t,
 // fields
 template <class T, class U, class V>
 constexpr auto fields(T &&t, U &&u, V &&v)
-    -> decltype(fields_impl(category::identify(t), std::forward<T>(t), std::forward<U>(u),
-                            std::forward<V>(v))) {
-  return fields_impl(category::identify(t), std::forward<T>(t), std::forward<U>(u),
-                     std::forward<V>(v));
+    -> decltype(fields_impl(category::identify(t), std::forward<T>(t),
+                            std::forward<U>(u), std::forward<V>(v))) {
+  return fields_impl(category::identify(t), std::forward<T>(t),
+                     std::forward<U>(u), std::forward<V>(v));
 }
-
-
 
 // has_member_func_fields
 struct test_visitor {
@@ -202,10 +201,9 @@ struct has_member_func_fields_simple
 namespace details {
 template <class T, class UsageT> struct _has_global_func_fields {
   template <class TT, class UU>
-  static auto test(int)
-      -> decltype(::wheels::fields(std::declval<TT>(), std::declval<UU>(),
-                                   test_visitor()),
-                  yes()) {
+  static auto test(int) -> decltype(fields(std::declval<TT>(),
+                                           std::declval<UU>(), test_visitor()),
+                                    yes()) {
     return yes();
   }
   template <class, class> static no test(...) { return no(); }
@@ -222,7 +220,7 @@ namespace details {
 template <class T> struct _has_global_func_fields_simple {
   template <class TT>
   static auto test(int)
-      -> decltype(::wheels::fields(std::declval<TT>(), test_visitor()), yes()) {
+      -> decltype(fields(std::declval<TT>(), test_visitor()), yes()) {
     return yes();
   }
   template <class> static no test(...) { return no(); }
@@ -289,7 +287,7 @@ public:
                          !has_member_func_fields_simple<T>::value &&
                          has_global_func_fields<T, UsageT>::value>>
   constexpr decltype(auto) visit(T &&v, WHEELS_PARAMETER_DISTINGUISH(2)) const {
-    return ::wheels::fields(std::forward<T>(v), UsageT(), non_const_self());
+    return fields(std::forward<T>(v), UsageT(), non_const_self());
   }
   // has_global_func_fields<T&...> for const T
   template <class T, class = std::enable_if_t<
@@ -301,7 +299,7 @@ public:
                          has_global_func_fields<T &, UsageT>::value>>
   constexpr decltype(auto) visit(const T &v,
                                  WHEELS_PARAMETER_DISTINGUISH(2)) const {
-    return ::wheels::fields(const_cast<T &>(v), UsageT(), const_self());
+    return fields(const_cast<T &>(v), UsageT(), const_self());
   }
 
   // has_global_func_fields_simple
@@ -311,7 +309,7 @@ public:
                          !has_global_func_fields<T, UsageT>::value &&
                          has_global_func_fields_simple<T>::value>>
   constexpr decltype(auto) visit(T &&v, WHEELS_PARAMETER_DISTINGUISH(3)) const {
-    return ::wheels::fields(std::forward<T>(v), non_const_self());
+    return fields(std::forward<T>(v), non_const_self());
   }
   // has_global_func_fields_simple<T &...> for const T
   template <class T, class = std::enable_if_t<
@@ -325,7 +323,7 @@ public:
                          has_global_func_fields_simple<T &>::value>>
   constexpr decltype(auto) visit(const T &v,
                                  WHEELS_PARAMETER_DISTINGUISH(3)) const {
-    return ::wheels::fields(const_cast<T &>(v), const_self());
+    return fields(const_cast<T &>(v), const_self());
   }
 
   // leaf type or container type
@@ -573,5 +571,4 @@ template <class T, class Kind = void> struct convertible {
     return static_cast<T &>(*this);
   }
 };
-
 }

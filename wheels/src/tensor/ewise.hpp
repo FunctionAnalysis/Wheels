@@ -80,16 +80,8 @@ constexpr decltype(auto) element_at_index(
 }
 
 // most ewise binray ops apply on two tensors (except certain ops like below)
-namespace details {
-template <class T> struct _op_naturally_ewise : yes {};
-template <> struct _op_naturally_ewise<binary_op_eq> : no {};
-template <> struct _op_naturally_ewise<binary_op_neq> : no {};
-template <> struct _op_naturally_ewise<binary_op_mul> : no {};
-}
-template <class OpT,
-          class = std::enable_if_t<details::_op_naturally_ewise<OpT>::value>,
-          class EleT, class ShapeT, class T, class... EleTs, class... ShapeTs,
-          class... Ts>
+template <class OpT, class, class EleT, class ShapeT, class T, class... EleTs,
+          class... ShapeTs, class... Ts>
 constexpr auto overload_as(const func_base<OpT> &op,
                            const tensor_base<EleT, ShapeT, T> &t,
                            const tensor_base<EleTs, ShapeTs, Ts> &... ts) {
@@ -185,7 +177,7 @@ constexpr auto _transform(tensor_base<EleT, ShapeT, T> &&t, FunT &&fun) {
 template <class TargetEleT, class EleT, class ShapeT, class T>
 constexpr auto _static_ecast(const tensor_base<EleT, ShapeT, T> &t) {
   return _transform(t.derived(),
-                    [](const auto &e) { return static_cast<TargetEleT>(e); })
+                    [](const auto &e) { return static_cast<TargetEleT>(e); });
 }
 template <class TargetEleT, class EleT, class ShapeT, class T>
 constexpr auto _static_ecast(tensor_base<EleT, ShapeT, T> &&t) {

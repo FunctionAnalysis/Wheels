@@ -1,10 +1,14 @@
 #pragma once
 
-#include "const_ints.hpp"
 #include <complex>
 
-namespace wheels {
+#include "types_fwd.hpp"
+#include "utility_fwd.hpp"
 
+#include "const_ints.hpp"
+#include "utility.hpp"
+
+namespace wheels {
 namespace details {
 
 // element helper
@@ -151,9 +155,6 @@ template <> struct types<void> {
 template <class... Ts> constexpr auto type_of(Ts &&... t) {
   return types<Ts &&...>();
 }
-
-// type_t
-#define type_t(t) decltype(t)::type
 
 template <class... Ts>
 inline std::ostream &operator<<(std::ostream &os, const types<Ts...> &) {

@@ -50,33 +50,33 @@ element_at_index(tensor_continuous_data_base<ET, ShapeT, T> &t,
 
 // for_each_element
 template <class FunT, class ET, class ShapeT, class T, class... Ts>
-bool for_each_element(behavior_flag<index_ascending>, FunT &fun,
+bool for_each_element(behavior_flag<index_ascending>, FunT fun,
                       const tensor_continuous_data_base<ET, ShapeT, T> &t,
                       Ts &... ts);
 template <class FunT, class ET, class ShapeT, class T, class... Ts>
-bool for_each_element(behavior_flag<index_ascending>, FunT &fun,
+bool for_each_element(behavior_flag<index_ascending>, FunT fun,
                       tensor_continuous_data_base<ET, ShapeT, T> &t,
                       Ts &... ts);
 
 // for_each_element_with_short_circuit
 template <class FunT, class ET, class ShapeT, class T, class... Ts>
-bool for_each_element(behavior_flag<break_on_false>, FunT &fun,
+bool for_each_element(behavior_flag<break_on_false>, FunT fun,
                       const tensor_continuous_data_base<ET, ShapeT, T> &t,
                       Ts &... ts);
 
 template <class FunT, class ET, class ShapeT, class T, class... Ts>
-bool for_each_element(behavior_flag<break_on_false>, FunT &fun,
+bool for_each_element(behavior_flag<break_on_false>, FunT fun,
                       tensor_continuous_data_base<ET, ShapeT, T> &t,
                       Ts &... ts);
 
 // nonzero_only
 template <class FunT, class ET, class ShapeT, class T, class... Ts>
-bool for_each_element(behavior_flag<nonzero_only>, FunT &fun,
+bool for_each_element(behavior_flag<nonzero_only>, FunT fun,
                       const tensor_continuous_data_base<ET, ShapeT, T> &t,
                       Ts &... ts);
 
 template <class FunT, class ET, class ShapeT, class T, class... Ts>
-bool for_each_element(behavior_flag<nonzero_only>, FunT &fun,
+bool for_each_element(behavior_flag<nonzero_only>, FunT fun,
                       tensor_continuous_data_base<ET, ShapeT, T> &t,
                       Ts &... ts);
 }

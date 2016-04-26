@@ -2,23 +2,15 @@
 
 #include <cassert>
 
-#include "../core/const_expr.hpp"
-#include "../core/const_ints.hpp"
-#include "../core/iterators.hpp"
-#include "../core/object.hpp"
-#include "../core/overloads.hpp"
-#include "../core/parallel.hpp"
-#include "../core/types.hpp"
-
-#include "shape.hpp"
+#include "base_fwd.hpp"
 
 #include "aligned_fwd.hpp"
-#include "base_fwd.hpp"
 #include "block_fwd.hpp"
 #include "cartesian_fwd.hpp"
 #include "cat_fwd.hpp"
 #include "constants_fwd.hpp"
 #include "diagonal_fwd.hpp"
+#include "downgrade_fwd.hpp"
 #include "ewise_fwd.hpp"
 #include "index_fwd.hpp"
 #include "iota_fwd.hpp"
@@ -27,6 +19,16 @@
 #include "remap_fwd.hpp"
 #include "reshape_fwd.hpp"
 #include "tensor_fwd.hpp"
+#include "upgrade_fwd.hpp"
+
+#include "../core/const_expr.hpp"
+#include "../core/const_ints.hpp"
+#include "../core/iterators.hpp"
+#include "../core/object.hpp"
+#include "../core/parallel.hpp"
+#include "../core/types.hpp"
+
+#include "shape.hpp"
 
 namespace wheels {
 
@@ -54,7 +56,7 @@ constexpr T &&_eval_index_expr(T &&t, const SizeT &) {
 template <class T, class E, class EE>
 constexpr decltype(auto) _brackets_impl(T &&t, const category::other<E> &id,
                                         EE &&ind) {
-  return ::wheels::element_at_index(std::forward<T>(t), std::forward<EE>(ind));
+  return element_at_index(std::forward<T>(t), std::forward<EE>(ind));
 }
 
 template <class T, class TensorT, class TensorTT>
@@ -105,21 +107,19 @@ constexpr auto _block_seq(T &&t, const const_ints<size_t, Is...> &,
 template <class T> struct tensor_core : category::object<T> {
   const tensor_core &core() const { return *this; }
 
-  constexpr auto shape() const { return ::wheels::shape_of(derived()); }
+  constexpr auto shape() const { return shape_of(this->derived()); }
   template <class K, K Idx>
   constexpr auto size(const const_ints<K, Idx> &i) const {
-    return ::wheels::size_at(derived(), i);
+    return size_at(this->derived(), i);
   }
-  constexpr auto numel() const { return ::wheels::numel(derived()); }
+  constexpr auto numel() const { return numel_of(this->derived()); }
 
-  constexpr auto norm_squared() const {
-    return ::wheels::norm_squared(derived());
-  }
-  constexpr auto norm() const { return ::wheels::norm(derived()); }
-  constexpr auto normalized() const & { return derived() / this->norm(); }
-  auto normalized() && { return std::move(derived()) / this->norm(); }
+  constexpr auto norm_squared() const { return norm_squared(this->derived()); }
+  constexpr auto norm() const { return norm_of(this->derived()); }
+  constexpr auto normalized() const & { return this->derived() / this->norm(); }
+  auto normalized() && { return std::move(this->derived()) / this->norm(); }
 
-  constexpr auto sum() const { return ::wheels::sum_of(derived()); }
+  constexpr auto sum() const { return sum_of(this->derived()); }
 
   // at_or(otherwisev, subs ...)
   template <class E, class... SubTs>
@@ -140,111 +140,116 @@ template <class T> struct tensor_core : category::object<T> {
   // operator[](index/{index tensor})
   template <class E> constexpr decltype(auto) operator[](E &&e) const & {
     return details::_brackets(
-        derived(), details::_eval_index_expr(std::forward<E>(e), numel()));
+        this->derived(),
+        details::_eval_index_expr(std::forward<E>(e), this->numel()));
   }
   template <class E> decltype(auto) operator[](E &&e) & {
     return details::_brackets(
-        derived(), details::_eval_index_expr(std::forward<E>(e), numel()));
+        this->derived(),
+        details::_eval_index_expr(std::forward<E>(e), this->numel()));
   }
   template <class E> decltype(auto) operator[](E &&e) && {
     return details::_brackets(
-        std::move(derived()),
-        details::_eval_index_expr(std::forward<E>(e), numel()));
+        std::move(this->derived()),
+        details::_eval_index_expr(std::forward<E>(e), this->numel()));
   }
 
   // ewise
-  constexpr decltype(auto) ewised() const & { return ewise(derived()); }
-  decltype(auto) ewised() & { return ewise(derived()); }
-  decltype(auto) ewised() && { return ewise(std::move(derived())); }
+  constexpr decltype(auto) ewised() const & { return ewise(this->derived()); }
+  decltype(auto) ewised() & { return ewise(this->derived()); }
+  decltype(auto) ewised() && { return ewise(std::move(this->derived())); }
 
   // block
   template <class... TensorOrIndexTs>
   constexpr auto block(TensorOrIndexTs &&... tois) const & {
-    return details::_block_seq(derived(),
+    return details::_block_seq(this->derived(),
                                make_const_sequence_for<TensorOrIndexTs...>(),
                                std::forward<TensorOrIndexTs>(tois)...);
   }
   template <class... TensorOrIndexTs> auto block(TensorOrIndexTs &&... tois) & {
-    return details::_block_seq(derived(),
+    return details::_block_seq(this->derived(),
                                make_const_sequence_for<TensorOrIndexTs...>(),
                                std::forward<TensorOrIndexTs>(tois)...);
   }
   template <class... TensorOrIndexTs>
   auto block(TensorOrIndexTs &&... tois) && {
-    return details::_block_seq(std::move(derived()),
+    return details::_block_seq(std::move(this->derived()),
                                make_const_sequence_for<TensorOrIndexTs...>(),
                                std::forward<TensorOrIndexTs>(tois)...);
   }
 
   // for_each
-  template <class FunT> void for_each(FunT &fun) const {
-    ::wheels::for_each_element(behavior_flag<unordered>(), fun, derived());
+  template <class FunT> void for_each(FunT fun) const {
+    for_each_element(behavior_flag<unordered>(), fun, this->derived());
   }
-  template <class FunT> void for_each(FunT &fun) {
-    ::wheels::for_each_element(behavior_flag<unordered>(), fun, derived());
+  template <class FunT> void for_each(FunT fun) {
+    for_each_element(behavior_flag<unordered>(), fun, this->derived());
   }
 
   // reshape
   template <class ST, class... SizeTs>
   constexpr auto reshape(const tensor_shape<ST, SizeTs...> &ns) const & {
-    return ::wheels::reshape(derived(), ns);
+    return ::wheels::reshape(this->derived(), ns);
   }
   template <class ST, class... SizeTs>
   auto reshape(const tensor_shape<ST, SizeTs...> &ns) & {
-    return ::wheels::reshape(derived(), ns);
+    return ::wheels::reshape(this->derived(), ns);
   }
   template <class ST, class... SizeTs>
   auto reshape(const tensor_shape<ST, SizeTs...> &ns) && {
-    return ::wheels::reshape(std::move(derived()), ns);
+    return ::wheels::reshape(std::move(this->derived()), ns);
   }
 
-  // subwise
+  // downgrade
   template <class K, K FixedRank>
-  constexpr decltype(auto) subwise(const const_ints<K, FixedRank> &r) const & {
-    return ::wheels::subwise(derived(), r);
+  constexpr decltype(auto)
+  downgrade(const const_ints<K, FixedRank> &r) const & {
+    return ::wheels::downgrade(this->derived(), r);
   }
   template <class K, K FixedRank>
-  decltype(auto) subwise(const const_ints<K, FixedRank> &r) & {
-    return ::wheels::subwise(derived(), r);
+  decltype(auto) downgrade(const const_ints<K, FixedRank> &r) & {
+    return ::wheels::downgrade(this->derived(), r);
   }
   template <class K, K FixedRank>
-  decltype(auto) subwise(const const_ints<K, FixedRank> &r) && {
-    return ::wheels::subwise(std::move(derived()), r);
+  decltype(auto) downgrade(const const_ints<K, FixedRank> &r) && {
+    return ::wheels::downgrade(std::move(this->derived()), r);
   }
 
   // permute
   template <class... IndexTs>
   constexpr decltype(auto) permute(const IndexTs &... inds) const & {
-    return ::wheels::permute(derived(), inds...);
+    return ::wheels::permute(this->derived(), inds...);
   }
   template <class... IndexTs>
   decltype(auto) permute(const IndexTs &... inds) && {
-    return ::wheels::permute(std::move(derived()), inds...);
+    return ::wheels::permute(std::move(this->derived()), inds...);
   }
 
   // all
-  constexpr bool all() const { return ::wheels::all_of(derived()); }
+  constexpr bool all() const { return all_of(this->derived()); }
   // any
-  constexpr bool any() const { return ::wheels::any_of(derived()); }
+  constexpr bool any() const { return any_of(this->derived()); }
   // none
-  constexpr bool none() const { return !::wheels::any_of(derived()); }
+  constexpr bool none() const { return !any_of(this->derived()); }
 
   // begin/end
   constexpr tensor_iterator<const T> begin() const {
-    return tensor_iterator<const T>(derived(), 0);
+    return tensor_iterator<const T>(this->derived(), 0);
   }
   constexpr tensor_iterator<const T> end() const {
-    return tensor_iterator<const T>(derived(), numel());
+    return tensor_iterator<const T>(this->derived(), this->numel());
   }
-  tensor_iterator<T> begin() { return tensor_iterator<T>(derived(), 0); }
-  tensor_iterator<T> end() { return tensor_iterator<T>(derived(), numel()); }
+  tensor_iterator<T> begin() { return tensor_iterator<T>(this->derived(), 0); }
+  tensor_iterator<T> end() {
+    return tensor_iterator<T>(this->derived(), this->numel());
+  }
 
 private:
   template <class... SubEs, size_t... Is>
   constexpr bool _valid_subs_seq(const_ints<size_t, Is...> seq,
                                  const SubEs &... subes) const {
     return ::wheels::all(::wheels::is_between(
-        details::_eval_index_expr(subes, size(const_size<Is>())), 0,
+        details::_eval_index_expr(subes, this->size(const_size<Is>())), 0,
         size(const_size<Is>()))...);
   }
   template <class E, class... SubEs, size_t... Is>
@@ -259,26 +264,25 @@ private:
   constexpr decltype(auto) _parenthesis_seq(const_ints<size_t, Is...> seq,
                                             const SubEs &... subes) const {
     assert(_valid_subs_seq(seq, subes...));
-    return ::wheels::element_at(
+    return element_at(
         derived(), details::_eval_index_expr(subes, size(const_size<Is>()))...);
   }
   template <class... SubEs, size_t... Is>
   decltype(auto) _parenthesis_seq(const_ints<size_t, Is...> seq,
                                   const SubEs &... subes) {
     assert(_valid_subs_seq(seq, subes...));
-    return ::wheels::element_at(
-        derived(), details::_eval_index_expr(subes, size(const_size<Is>()))...);
+    return element_at(
+        this->derived(),
+        details::_eval_index_expr(subes, this->size(const_size<Is>()))...);
   }
 };
 
 template <class T1, class T2>
 constexpr bool operator==(const tensor_core<T1> &a, const tensor_core<T2> &b) {
-  return a.shape() == b.shape()
-             ? for_each_element(
-                   behavior_flag<break_on_false>(),
-                   [](auto &&e1, auto &&e2) -> bool { return e1 == e2; },
-                   a.derived(), b.derived())
-             : false;
+  return a.shape() == b.shape() &&
+         for_each_element(behavior_flag<break_on_false>(),
+                          [](auto &&e1, auto &&e2) -> bool { return e1 == e2; },
+                          a.derived(), b.derived());
 }
 template <class T1, class T2>
 constexpr bool operator!=(const tensor_core<T1> &a, const tensor_core<T2> &b) {
@@ -291,10 +295,10 @@ template <class T> struct tensor_iterator {
   ptrdiff_t ind;
   constexpr tensor_iterator(T &s, ptrdiff_t i) : self(s), ind(i) {}
   constexpr decltype(auto) operator*() const {
-    return ::wheels::element_at_index(self, ind);
+    return element_at_index(self, ind);
   }
   constexpr decltype(auto) operator-> () const {
-    return ::wheels::element_at_index(self, ind);
+    return element_at_index(self, ind);
   }
   tensor_iterator &operator++() {
     ++ind;
@@ -355,11 +359,8 @@ struct tensor_base<ET, tensor_shape<ST>, T> : tensor_core<T> {
   tensor_type eval() && { return tensor_type(std::move(this->derived())); }
   constexpr operator tensor_type() const { return eval(); }
 
-  constexpr operator value_type() const {
-    return ::wheels::element_at(this->derived());
-  }
+  constexpr operator value_type() const { return element_at(this->derived()); }
 };
-
 
 // -- necessary tensor functions
 // Shape shape_of(ts);
@@ -368,6 +369,7 @@ constexpr tensor_shape<size_t> shape_of(const tensor_core<T> &) {
   static_assert(always<bool, false, T>::value,
                 "shape_of(const T &) is not supported by tensor_core<T>, do "
                 "you forget to call .derived()?");
+  return tensor_shape<size_t>();
 }
 
 // Scalar element_at(ts, subs ...);
@@ -376,12 +378,15 @@ constexpr double element_at(const tensor_core<T> &t, const SubTs &...) {
   static_assert(always<bool, false, T>::value,
                 "element_at(const T &) is not supported by tensor_core<T>, do "
                 "you forget to call .derived()?");
+  return 0.0;
 }
 template <class T, class... SubTs>
-constexpr double &element_at(tensor_core<T> &t, const SubTs &...) {
+inline double &element_at(tensor_core<T> &t, const SubTs &...) {
   static_assert(always<bool, false, T>::value,
                 "element_at(T &) is not supported by tensor_core<T>, do you "
                 "forget to call .derived()?");
+  static double _dummy = 123.45;
+  return _dummy;
 }
 
 // -- auxiliary tensor functions
@@ -392,8 +397,8 @@ constexpr auto size_at(const tensor_core<T> &t,
   return shape_of(t.derived()).at(idx);
 }
 
-// auto numel(ts)
-template <class T> constexpr auto numel(const tensor_core<T> &t) {
+// auto numel_of(ts)
+template <class T> constexpr auto numel_of(const tensor_core<T> &t) {
   return shape_of(t.derived()).magnitude();
 }
 
@@ -413,8 +418,8 @@ void reserve_shape(tensor_core<T> &, const tensor_shape<ST, SizeTs...> &shape) {
 
 // index_ascending
 template <class FunT, class T, class... Ts>
-bool for_each_element(behavior_flag<index_ascending>, FunT &fun,
-                      const tensor_core<T> &t, Ts &... ts) {
+bool for_each_element(behavior_flag<index_ascending>, FunT fun,
+                      const tensor_core<T> &t, Ts &&... ts) {
   assert(all_same(t.shape(), ts.shape()...));
   for_each_subscript(t.shape(), [&fun, &t, &ts...](auto &... subs) {
     fun(element_at(t.derived(), subs...), element_at(ts.derived(), subs...)...);
@@ -423,8 +428,8 @@ bool for_each_element(behavior_flag<index_ascending>, FunT &fun,
 }
 
 template <class FunT, class T, class... Ts>
-bool for_each_element(behavior_flag<index_ascending>, FunT &fun,
-                      tensor_core<T> &t, Ts &... ts) {
+bool for_each_element(behavior_flag<index_ascending>, FunT fun,
+                      tensor_core<T> &t, Ts &&... ts) {
   assert(all_same(t.shape(), ts.shape()...));
   for_each_subscript(t.shape(), [&fun, &t, &ts...](auto &... subs) {
     fun(element_at(t.derived(), subs...), element_at(ts.derived(), subs...)...);
@@ -435,14 +440,14 @@ bool for_each_element(behavior_flag<index_ascending>, FunT &fun,
 // unordered
 namespace details {
 template <class FunT, class T, class... Ts>
-void _for_each_element_unordered_default(yes staticShape, FunT &fun, T &t,
-                                         Ts &... ts) {
+void _for_each_element_unordered_default(yes staticShape, FunT fun, T &&t,
+                                         Ts &&... ts) {
   for_each_element(behavior_flag<index_ascending>(), fun, t, ts...);
 }
 constexpr size_t _numel_parallel_thres = (size_t)4e4;
 template <class FunT, class T, class... Ts>
-void _for_each_element_unordered_default(no staticShape, FunT &fun, T &t,
-                                         Ts &... ts) {
+void _for_each_element_unordered_default(no staticShape, FunT fun, T &&t,
+                                         Ts &&... ts) {
   if (t.numel() < _numel_parallel_thres) {
     for_each_element(behavior_flag<index_ascending>(), fun, t, ts...);
   } else {
@@ -455,31 +460,27 @@ void _for_each_element_unordered_default(no staticShape, FunT &fun, T &t,
 }
 }
 template <class FunT, class T, class... Ts>
-bool for_each_element(behavior_flag<unordered>, FunT &fun,
-                      const tensor_core<T> &t, Ts &... ts) {
+bool for_each_element(behavior_flag<unordered>, FunT fun,
+                      const tensor_core<T> &t, Ts &&... ts) {
   details::_for_each_element_unordered_default(
-      const_bool<::wheels::any(
-          std::decay_t<decltype(t.shape())>::is_static,
-          std::decay_t<decltype(ts.shape())>::is_static...)>(),
-      fun, t.derived(), ts.derived()...);
+      const_bool<std::decay_t<decltype(t.shape())>::is_static>(), fun,
+      t.derived(), ts.derived()...);
   return true;
 }
 
 template <class FunT, class T, class... Ts>
-bool for_each_element(behavior_flag<unordered>, FunT &fun, tensor_core<T> &t,
-                      Ts &... ts) {
+bool for_each_element(behavior_flag<unordered>, FunT fun, tensor_core<T> &t,
+                      Ts &&... ts) {
   details::_for_each_element_unordered_default(
-      const_bool<::wheels::any(
-          std::decay_t<decltype(t.shape())>::is_static,
-          std::decay_t<decltype(ts.shape())>::is_static...)>(),
-      fun, t.derived(), ts.derived()...);
+      const_bool<std::decay_t<decltype(t.shape())>::is_static>(), fun,
+      t.derived(), ts.derived()...);
   return true;
 }
 
 // break_on_false
 template <class FunT, class T, class... Ts>
-bool for_each_element(behavior_flag<break_on_false>, FunT &fun,
-                      const tensor_core<T> &t, Ts &... ts) {
+bool for_each_element(behavior_flag<break_on_false>, FunT fun,
+                      const tensor_core<T> &t, Ts &&... ts) {
   assert(all_same(t.shape(), ts.shape()...));
   return for_each_subscript_if(t.shape(), [&](auto &&... subs) {
     return fun(element_at(t.derived(), subs...),
@@ -488,8 +489,8 @@ bool for_each_element(behavior_flag<break_on_false>, FunT &fun,
 }
 
 template <class FunT, class T, class... Ts>
-bool for_each_element(behavior_flag<break_on_false>, FunT &fun,
-                      tensor_core<T> &t, Ts &... ts) {
+bool for_each_element(behavior_flag<break_on_false>, FunT fun,
+                      tensor_core<T> &t, Ts &&... ts) {
   assert(all_same(t.shape(), ts.shape()...));
   return for_each_subscript_if(t.shape(), [&](auto &&... subs) {
     return fun(element_at(t.derived(), subs...),
@@ -499,8 +500,8 @@ bool for_each_element(behavior_flag<break_on_false>, FunT &fun,
 
 // nonzero_only
 template <class FunT, class T, class... Ts>
-bool for_each_element(behavior_flag<nonzero_only>, FunT &fun,
-                      const tensor_core<T> &t, Ts &... ts) {
+bool for_each_element(behavior_flag<nonzero_only>, FunT fun,
+                      const tensor_core<T> &t, Ts &&... ts) {
   assert(all_same(t.shape(), ts.shape()...));
   bool visited_all = true;
   for_each_subscript(t.shape(), [&](auto &&... subs) {
@@ -515,8 +516,8 @@ bool for_each_element(behavior_flag<nonzero_only>, FunT &fun,
 }
 
 template <class FunT, class T, class... Ts>
-bool for_each_element(behavior_flag<nonzero_only>, FunT &fun, tensor_core<T> &t,
-                      Ts &... ts) {
+bool for_each_element(behavior_flag<nonzero_only>, FunT fun, tensor_core<T> &t,
+                      Ts &&... ts) {
   assert(all_same(t.shape(), ts.shape()...));
   bool visited_all = true;
   for_each_subscript(t.shape(), [&](auto &&... subs) {
@@ -531,17 +532,15 @@ bool for_each_element(behavior_flag<nonzero_only>, FunT &fun, tensor_core<T> &t,
 }
 
 // void assign_elements(to, from);
-template <class ToET, class ToShapeT, class ToT, class FromET, class FromShapeT,
-          class FromT>
-void assign_elements(tensor_base<ToET, ToShapeT, ToT> &to,
-                     const tensor_base<FromET, FromShapeT, FromT> &from) {
+template <class ToT, class FromT>
+void assign_elements(tensor_core<ToT> &to, const tensor_core<FromT> &from) {
   decltype(auto) s = from.shape();
   if (to.shape() != s) {
     reserve_shape(to.derived(), s);
   }
   for_each_element(behavior_flag<unordered>(),
                    [](auto &&to_e, auto &&from_e) {
-                     FromET e = from_e;
+                     auto e = from_e;
                      to_e = e;
                    },
                    to.derived(), from.derived());
@@ -564,7 +563,7 @@ template <class T> size_t nonzero_elements_count(const tensor_core<T> &t) {
 
 // Scalar reduce_elements(ts, initial, functor);
 template <class T, class E, class ReduceT>
-E reduce_elements(const tensor_core<T> &t, E initial, ReduceT &red) {
+E reduce_elements(const tensor_core<T> &t, E initial, ReduceT &&red) {
   for_each_element(behavior_flag<unordered>(),
                    [&initial, &red](auto &&e) { initial = red(initial, e); },
                    t.derived());
@@ -580,9 +579,9 @@ ET norm_squared(const tensor_base<ET, ShapeT, T> &t) {
   return result;
 }
 
-// Scalar norm(ts)
+// Scalar norm_of(ts)
 template <class ET, class ShapeT, class T>
-constexpr auto norm(const tensor_base<ET, ShapeT, T> &t) {
+constexpr auto norm_of(const tensor_base<ET, ShapeT, T> &t) {
   return sqrt(norm_squared(t.derived()));
 }
 

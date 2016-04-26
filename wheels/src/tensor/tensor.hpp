@@ -75,41 +75,7 @@ public:
   constexpr tensor(const ShapeT &shape, IterT begin, IterT end)
       : _storage(shape, with_iterators, begin, end) {}
 
-  //// tensor(e1)
-  //template <class E1, bool B = (ShapeT::static_magnitude == 1 &&
-  //                              std::is_convertible<E1, ET>::value),
-  //          class = std::enable_if_t<B>>
-  //constexpr explicit tensor(E1 &&e1)
-  //    : _storage(ShapeT(), with_elements, std::forward<E1>(e1)) {}
-  //// tensor(e1, e2)
-  //template <class E1, class E2, bool B = (ShapeT::static_magnitude == 2 &&
-  //                                        std::is_convertible<E1, ET>::value &&
-  //                                        std::is_convertible<E2, ET>::value),
-  //          class = std::enable_if_t<B>>
-  //constexpr tensor(E1 &&e1, E2 &&e2)
-  //    : _storage(ShapeT(), with_elements, std::forward<E1>(e1),
-  //               std::forward<E2>(e2)) {}
-  //// tensor(e1, e2, e3)
-  //template <class E1, class E2, class E3,
-  //          bool B = (ShapeT::static_magnitude == 3 &&
-  //                    std::is_convertible<E1, ET>::value &&
-  //                    std::is_convertible<E2, ET>::value &&
-  //                    std::is_convertible<E3, ET>::value),
-  //          class = std::enable_if_t<B>>
-  //constexpr tensor(E1 &&e1, E2 &&e2, E3 &&e3)
-  //    : _storage(ShapeT(), with_elements, std::forward<E1>(e1),
-  //               std::forward<E2>(e2), std::forward<E3>(e3)) {}
-  //  // tensor(e1, e2, e3, e4)
-  //template <class E1, class E2, class E3,
-  //          bool B = (ShapeT::static_magnitude == 3 &&
-  //                    std::is_convertible<E1, ET>::value &&
-  //                    std::is_convertible<E2, ET>::value &&
-  //                    std::is_convertible<E3, ET>::value),
-  //          class = std::enable_if_t<B>>
-  //constexpr tensor(E1 &&e1, E2 &&e2, E3 &&e3)
-  //    : _storage(ShapeT(), with_elements, std::forward<E1>(e1),
-  //               std::forward<E2>(e2), std::forward<E3>(e3)) {}
-
+  // tensor(e1, e2, e3, ...) for statically shaped tensors
   template <class FirstEleT, class... EleTs,
             bool B = (ShapeT::static_magnitude == 1 + sizeof...(EleTs) &&
                       std::is_convertible<FirstEleT, ET>::value),

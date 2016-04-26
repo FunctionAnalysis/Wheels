@@ -89,7 +89,7 @@ constexpr auto find_first_of(const const_ints<T, S, Ss...> &seq,
 
 // for_each
 template <class T, class FunT>
-inline void for_each(const const_ints<T> &, FunT &fun);
+inline void for_each(const const_ints<T> &, FunT fun);
 template <class T, T S, T... Ss, class FunT>
-inline void for_each(const const_ints<T, S, Ss...> &, FunT &fun);
+inline void for_each(const const_ints<T, S, Ss...> &, FunT fun);
 }

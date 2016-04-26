@@ -2,19 +2,25 @@
 
 #include <type_traits>
 
-#include "const_expr.hpp"
-
 #include "smart_invoke_fwd.hpp"
+
+#include "const_expr.hpp"
 
 namespace wheels {
 namespace details {
+template <class T, class... ArgTs>
+constexpr yes _has_const_expr(const const_expr_base<T> &, ArgTs &...);
+constexpr no _has_const_expr();
+template <class T, class = std::enable_if_t<!is_const_expr<T>::value>,
+          class... ArgTs>
+constexpr auto _has_const_expr(const T &, ArgTs &... args);
+
 // _has_const_expr
 template <class T, class... ArgTs>
 constexpr yes _has_const_expr(const const_expr_base<T> &, ArgTs &...) {
   return yes();
 }
-template <class T, class = std::enable_if_t<!is_const_expr<T>::value>,
-          class... ArgTs>
+template <class T, class, class... ArgTs>
 constexpr auto _has_const_expr(const T &, ArgTs &... args) {
   return _has_const_expr(args...);
 }

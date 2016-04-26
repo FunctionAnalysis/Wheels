@@ -1,5 +1,6 @@
 #pragma once
 
+#include "shape_fwd.hpp"
 #include "base_fwd.hpp"
 
 namespace wheels {

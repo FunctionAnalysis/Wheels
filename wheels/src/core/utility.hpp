@@ -3,14 +3,14 @@
 #include <iostream>
 #include <tuple>
 
+#include "utility_fwd.hpp"
+
 #include "const_ints.hpp"
 #include "macros.hpp"
 
 namespace wheels {
 
-template <class T> constexpr T copy(const T &t) { return t; }
-
-template <class... Ts> constexpr std::tuple<Ts...> as_tuple(Ts &&... ts) {
+template <class... Ts> constexpr auto as_tuple(Ts &&... ts) {
   return std::tuple<Ts...>(std::forward<Ts>(ts)...);
 }
 
@@ -97,11 +97,9 @@ template <class T, class... Ts> constexpr auto cat(T &&v, Ts &&... vs) {
 }
 
 // traverse(fun, ...)
-template <class FunT, class T> constexpr void traverse(const FunT &fun, T &&v) {
-  fun(std::forward<T>(v));
-}
+template <class FunT> constexpr void traverse(FunT fun) {}
 template <class FunT, class T, class... Ts>
-constexpr void traverse(const FunT &fun, T &&v, Ts &&... vs) {
+constexpr void traverse(FunT fun, T &&v, Ts &&... vs) {
   fun(std::forward<T>(v));
   traverse(fun, std::forward<Ts>(vs)...);
 }
@@ -153,32 +151,6 @@ template <class T>
 constexpr T right_open_wrapped(const T &v, const T &lb, const T &ub) {
   return details::_right_open_wrapped(v, lb, ub, std::is_integral<T>());
 }
-
-// always
-// - const value
-template <class T, T Val, class... ArgTs> struct always {
-  static constexpr T value = Val;
-};
-// - type by size_t's
-namespace details {
-template <class T, size_t... ArgIs> struct _always_t { using type = T; };
-}
-template <class T, size_t... ArgIs>
-using always_t = typename details::_always_t<T, ArgIs...>::type;
-// - type by types
-namespace details {
-template <class T, class... ArgTs> struct _always2_t { using type = T; };
-}
-template <class T, class... ArgTs>
-using always2_t = typename details::_always2_t<T, ArgTs...>::type;
-// - functor returning const value
-template <class T> struct always_f {
-  constexpr always_f(const T &v) : val(v) {}
-  template <class... ArgTs> constexpr const T &operator()(ArgTs &&...) const {
-    return val;
-  }
-  T val;
-};
 
 // print_to
 inline std::ostream &print_to(std::ostream &os) { return os; }

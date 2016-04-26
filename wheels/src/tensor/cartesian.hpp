@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../core/types.hpp"
+
 #include "base.hpp"
 #include "tensor.hpp"
 
@@ -46,7 +48,8 @@ constexpr auto meshgrid(const tensor_shape<ST, SizeTs...> &s,
 namespace details {
 template <class ET, class ShapeT, size_t... Is>
 constexpr auto _meshgrid(const ShapeT &s, const const_ints<size_t, Is...> &) {
-  return as_tuple(meshgrid_result<ET, ShapeT, Is>(s)...);
+  return std::tuple<meshgrid_result<ET, ShapeT, Is>...>(
+      meshgrid_result<ET, ShapeT, Is>(s)...);
 }
 }
 template <class ET, class ST, class... SizeTs>
@@ -122,7 +125,7 @@ shape_of(const cart_prod_result<TupleT, ShapeT, Ts...> &t) {
 namespace details {
 template <class CartProdT, class SubsTupleT, size_t... Is>
 constexpr auto
-_element_at_cart_prod_result_seq(CartProdT &t, SubsTupleT &subs,
+_element_at_cart_prod_result_seq(CartProdT &&t, SubsTupleT &&subs,
                                  const const_ints<size_t, Is...> &) {
   return as_tuple(
       element_at_index(std::get<Is>(t.inputs), std::get<Is>(subs))...);
@@ -137,10 +140,16 @@ constexpr auto element_at(const cart_prod_result<TupleT, ShapeT, Ts...> &t,
 
 // cart_prod
 namespace details {
+template <class T> struct _get_value_type_helper {
+  using _t = decltype(std::declval<T>().get_value_type());
+  using type = std::decay_t<typename _t::type>;
+};
+
 template <class... Ts, class... TTs> constexpr auto _cart_prod(TTs &&... tts) {
   using shape_t = decltype(make_shape(tts.numel()...));
-  return cart_prod_result<std::tuple<type_t(tts.get_value_type())...>, shape_t,
-                          TTs...>(std::forward<TTs>(tts)...);
+  return cart_prod_result<
+      std::tuple<typename _get_value_type_helper<TTs>::type...>, shape_t,
+      TTs...>(std::forward<TTs>(tts)...);
 }
 }
 }

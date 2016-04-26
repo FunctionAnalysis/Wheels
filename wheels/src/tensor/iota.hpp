@@ -53,7 +53,7 @@ template <behavior_flag_enum O, class FunT, class ET, class ShapeT,
           bool StaticShape>
 bool for_each_element(behavior_flag<O>, FunT &&fun,
                       const iota_result<ET, ShapeT, StaticShape> &t) {
-  for (size_t i = 0; i < numel(t); i++) {
+  for (size_t i = 0; i < numel_of(t); i++) {
     fun((ET)i);
   }
   return true;
@@ -63,7 +63,7 @@ bool for_each_element(behavior_flag<O>, FunT &&fun,
 template <class FunT, class ET, class ShapeT, bool StaticShape>
 bool for_each_element(behavior_flag<break_on_false>, FunT &&fun,
                       const iota_result<ET, ShapeT, StaticShape> &t) {
-  for (size_t i = 0; i < numel(t); i++) {
+  for (size_t i = 0; i < numel_of(t); i++) {
     if (!fun((ET)i)) {
       return false;
     }
@@ -77,7 +77,7 @@ std::enable_if_t<!std::is_scalar<ET>::value, bool>
 for_each_element(behavior_flag<nonzero_only> o, FunT &&fun,
                  const iota_result<ET, ShapeT, StaticShape> &t, Ts &&... ts) {
   assert(all_same(shape_of(t), shape_of(ts)...));
-  for (size_t i = 0; i < numel(t); i++) {
+  for (size_t i = 0; i < numel_of(t); i++) {
     ET e = (ET)i;
     if (!is_zero(e)) {
       fun(e, element_at_index(ts, i)...);
@@ -90,7 +90,7 @@ std::enable_if_t<std::is_scalar<ET>::value, bool>
 for_each_element(behavior_flag<nonzero_only> o, FunT &&fun,
                  const iota_result<ET, ShapeT, StaticShape> &t, Ts &&... ts) {
   assert(all_same(shape_of(t), shape_of(ts)...));
-  for (size_t i = 1; i < numel(t); i++) {
+  for (size_t i = 1; i < numel_of(t); i++) {
     fun((ET)i, element_at_index(ts, i)...);
   }
   return true;
@@ -107,7 +107,7 @@ template <class ET, class ShapeT, bool StaticShape>
 std::enable_if_t<!std::is_scalar<ET>::value, size_t>
 nonzero_elements_count(const iota_result<ET, ShapeT, StaticShape> &t) {
   size_t c = 0;
-  for (size_t i = 0; i < numel(t); i++) {
+  for (size_t i = 0; i < numel_of(t); i++) {
     ET e = (ET)i;
     if (!is_zero(e)) {
       c++;
@@ -120,7 +120,7 @@ nonzero_elements_count(const iota_result<ET, ShapeT, StaticShape> &t) {
 template <class ET, class ShapeT, bool StaticShape, class E, class ReduceT>
 E reduce_elements(const iota_result<ET, ShapeT, StaticShape> &t, E initial,
                   ReduceT &&red) {
-  for (size_t i = 0; i < numel(t); i++) {
+  for (size_t i = 0; i < numel_of(t); i++) {
     initial = red(initial, (ET)i);
   }
   return initial;
