@@ -36,6 +36,15 @@ TEST(tensor, ewise_ops2) {
   rr.t().for_each([](double e) { ASSERT_EQ(e, min(1.0, sin(1) + 2)); });
   rr.t().t().for_each([](double e) { ASSERT_EQ(e, min(1.0, sin(1) + 2)); });
 
+  //auto rrr = t1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1;
+  ////for_each_element(behavior_flag<unordered>(), [](double){}, rrr);
+  //details::_for_each_element_unordered_parallel([](auto ...){}, rrr);
+
+  //rr.for_each([](double e) {});
+  //rr.eval().for_each([](double e) {});
+  //rr.t().for_each([](double e) {});
+  //rr.t().t().for_each([](double e) {});
+
   decltype(auto) rre = rr.t().t().t().t();
   ASSERT_TRUE(&rr == &rre);
   ASSERT_TRUE(rr == rre);

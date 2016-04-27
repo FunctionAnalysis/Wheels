@@ -179,50 +179,54 @@ template <class T> struct tensor_core : category::object<T> {
   }
 
   // for_each
-  template <class FunT> void for_each(FunT fun) const {
+  template <class FunT> void for_each(FunT fun) const & {
     for_each_element(behavior_flag<unordered>(), fun, this->derived());
   }
-  template <class FunT> void for_each(FunT fun) {
+  template <class FunT> void for_each(FunT fun) & {
     for_each_element(behavior_flag<unordered>(), fun, this->derived());
+  }
+  template <class FunT> void for_each(FunT fun) && {
+    for_each_element(behavior_flag<unordered>(), fun,
+                     std::move(this->derived()));
   }
 
   // reshape
   template <class ST, class... SizeTs>
-  constexpr auto reshape(const tensor_shape<ST, SizeTs...> &ns) const & {
-    return ::wheels::reshape(this->derived(), ns);
+  constexpr auto reshaped(const tensor_shape<ST, SizeTs...> &ns) const & {
+    return reshape(this->derived(), ns);
   }
   template <class ST, class... SizeTs>
-  auto reshape(const tensor_shape<ST, SizeTs...> &ns) & {
-    return ::wheels::reshape(this->derived(), ns);
+  auto reshaped(const tensor_shape<ST, SizeTs...> &ns) & {
+    return reshape(this->derived(), ns);
   }
   template <class ST, class... SizeTs>
-  auto reshape(const tensor_shape<ST, SizeTs...> &ns) && {
-    return ::wheels::reshape(std::move(this->derived()), ns);
+  auto reshaped(const tensor_shape<ST, SizeTs...> &ns) && {
+    return reshape(std::move(this->derived()), ns);
   }
 
   // downgrade
   template <class K, K FixedRank>
   constexpr decltype(auto)
-  downgrade(const const_ints<K, FixedRank> &r) const & {
-    return ::wheels::downgrade(this->derived(), r);
+  downgraded(const const_ints<K, FixedRank> &r) const & {
+    return downgrade(this->derived(), r);
   }
   template <class K, K FixedRank>
-  decltype(auto) downgrade(const const_ints<K, FixedRank> &r) & {
-    return ::wheels::downgrade(this->derived(), r);
+  decltype(auto) downgraded(const const_ints<K, FixedRank> &r) & {
+    return downgrade(this->derived(), r);
   }
   template <class K, K FixedRank>
-  decltype(auto) downgrade(const const_ints<K, FixedRank> &r) && {
-    return ::wheels::downgrade(std::move(this->derived()), r);
+  decltype(auto) downgraded(const const_ints<K, FixedRank> &r) && {
+    return downgrade(std::move(this->derived()), r);
   }
 
   // permute
   template <class... IndexTs>
-  constexpr decltype(auto) permute(const IndexTs &... inds) const & {
-    return ::wheels::permute(this->derived(), inds...);
+  constexpr decltype(auto) permuted(const IndexTs &... inds) const & {
+    return permute(this->derived(), inds...);
   }
   template <class... IndexTs>
-  decltype(auto) permute(const IndexTs &... inds) && {
-    return ::wheels::permute(std::move(this->derived()), inds...);
+  decltype(auto) permuted(const IndexTs &... inds) && {
+    return permute(std::move(this->derived()), inds...);
   }
 
   // all
@@ -265,7 +269,7 @@ private:
                                             const SubEs &... subes) const {
     assert(_valid_subs_seq(seq, subes...));
     return element_at(
-        derived(), details::_eval_index_expr(subes, size(const_size<Is>()))...);
+        this->derived(), details::_eval_index_expr(subes, size(const_size<Is>()))...);
   }
   template <class... SubEs, size_t... Is>
   decltype(auto) _parenthesis_seq(const_ints<size_t, Is...> seq,
@@ -410,6 +414,12 @@ constexpr decltype(auto) element_at_index(const tensor_core<T> &t,
     return element_at(t.derived(), subs...);
   });
 }
+template <class T, class IndexT>
+decltype(auto) element_at_index(tensor_core<T> &t, const IndexT &ind) {
+  return invoke_with_subs(shape_of(t.derived()), ind, [&t](auto &&... subs) {
+    return element_at(t.derived(), subs...);
+  });
+}
 
 // void reserve_shape(ts, shape);
 template <class T, class ST, class... SizeTs>
@@ -421,7 +431,7 @@ template <class FunT, class T, class... Ts>
 bool for_each_element(behavior_flag<index_ascending>, FunT fun,
                       const tensor_core<T> &t, Ts &&... ts) {
   assert(all_same(t.shape(), ts.shape()...));
-  for_each_subscript(t.shape(), [&fun, &t, &ts...](auto &... subs) {
+  for_each_subscript(t.shape(), [&](auto &&... subs) {
     fun(element_at(t.derived(), subs...), element_at(ts.derived(), subs...)...);
   });
   return true;
@@ -431,7 +441,7 @@ template <class FunT, class T, class... Ts>
 bool for_each_element(behavior_flag<index_ascending>, FunT fun,
                       tensor_core<T> &t, Ts &&... ts) {
   assert(all_same(t.shape(), ts.shape()...));
-  for_each_subscript(t.shape(), [&fun, &t, &ts...](auto &... subs) {
+  for_each_subscript(t.shape(), [&](auto &&... subs) {
     fun(element_at(t.derived(), subs...), element_at(ts.derived(), subs...)...);
   });
   return true;
@@ -442,20 +452,31 @@ namespace details {
 template <class FunT, class T, class... Ts>
 void _for_each_element_unordered_default(yes staticShape, FunT fun, T &&t,
                                          Ts &&... ts) {
-  for_each_element(behavior_flag<index_ascending>(), fun, t, ts...);
+  for_each_element(behavior_flag<index_ascending>(), fun, std::forward<T>(t),
+                   std::forward<Ts>(ts)...);
 }
-constexpr size_t _numel_parallel_thres = (size_t)4e4;
+
+static constexpr size_t _numel_parallel_thres = (size_t)4e4;
+template <class FunT, class T, class... Ts>
+void _for_each_element_unordered_parallel(FunT &&fun, T &&t, Ts &&... ts) {
+  parallel_for_each((size_t)(numel_of(t)),
+                    [&fun, &t, &ts...](size_t i) {
+                      fun(element_at_index(t.derived(), i),
+                          element_at_index(ts.derived(), i)...);
+                    },
+                    _numel_parallel_thres / 2);
+}
+
 template <class FunT, class T, class... Ts>
 void _for_each_element_unordered_default(no staticShape, FunT fun, T &&t,
                                          Ts &&... ts) {
+  assert(all_same(t.shape(), ts.shape()...));
   if (t.numel() < _numel_parallel_thres) {
-    for_each_element(behavior_flag<index_ascending>(), fun, t, ts...);
+    for_each_element(behavior_flag<index_ascending>(), fun, std::forward<T>(t),
+                     std::forward<Ts>(ts)...);
   } else {
-    parallel_for_each(t.numel(),
-                      [&](size_t i) {
-                        fun(element_at_index(t, i), element_at_index(ts, i)...);
-                      },
-                      _numel_parallel_thres / 2);
+    _for_each_element_unordered_parallel(fun, std::forward<T>(t),
+                                         std::forward<Ts>(ts)...);
   }
 }
 }

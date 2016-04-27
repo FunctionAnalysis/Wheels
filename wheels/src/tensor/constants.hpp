@@ -49,7 +49,7 @@ constexpr const ET &element_at_index(const constant_result<ET, ShapeT, OpT> &t,
 
 // index_ascending, unordered
 template <behavior_flag_enum O, class FunT, class ET, class ShapeT, class OpT>
-bool for_each_element(behavior_flag<O>, FunT &&fun,
+bool for_each_element(behavior_flag<O>, FunT fun,
                       const constant_result<ET, ShapeT, OpT> &t) {
   for (size_t i = 0; i < numel_of(t); i++) {
     fun(t.value());
@@ -59,7 +59,7 @@ bool for_each_element(behavior_flag<O>, FunT &&fun,
 
 // break_on_false
 template <class FunT, class ET, class ShapeT, class OpT>
-bool for_each_element(behavior_flag<break_on_false>, FunT &&fun,
+bool for_each_element(behavior_flag<break_on_false>, FunT fun,
                       const constant_result<ET, ShapeT, OpT> &t) {
   for (size_t i = 0; i < numel_of(t); i++) {
     if (!fun(t.value())) {
@@ -71,7 +71,7 @@ bool for_each_element(behavior_flag<break_on_false>, FunT &&fun,
 
 // nonzero_only
 template <class FunT, class ET, class ShapeT, class OpT, class... Ts>
-bool for_each_element(behavior_flag<nonzero_only> o, FunT &&fun,
+bool for_each_element(behavior_flag<nonzero_only> o, FunT fun,
                       const constant_result<ET, ShapeT, OpT> &t, Ts &&... ts) {
   assert(all_same(shape_of(t), shape_of(ts)...));
   if (!is_zero(t.value())) {

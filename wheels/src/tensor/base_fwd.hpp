@@ -40,6 +40,8 @@ template <class T> constexpr auto numel_of(const tensor_core<T> &t);
 template <class T, class IndexT>
 constexpr decltype(auto) element_at_index(const tensor_core<T> &t,
                                           const IndexT &ind);
+template <class T, class IndexT>
+decltype(auto) element_at_index(tensor_core<T> &t, const IndexT &ind);
 
 // void reserve_shape(ts, shape);
 template <class T, class ST, class... SizeTs>

@@ -25,7 +25,7 @@ public:
 // shape_of
 template <class ET, class ShapeT, class T, size_t... Inds>
 constexpr auto shape_of(const permute_result<ET, ShapeT, T, Inds...> &m) {
-  return ::wheels::permute(m.input.shape(), const_index<Inds>()...);
+  return permute(m.input.shape(), const_index<Inds>()...);
 }
 
 // element_at
@@ -35,7 +35,7 @@ template <class ET, class ShapeT, class T, size_t... Inds, class SubsTupleT,
 constexpr decltype(auto)
 _element_at_permute_result_seq(const permute_result<ET, ShapeT, T, Inds...> &m,
                                SubsTupleT &&subs, const_ints<size_t, Is...>) {
-  return ::wheels::element_at(
+  return element_at(
       m.input,
       std::get<decltype(::wheels::find_first_of(
           const_ints<size_t, Inds...>(), const_index<Is>()))::value>(subs)...);
@@ -51,23 +51,23 @@ element_at(const permute_result<ET, ShapeT, T, Inds...> &m,
 
 // unordered
 template <class FunT, class ET, class ShapeT, class T, size_t... Inds>
-bool for_each_element(behavior_flag<unordered> o, FunT &&fun,
+bool for_each_element(behavior_flag<unordered> o, FunT fun,
                       const permute_result<ET, ShapeT, T, Inds...> &m) {
-  return for_each_element(o, std::forward<FunT>(fun), m.input);
+  return for_each_element(o, fun, m.input);
 }
 
 // break_on_false
 template <class FunT, class ET, class ShapeT, class T, size_t... Inds>
-bool for_each_element(behavior_flag<break_on_false> o, FunT &&fun,
+bool for_each_element(behavior_flag<break_on_false> o, FunT fun,
                       const permute_result<ET, ShapeT, T, Inds...> &m) {
-  return for_each_element(o, std::forward<FunT>(fun), m.input);
+  return for_each_element(o, fun, m.input);
 }
 
 // nonzero_only
 template <class FunT, class ET, class ShapeT, class T, size_t... Inds>
-bool for_each_element(behavior_flag<nonzero_only> o, FunT &&fun,
+bool for_each_element(behavior_flag<nonzero_only> o, FunT fun,
                       const permute_result<ET, ShapeT, T, Inds...> &m) {
-  return for_each_element(o, std::forward<FunT>(fun), m.input);
+  return for_each_element(o, fun, m.input);
 }
 
 // size_t nonzero_elements_count(t)

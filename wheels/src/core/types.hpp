@@ -88,10 +88,6 @@ template <class T> struct types<T> {
   template <class... ArgTs> static constexpr auto construct(ArgTs &&... args) {
     return T(std::forward<ArgTs>(args)...);
   }
-
-  static type_info info() { return typeid(T); }
-  static const char *name() { return typeid(T).name(); }
-  static const char *raw_name() { return typeid(T).raw_name(); }
 };
 
 // array type
@@ -116,10 +112,6 @@ template <class T, size_t N> struct types<T[N]> {
 
   static constexpr auto decay() { return types<std::decay_t<T[N]>>(); }
   static constexpr auto declval() { return std::declval<T[N]>(); }
-
-  static type_info info() { return typeid(T[N]); }
-  static const char *name() { return typeid(T[N]).name(); }
-  static const char *raw_name() { return typeid(T[N]).raw_name(); }
 };
 
 // void
@@ -147,9 +139,6 @@ template <> struct types<void> {
   }
 
   static constexpr auto decay() { return types<void>(); }
-
-  const char *name() const { return typeid(void).name(); }
-  const char *raw_name() const { return typeid(void).raw_name(); }
 };
 
 template <class... Ts> constexpr auto type_of(Ts &&... t) {

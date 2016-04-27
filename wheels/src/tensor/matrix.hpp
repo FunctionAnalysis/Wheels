@@ -35,8 +35,8 @@ struct tensor_base<ET, tensor_shape<ST, MT, NT>, T> : matrix_base<T> {
 
   const tensor_base &base() const { return *this; }
 
-  constexpr tensor_type eval() const & { return tensor_type(derived()); }
-  tensor_type eval() && { return tensor_type(std::move(derived())); }
+  constexpr tensor_type eval() const & { return tensor_type(this->derived()); }
+  tensor_type eval() && { return tensor_type(std::move(this->derived())); }
   constexpr operator tensor_type() const { return eval(); }
 };
 
@@ -56,18 +56,19 @@ struct tensor_base<ET, tensor_shape<ST, MT, const_ints<ST, (ST)1>>, T>
 
   const tensor_base &base() const { return *this; }
 
-  constexpr tensor_type eval() const & { return tensor_type(derived()); }
-  tensor_type eval() && { return tensor_type(std::move(derived())); }
-  constexpr operator tensor_type() const { return eval(); }
+  constexpr tensor_type eval() const & { return tensor_type(this->derived()); }
+  tensor_type eval() && { return tensor_type(std::move(this->derived())); }
+  constexpr operator tensor_type() const { return this->eval(); }
 
   constexpr decltype(auto) to_vec() const & {
-    return ::wheels::reshape(this->derived(), make_shape(rows()));
+    return ::wheels::reshape(this->derived(), make_shape(this->rows()));
   }
   decltype(auto) to_vec() & {
-    return ::wheels::reshape(this->derived(), make_shape(rows()));
+    return ::wheels::reshape(this->derived(), make_shape(this->rows()));
   }
   decltype(auto) to_vec() && {
-    return ::wheels::reshape(std::move(this->derived()), make_shape(rows()));
+    return ::wheels::reshape(std::move(this->derived()),
+                             make_shape(this->rows()));
   }
 
   // xyzw
@@ -103,10 +104,10 @@ struct tensor_base<ET, tensor_shape<ST, MT, const_ints<ST, (ST)1>>, T>
     return ::wheels::element_at(this->derived(), 3, 0);
   }
 
-  decltype(auto) r() { return ::wheels::element_at(derived(), 0, 0); }
-  decltype(auto) g() { return ::wheels::element_at(derived(), 1, 0); }
-  decltype(auto) b() { return ::wheels::element_at(derived(), 2, 0); }
-  decltype(auto) a() { return ::wheels::element_at(derived(), 3, 0); }
+  decltype(auto) r() { return ::wheels::element_at(this->derived(), 0, 0); }
+  decltype(auto) g() { return ::wheels::element_at(this->derived(), 1, 0); }
+  decltype(auto) b() { return ::wheels::element_at(this->derived(), 2, 0); }
+  decltype(auto) a() { return ::wheels::element_at(this->derived(), 3, 0); }
 };
 
 // row vec
@@ -125,18 +126,19 @@ struct tensor_base<ET, tensor_shape<ST, const_ints<ST, (ST)1>, NT>, T>
 
   const tensor_base &base() const { return *this; }
 
-  constexpr tensor_type eval() const & { return tensor_type(derived()); }
-  tensor_type eval() && { return tensor_type(std::move(derived())); }
-  constexpr operator tensor_type() const { return eval(); }
+  constexpr tensor_type eval() const & { return tensor_type(this->derived()); }
+  tensor_type eval() && { return tensor_type(std::move(this->derived())); }
+  constexpr operator tensor_type() const { return this->eval(); }
 
   constexpr decltype(auto) to_vec() const & {
-    return ::wheels::reshape(this->derived(), make_shape(cols()));
+    return ::wheels::reshape(this->derived(), make_shape(this->cols()));
   }
   decltype(auto) to_vec() & {
-    return ::wheels::reshape(this->derived(), make_shape(cols()));
+    return ::wheels::reshape(this->derived(), make_shape(this->cols()));
   }
   decltype(auto) to_vec() && {
-    return ::wheels::reshape(std::move(this->derived()), make_shape(cols()));
+    return ::wheels::reshape(std::move(this->derived()),
+                             make_shape(this->cols()));
   }
 
   // xyzw
@@ -172,10 +174,10 @@ struct tensor_base<ET, tensor_shape<ST, const_ints<ST, (ST)1>, NT>, T>
     return ::wheels::element_at(this->derived(), 0, 3);
   }
 
-  decltype(auto) r() { return ::wheels::element_at(derived(), 0, 0); }
-  decltype(auto) g() { return ::wheels::element_at(derived(), 0, 1); }
-  decltype(auto) b() { return ::wheels::element_at(derived(), 0, 2); }
-  decltype(auto) a() { return ::wheels::element_at(derived(), 0, 3); }
+  decltype(auto) r() { return ::wheels::element_at(this->derived(), 0, 0); }
+  decltype(auto) g() { return ::wheels::element_at(this->derived(), 0, 1); }
+  decltype(auto) b() { return ::wheels::element_at(this->derived(), 0, 2); }
+  decltype(auto) a() { return ::wheels::element_at(this->derived(), 0, 3); }
 };
 
 // matrix * matrix -> matrix

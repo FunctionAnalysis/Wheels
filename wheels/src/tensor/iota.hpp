@@ -51,7 +51,7 @@ constexpr ET element_at(const iota_result<ET, ShapeT, StaticShape> &t,
 // index_ascending, unordered
 template <behavior_flag_enum O, class FunT, class ET, class ShapeT,
           bool StaticShape>
-bool for_each_element(behavior_flag<O>, FunT &&fun,
+bool for_each_element(behavior_flag<O>, FunT fun,
                       const iota_result<ET, ShapeT, StaticShape> &t) {
   for (size_t i = 0; i < numel_of(t); i++) {
     fun((ET)i);
@@ -61,7 +61,7 @@ bool for_each_element(behavior_flag<O>, FunT &&fun,
 
 // break_on_false
 template <class FunT, class ET, class ShapeT, bool StaticShape>
-bool for_each_element(behavior_flag<break_on_false>, FunT &&fun,
+bool for_each_element(behavior_flag<break_on_false>, FunT fun,
                       const iota_result<ET, ShapeT, StaticShape> &t) {
   for (size_t i = 0; i < numel_of(t); i++) {
     if (!fun((ET)i)) {
@@ -74,7 +74,7 @@ bool for_each_element(behavior_flag<break_on_false>, FunT &&fun,
 // nonzero_only
 template <class FunT, class ET, class ShapeT, bool StaticShape, class... Ts>
 std::enable_if_t<!std::is_scalar<ET>::value, bool>
-for_each_element(behavior_flag<nonzero_only> o, FunT &&fun,
+for_each_element(behavior_flag<nonzero_only> o, FunT fun,
                  const iota_result<ET, ShapeT, StaticShape> &t, Ts &&... ts) {
   assert(all_same(shape_of(t), shape_of(ts)...));
   for (size_t i = 0; i < numel_of(t); i++) {
@@ -87,7 +87,7 @@ for_each_element(behavior_flag<nonzero_only> o, FunT &&fun,
 }
 template <class FunT, class ET, class ShapeT, bool StaticShape, class... Ts>
 std::enable_if_t<std::is_scalar<ET>::value, bool>
-for_each_element(behavior_flag<nonzero_only> o, FunT &&fun,
+for_each_element(behavior_flag<nonzero_only> o, FunT fun,
                  const iota_result<ET, ShapeT, StaticShape> &t, Ts &&... ts) {
   assert(all_same(shape_of(t), shape_of(ts)...));
   for (size_t i = 1; i < numel_of(t); i++) {

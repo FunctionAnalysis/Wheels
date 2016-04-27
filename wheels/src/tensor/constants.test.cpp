@@ -17,4 +17,7 @@ TEST(tensor, constants) {
   for (auto i : ones(5, 6, 7) * 5) {
     ASSERT_TRUE(i == 5);
   }
+
+  ones(10, 20, 30_c).for_each([](double a) { ASSERT_EQ(a, 1.0); });
+  m.for_each([](double a) { ASSERT_EQ(a, 1.0); });
 }

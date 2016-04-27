@@ -287,21 +287,22 @@ template <class FunT>
 inline constexpr auto
 tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::transform(
     FunT &&fun) const & {
-  return details::_transform(derived(), std::forward<FunT>(fun));
+  return details::_transform(this->derived(), std::forward<FunT>(fun));
 }
 template <class EleT, class ShapeT, class T>
 template <class FunT>
 inline auto
 tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::transform(
     FunT &&fun) & {
-  return details::_transform(derived(), std::forward<FunT>(fun));
+  return details::_transform(this->derived(), std::forward<FunT>(fun));
 }
 template <class EleT, class ShapeT, class T>
 template <class FunT>
 inline auto
 tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::transform(
     FunT &&fun) && {
-  return details::_transform(std::move(derived()), std::forward<FunT>(fun));
+  return details::_transform(std::move(this->derived()),
+                             std::forward<FunT>(fun));
 }
 
 // cast
@@ -309,13 +310,13 @@ template <class EleT, class ShapeT, class T>
 template <class TargetEleT>
 inline constexpr auto
 tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::cast() const & {
-  return details::_static_ecast<TargetEleT>(derived());
+  return details::_static_ecast<TargetEleT>(this->derived());
 }
 template <class EleT, class ShapeT, class T>
 template <class TargetEleT>
 inline auto
 tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::cast() && {
-  return details::_static_ecast<TargetEleT>(std::move(derived()));
+  return details::_static_ecast<TargetEleT>(std::move(this->derived()));
 }
 
 // _as_tuple_seq

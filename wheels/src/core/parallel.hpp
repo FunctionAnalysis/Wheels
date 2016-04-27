@@ -25,7 +25,7 @@ void parallel_for_each(size_t n, FunT &&fun, size_t batch_num,
         },
         bfirst, blast);
     if (threads.size() >= concurrency_num || bid == n / batch_num) {
-      for (auto &t : threads) {
+      for (auto &&t : threads) {
         t.join();
       }
       threads.clear();
@@ -52,7 +52,7 @@ void parallel_for_each(IterT begin, IterT end, FunT &&fun, size_t batch_num,
         },
         begin + bfirst, begin + blast);
     if (threads.size() >= concurrency_num || bid == n / batch_num) {
-      for (auto &t : threads) {
+      for (auto &&t : threads) {
         t.join();
       }
       threads.clear();
@@ -62,7 +62,7 @@ void parallel_for_each(IterT begin, IterT end, FunT &&fun, size_t batch_num,
 
 // parallel_reduce
 template <class IterT, class T, class ReduceT>
-T parallel_reduce(IterT begin, IterT end, const T &initial, ReduceT &&redux,
+T parallel_reduce(IterT begin, IterT end, const T &initial, ReduceT&& redux,
                   size_t batch_num, size_t concurrency_num) {
   std::vector<std::future<T>> futures;
   futures.reserve(concurrency_num);
@@ -85,10 +85,10 @@ T parallel_reduce(IterT begin, IterT end, const T &initial, ReduceT &&redux,
 
     std::thread(std::move(task), begin + bfirst, begin + blast).detach();
     if (futures.size() >= concurrency_num || bid == n / batch_num) {
-      for (auto &f : futures) {
+      for (auto &&f : futures) {
         f.wait();
       }
-      for (auto &f : futures) {
+      for (auto &&f : futures) {
         result = redux(result, f.get());
       }
       futures.clear();

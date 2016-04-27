@@ -61,16 +61,17 @@ constexpr auto _linear_interpolate(T1 &&p1, T2 &&p2, double c) {
 // _linear_interpolate
 template <class SamplerFunT, class DistToZeroFunT, class... SubTs>
 constexpr auto _linear_interpolated_sampling(const_size<0>,
-                                             SamplerFunT &samplerfun,
-                                             DistToZeroFunT &dist0fun,
+                                             SamplerFunT &&samplerfun,
+                                             DistToZeroFunT &&dist0fun,
                                              const SubTs &... subs) {
   return samplerfun(subs...);
 }
 template <size_t Undetermined, class SamplerFunT, class DistToZeroFunT,
           class... SubTs>
-constexpr auto
-_linear_interpolated_sampling(const_size<Undetermined>, SamplerFunT &samplerfun,
-                              DistToZeroFunT &dist0fun, const SubTs &... subs) {
+constexpr auto _linear_interpolated_sampling(const_size<Undetermined>,
+                                             SamplerFunT &&samplerfun,
+                                             DistToZeroFunT &&dist0fun,
+                                             const SubTs &... subs) {
   return details::_linear_interpolate(
       _linear_interpolated_sampling(const_size<Undetermined - 1>(), samplerfun,
                                     dist0fun, no(), subs...),
@@ -82,8 +83,8 @@ _linear_interpolated_sampling(const_size<Undetermined>, SamplerFunT &samplerfun,
 // _element_at_ceil_or_floor_helper
 template <class T, class E, class SubsInputT, class NoYesTupleT, size_t... Is>
 constexpr decltype(auto)
-_element_at_ceil_or_floor_helper(T &t, E &&otherwise, SubsInputT &subs,
-                                 NoYesTupleT &noyes,
+_element_at_ceil_or_floor_helper(T &&t, E &&otherwise, SubsInputT &&subs,
+                                 NoYesTupleT &&noyes,
                                  const_ints<size_t, Is...>) {
   return t.at_or(
       std::forward<E>(otherwise),

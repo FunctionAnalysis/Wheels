@@ -42,8 +42,9 @@ shape_of(const reformulate_result<ET, ShapeT, InputT, SubsMapFunT> &r) {
 // element_at
 namespace details {
 template <class InputT, class SubsTupleT, size_t... Is>
-constexpr decltype(auto) _element_at_subs_seq(InputT &input, SubsTupleT &&subs,
-                                              const_ints<size_t, Is...> &) {
+constexpr decltype(auto)
+_element_at_subs_seq(InputT &&input, SubsTupleT &&subs,
+                     const const_ints<size_t, Is...> &) {
   return element_at(input, std::get<Is>(subs)...);
 }
 }
@@ -69,7 +70,7 @@ constexpr auto _reformulate(const tensor_base<ET, ShapeT, T> &, TT &&t,
 // repeat
 namespace details {
 template <class ShapeT, class SubsTupleT, size_t... Is>
-constexpr auto _repeat_subs_seq(const ShapeT &shape, SubsTupleT &subs,
+constexpr auto _repeat_subs_seq(const ShapeT &shape, SubsTupleT &&subs,
                                 const const_ints<size_t, Is...> &) {
   return std::make_tuple((std::get<Is>(subs) % std::get<Is>(shape))...);
 }
