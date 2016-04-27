@@ -2,6 +2,8 @@
 
 #include <iterator>
 
+#include "utility_fwd.hpp"
+
 #include "const_ints.hpp"
 
 namespace wheels {
@@ -10,7 +12,7 @@ namespace wheels {
 template <class T, class = void> struct is_iterator : no {};
 template <class T>
 struct is_iterator<
-    T, std::void_t<typename T::iterator_category, typename T::value_type,
+    T, void_t<typename T::iterator_category, typename T::value_type,
                    typename T::difference_type, typename T::pointer,
                    typename T::reference>> : yes {};
 template <class T> struct is_iterator<T *> : yes {};

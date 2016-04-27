@@ -284,18 +284,4 @@ private:
   value_type *_data;
   std::allocator<value_type> _alloc;
 };
-
-// serialize
-template <class T, class ShapeT, bool S, class ArcT>
-void save(ArcT &ar, const storage<T, ShapeT, S> &st) {
-  details::_save_shape(ar, st.shape());
-  ar(cereal::binary_data(st.data(), sizeof(T) * st.shape().magnitude()));
-}
-template <class T, class ShapeT, bool S, class ArcT>
-void load(ArcT &ar, storage<T, ShapeT, S> &st) {
-  ShapeT s;
-  details::_load_shape(ar, s);
-  st.reshape(s);
-  ar(cereal::binary_data(st.data(), sizeof(T) * s.magnitude()));
-}
 }

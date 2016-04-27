@@ -23,12 +23,7 @@ template <class T> constexpr const T &identify_impl(const object<T> &o) {
 }
 
 // other
-template <class T> struct other {
-  constexpr const T &derived() const & {
-    return reinterpret_cast<const T &>(*this);
-  }
-  T &derived() & { return reinterpret_cast<T &>(*this); }
-};
+template <class T> struct other {};
 
 template <class T> struct scalar : other<T> {};
 template <class T> struct arithmetic : scalar<T> {};
@@ -100,7 +95,7 @@ template <class T,
               !std::is_convertible<const T &, const object<T> &>::value &&
               !std::is_integral<T>::value && !std::is_floating_point<T>::value>>
 constexpr const other<T> &identify_impl(const T &t) {
-  return *reinterpret_cast<const other<T> *>(&t);
+  return *reinterpret_cast<const other<T> *>(nullptr);
 }
 
 // identify

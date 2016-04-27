@@ -29,7 +29,7 @@
 #if defined(wheels_compiler_msc)
 #define wheels_enable_if(B) class = std::enable_if_t<(B)>
 #define wheels_enable_else_if(B) class = std::enable_if_t<(B)>, class = void
-#elif defined(wheels_compiler_clang)
+#else
 #define wheels_enable_if(B) bool _B = (B), class = std::enable_if_t<_B>
 #define wheels_enable_else_if(B)                                               \
   bool _B = (B), class = std::enable_if_t<_B>, class = void

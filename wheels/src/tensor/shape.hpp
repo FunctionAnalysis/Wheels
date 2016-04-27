@@ -424,7 +424,7 @@ std::enable_if_t<(Idx < sizeof...(SizeTs) + 1)>
 for_each_subscript_until(const tensor_shape<T, SizeT, SizeTs...> &shape,
                          const const_index<Idx> &idx, FunT &&fun,
                          Ts &&... args) {
-  const auto n = value();
+  const auto n = shape.value();
   for (T i = 0; i < n; i++) {
     for_each_subscript_until(shape.rest(), idx, fun, args..., i);
   }
