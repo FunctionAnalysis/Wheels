@@ -265,7 +265,7 @@ private:
                                             const SubEs &... subes) const {
     assert(_valid_subs_seq(seq, subes...));
     return element_at(
-        derived(), details::_eval_index_expr(subes, size(const_size<Is>()))...);
+        this->derived(), details::_eval_index_expr(subes, this->size(const_size<Is>()))...);
   }
   template <class... SubEs, size_t... Is>
   decltype(auto) _parenthesis_seq(const_ints<size_t, Is...> seq,

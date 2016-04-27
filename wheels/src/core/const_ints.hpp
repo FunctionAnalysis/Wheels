@@ -6,6 +6,7 @@
 
 #include "macros.hpp"
 
+#include "utility_fwd.hpp"
 #include "const_ints_fwd.hpp"
 
 namespace wheels {

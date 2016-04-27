@@ -98,6 +98,9 @@ template <class T> struct always_f {
   T val;
 };
 
+// void_t
+template <class ...> using void_t = void;
+
 // print_to
 inline std::ostream &print_to(std::ostream &os);
 template <class T, class... Ts>

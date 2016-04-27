@@ -1,5 +1,6 @@
 #pragma once
 
+#include <future>
 #include <algorithm>
 #include <numeric>
 #include <vector>
@@ -44,7 +45,7 @@ void parallel_for_each(IterT begin, IterT end, FunT &&fun, size_t batch_num,
     size_t bfirst = bid * batch_num;
     size_t blast = std::min(n, (bid + 1) * batch_num) - 1;
     threads.emplace_back(
-        [&fun](Iter first, Iter last) {
+        [&fun](IterT first, IterT last) {
           while (first != last) {
             fun(*first);
             ++first;

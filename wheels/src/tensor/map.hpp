@@ -84,8 +84,8 @@ public:
   }
 
 public:
-  constexpr const ET &at(size_t ind) const { return ptr()[ind]; }
-  ET &at(size_t ind) { return ptr()[ind]; }
+  constexpr const ET &at(size_t ind) const { return this->ptr()[ind]; }
+  ET &at(size_t ind) { return this->ptr()[ind]; }
 };
 
 // ptr_of
