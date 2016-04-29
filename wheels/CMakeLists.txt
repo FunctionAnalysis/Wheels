@@ -67,6 +67,12 @@ endforeach()
 
 include_directories (${DEPENDENCY_INCLUDES})
 
+if (MSVC)
+    message (WARNING "CMake cannot configure Visual Studio to modify the environment path during program execution, "
+        "therefore you have to do this manually: add 'PATH=\$(PATH);${DEPENDENCY_BIN_PATHS};' to [Project Property]->[Debug]->[Environment] ")
+endif ()
+
+
 # the lib project
 message(STATUS "wheels_sources:")
 foreach(i ${wheels_sources})
@@ -74,13 +80,6 @@ foreach(i ${wheels_sources})
 endforeach()
 add_library(Wheels.Lib ${wheels_includes} ${wheels_sources} ./dummy.cpp)
 target_link_libraries (Wheels.Lib ${DEPENDENCY_LIBS})
-
-
-
-if (MSVC)
-    message (WARNING "CMake cannot configure Visual Studio to modify the environment path during program execution, "
-        "therefore you have to do this manually: add 'PATH=\$(PATH);${DEPENDENCY_BIN_PATHS};' to [Project Property]->[Debug]->[Environment] ")
-endif ()
 
 
 # the test project

@@ -2,5 +2,3 @@
 
 #include "./src/math/lapack.hpp"
 #include "./src/math/auxmath.hpp"
-#include "./src/math/matrix_mul.hpp"
-#include "./src/math/methods.hpp"

@@ -232,7 +232,7 @@ inline bool read_tmp(const filesystem::path &filename, T &... data) {
 
 
 // serialize storage
-template <class T, class ShapeT, bool S> struct storage;
+template <class T, class ShapeT, bool S> class storage;
 template <class T, class ShapeT, bool S, class ArcT>
 void save(ArcT &ar, const storage<T, ShapeT, S> &st) {
   details::_save_shape(ar, st.shape());
@@ -252,11 +252,11 @@ void load(ArcT &ar, storage<T, ShapeT, S> &st) {
 namespace cv {
 class Mat;
 template <class T, int M, int N> class Matx;
-template <class T> struct Point_;
-template <class T> struct Size_;
-template <class T> struct Rect_;
-struct KeyPoint;
-struct Moments;
+template <class T> class Point_;
+template <class T> class Size_;
+template <class T> class Rect_;
+class KeyPoint;
+class Moments;
 
 // MUST be defined in the namespace of the underlying type (cv::XXX),
 //    definition of alias names in namespace pano::core won't work!

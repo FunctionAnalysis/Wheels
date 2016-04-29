@@ -116,8 +116,14 @@ template <class T> struct tensor_core : category::object<T> {
 
   constexpr auto norm_squared() const { return norm_squared(this->derived()); }
   constexpr auto norm() const { return norm_of(this->derived()); }
-  constexpr auto normalized() const & { return this->derived() / this->norm(); }
-  auto normalized() && { return std::move(this->derived()) / this->norm(); }
+
+  // normalized
+  constexpr decltype(auto) normalized() const & {
+    return ewise(this->derived()) / this->norm();
+  }
+  decltype(auto) normalized() && {
+    return ewise(std::move(this->derived())) / this->norm();
+  }
 
   constexpr auto sum() const { return sum_of(this->derived()); }
 
@@ -158,6 +164,7 @@ template <class T> struct tensor_core : category::object<T> {
   constexpr decltype(auto) ewised() const & { return ewise(this->derived()); }
   decltype(auto) ewised() & { return ewise(this->derived()); }
   decltype(auto) ewised() && { return ewise(std::move(this->derived())); }
+
 
   // block
   template <class... TensorOrIndexTs>
@@ -235,6 +242,7 @@ template <class T> struct tensor_core : category::object<T> {
   constexpr bool any() const { return any_of(this->derived()); }
   // none
   constexpr bool none() const { return !any_of(this->derived()); }
+
 
   // begin/end
   constexpr tensor_iterator<const T> begin() const {

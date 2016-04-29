@@ -1,21 +1,13 @@
 #pragma once
 
-#include "../core/macros.hpp"
-
-#if defined(wheels_compiler_msc)
-#include <complex.h>
-#define lapack_complex_float _C_float_complex
-#define lapack_complex_double _C_double_complex
-#include <lapacke.h>
-#ifdef I
-#undef I
-#endif
-#else
-#include <lapacke.h>
-#endif
-
-#include "../core/types.hpp"
 #include <complex>
+
+#define HAVE_LAPACK_CONFIG_H
+#define LAPACK_COMPLEX_CPP
+#include <lapacke.h>
+
+#include "../core/macros.hpp"
+#include "../core/types.hpp"
 
 #define wheels_lapack(fun) fun##_
 
@@ -24,7 +16,6 @@ namespace wheels {
 using blas_int = int;
 
 namespace lapack {
-
 
 template <class TT>
 inline void gels(char *trans, blas_int *m, blas_int *n, blas_int *nrhs, TT *a,
