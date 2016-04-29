@@ -25,10 +25,15 @@ TEST(tensor, iota) {
   vecx data(make_shape(100));
   std::default_random_engine rng;
   randomize_fields(data, rng);
-  vecx rev_data = data[index_tags::last - iota(100)];
-  for (auto i : iota(100)) {
+  auto fs = 0_symbol + iota(0_symbol);
+  auto fsv = fs(5);
+  //vecx rev_data = data[fs];
+  /*for (auto i : iota(100)) {
     ASSERT_EQ(data[i], rev_data[index_tags::last - i]);
   }
+
+  auto fun = iota(0_symbol);
+  auto ff = fun(5).eval();*/
 }
 
 TEST(tensor, range) {
@@ -73,5 +78,7 @@ TEST(tensor, range) {
                    vecx({1.0, 0.8, 0.6, 0.4, 0.2, 0.0})) < 1e-10)
                   .all());
 
+ // auto sfd = ;
+  //sfd.operator()(1, 2);
   ASSERT_TRUE(range(0_symbol, 2, 1_symbol)(0, 5) == range(0, 2, 5));
 }

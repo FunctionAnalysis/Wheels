@@ -16,7 +16,7 @@ template <char... Cs> constexpr auto operator"" _symbol();
 }
 
 template <class T> struct const_coeff;
-template <class T> constexpr const_coeff<std::decay_t<T>> as_const_coeff(T &&v);
+template <class T> constexpr decltype(auto) as_const_coeff(T &&v);
 
 template <class Op, class E> struct const_unary_op;
 template <class Op, class E>
@@ -27,6 +27,10 @@ template <class Op, class E1, class E2> struct const_binary_op;
 template <class Op, class E1, class E2>
 constexpr const_binary_op<Op, E1, E2> make_binary_op_expr(const Op &op, E1 &&e1,
                                                           E2 &&e2);
+
+template <class FunT, class... RecordedArgTs> struct const_call_list;
+template <class FunT, class... RecordedExprArgTs>
+constexpr auto make_const_call_list(FunT f, RecordedExprArgTs &&... as);
 
 template <class OpT> struct func_base;
 template <class OpT, class T>
@@ -44,5 +48,6 @@ template <class OpT, class T1, class T2>
 constexpr auto overload_as(const func_base<OpT> &, const category::other<T1> &,
                            const const_expr_base<T2> &);
 
-template <class FunT, class... RecordedArgTs> struct const_call_list;
+// has_const_expr
+template <class... ArgTs> constexpr auto has_const_expr(const ArgTs &... args);
 }

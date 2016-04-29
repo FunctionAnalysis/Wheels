@@ -141,14 +141,19 @@ template <class ET> struct _iota_impl {
   constexpr auto operator()(const tensor_shape<ST, SizeTs...> &s) const {
     return iota_result<ET, tensor_shape<ST, SizeTs...>>(s);
   }
-  template <class SizeT, class = std::enable_if_t<is_int<SizeT>::value>>
-  constexpr auto operator()(const SizeT &s) const {
-    return (*this)(make_shape(s));
+  constexpr auto operator()(size_t s) const {
+    return iota_result<ET, tensor_shape<size_t, size_t>>(
+        tensor_shape<size_t, size_t>(s));
+  }
+  template <class T, T N>
+  constexpr auto operator()(const const_ints<T, N> &) const {
+    return iota_result<ET, tensor_shape<T, const_ints<T, N>>>(
+        tensor_shape<T, const_ints<T, N>>());
   }
 };
 }
-template <class ET, class SizeT> constexpr auto iota(const SizeT &s) {
-  return smart_invoke(details::_iota_impl<ET>(), s);
+template <class ET, class SizeT> constexpr auto iota(SizeT &&s) {
+  return smart_invoke(details::_iota_impl<ET>(), std::forward<SizeT>(s));
 }
 
 // range

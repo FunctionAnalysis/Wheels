@@ -40,16 +40,25 @@ static const auto last = length - const_int<1>();
 }
 
 namespace details {
-template <class E, class SizeT,
-          class = std::enable_if_t<is_const_expr<std::decay_t<E>>::value>>
-constexpr decltype(auto) _eval_index_expr(E &&e, const SizeT &sz) {
+// _eval_index_expr
+template <class T, class E, class SizeT>
+constexpr decltype(auto) _eval_index_expr_impl(T &&e, const const_expr_base<E> &,
+                                          const SizeT &sz) {
   return std::forward<E>(e)(sz);
 }
-template <class T, class SizeT,
-          class = std::enable_if_t<!is_const_expr<std::decay_t<T>>::value>,
-          class = void>
-constexpr T &&_eval_index_expr(T &&t, const SizeT &) {
+template <class T, class E, class SizeT>
+constexpr T &&_eval_index_expr_impl(T &&t, const tensor_core<E> &,
+                               const SizeT &) {
   return static_cast<T &&>(t);
+}
+template <class T, class E, class SizeT>
+constexpr T &&_eval_index_expr_impl(T &&t, const category::other<E> &,
+                               const SizeT &) {
+  return static_cast<T &&>(t);
+}
+template <class T, class SizeT>
+constexpr decltype(auto) _eval_index_expr(T &&e, const SizeT &sz) {
+  return _eval_index_expr_impl(std::forward<T>(e), category::identify(e), sz);
 }
 
 // _brackets
@@ -82,20 +91,14 @@ constexpr TensorTT &&_all_as_tensor_impl(const tensor_core<TensorT> &id,
   return static_cast<TensorTT &&>(inds);
 }
 template <class T>
-constexpr auto _all_as_tensor(T &&t)
-    -> decltype(_all_as_tensor_impl(category::identify(t),
-                                    std::forward<T>(t))) {
+constexpr auto _all_as_tensor(T &&t) {
   return _all_as_tensor_impl(category::identify(t), std::forward<T>(t));
 }
 
 // _block_seq
 template <class T, size_t... Is, class... SubsTensorOrIntTs>
 constexpr auto _block_seq(T &&t, const const_ints<size_t, Is...> &,
-                          SubsTensorOrIntTs &&... subs)
-    -> decltype(::wheels::at_block(
-        std::forward<T>(t), _all_as_tensor(_eval_index_expr(
-                                std::forward<SubsTensorOrIntTs>(subs),
-                                (int64_t)size_at(t, const_index<Is>())))...)) {
+                          SubsTensorOrIntTs &&... subs) {
   return ::wheels::at_block(std::forward<T>(t),
                             _all_as_tensor(_eval_index_expr(
                                 std::forward<SubsTensorOrIntTs>(subs),
