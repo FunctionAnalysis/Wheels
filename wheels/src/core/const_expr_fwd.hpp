@@ -7,6 +7,10 @@ namespace wheels {
 // const_expr_base
 template <class T> struct const_expr_base;
 
+// invoke_const_expr
+template <class E, class... ArgTs>
+decltype(auto) invoke_const_expr(E &&e, ArgTs &&... args);
+
 // const_symbol
 template <size_t Idx> struct const_symbol;
 
@@ -18,19 +22,10 @@ template <char... Cs> constexpr auto operator"" _symbol();
 template <class T> struct const_coeff;
 template <class T> constexpr decltype(auto) as_const_coeff(T &&v);
 
-template <class Op, class E> struct const_unary_op;
-template <class Op, class E>
-constexpr const_unary_op<Op, E> make_unary_op_expr(const Op &op, E &&e);
-
-template <class Op, class E1, class E2> struct const_binary_op;
-
-template <class Op, class E1, class E2>
-constexpr const_binary_op<Op, E1, E2> make_binary_op_expr(const Op &op, E1 &&e1,
-                                                          E2 &&e2);
 
 template <class FunT, class... RecordedArgTs> struct const_call_list;
 template <class FunT, class... RecordedExprArgTs>
-constexpr auto make_const_call_list(FunT f, RecordedExprArgTs &&... as);
+constexpr auto make_const_call_list(FunT&& f, RecordedExprArgTs &&... as);
 
 template <class OpT> struct func_base;
 template <class OpT, class T>
@@ -50,4 +45,8 @@ constexpr auto overload_as(const func_base<OpT> &, const category::other<T1> &,
 
 // has_const_expr
 template <class... ArgTs> constexpr auto has_const_expr(const ArgTs &... args);
+
+// smart_invoke
+template <class FunT, class... ArgTs>
+constexpr decltype(auto) smart_invoke(FunT&& fun, ArgTs &&... args);
 }

@@ -89,7 +89,7 @@ if (${BuildWheelsUnitTest})
     include_directories(${GTEST_INCLUDE_DIRS})
     
     add_executable(Wheels.UnitTest ${wheels_test_sources} ./unittest.cpp)
-    target_link_libraries (Wheels.UnitTest ${DEPENDENCY_LIBS})
+    target_link_libraries (Wheels.UnitTest Wheels.Lib ${DEPENDENCY_LIBS})
     add_dependencies(Wheels.UnitTest googletest)
     
     if(NOT MSVC)

@@ -145,12 +145,12 @@ template <class... Ts> constexpr auto type_of(Ts &&... t) {
   return types<Ts &&...>();
 }
 
-template <class... Ts>
-inline std::ostream &operator<<(std::ostream &os, const types<Ts...> &) {
-  os << "{";
-  print_sep_to(os, ",", types<Ts>::name()...);
-  return os << "}";
-}
+//template <class... Ts>
+//inline std::ostream &operator<<(std::ostream &os, const types<Ts...> &) {
+//  os << "{";
+//  print_sep_to(os, ",", types<Ts>::name()...);
+//  return os << "}";
+//}
 
 // ==
 template <class... T1s, class... T2s,

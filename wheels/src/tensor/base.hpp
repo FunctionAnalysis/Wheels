@@ -40,11 +40,11 @@ static const auto last = length - const_int<1>();
 }
 
 namespace details {
-// _eval_index_expr
+
 template <class T, class E, class SizeT>
 constexpr decltype(auto) _eval_index_expr_impl(T &&e, const const_expr_base<E> &,
                                           const SizeT &sz) {
-  return std::forward<E>(e)(sz);
+  return invoke_const_expr(std::forward<T>(e), sz);
 }
 template <class T, class E, class SizeT>
 constexpr T &&_eval_index_expr_impl(T &&t, const tensor_core<E> &,
@@ -56,6 +56,10 @@ constexpr T &&_eval_index_expr_impl(T &&t, const category::other<E> &,
                                const SizeT &) {
   return static_cast<T &&>(t);
 }
+
+// _eval_index_expr
+// const_expr -> invoke with sz
+// other -> pass
 template <class T, class SizeT>
 constexpr decltype(auto) _eval_index_expr(T &&e, const SizeT &sz) {
   return _eval_index_expr_impl(std::forward<T>(e), category::identify(e), sz);
@@ -63,7 +67,7 @@ constexpr decltype(auto) _eval_index_expr(T &&e, const SizeT &sz) {
 
 // _brackets
 template <class T, class E, class EE>
-constexpr decltype(auto) _brackets_impl(T &&t, const category::other<E> &id,
+constexpr decltype(auto) _brackets_impl(T &&t, const category::other<E> &,
                                         EE &&ind) {
   return element_at_index(std::forward<T>(t), std::forward<EE>(ind));
 }

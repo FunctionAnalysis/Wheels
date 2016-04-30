@@ -142,8 +142,8 @@ constexpr auto overload_as(const func_base<OpT> &op,
                            const tensor_base<EleT1, ShapeT1, T1> &,
                            const const_expr_base<T2> &) {
   return [](auto &&t1, auto &&t2) {
-    return make_binary_op_expr(OpT(), as_const_coeff(wheels_forward(t1)),
-                               wheels_forward(t2));
+    return make_const_call_list(OpT(), as_const_coeff(wheels_forward(t1)),
+                                wheels_forward(t2));
   };
 }
 
@@ -153,8 +153,8 @@ constexpr auto overload_as(const func_base<OpT> &op,
                            const const_expr_base<T1> &,
                            const tensor_base<EleT2, ShapeT2, T2> &) {
   return [](auto &&t1, auto &&t2) {
-    return make_binary_op_expr(OpT(), wheels_forward(t1),
-                               as_const_coeff(wheels_forward(t2)));
+    return make_const_call_list(OpT(), wheels_forward(t1),
+                                as_const_coeff(wheels_forward(t2)));
   };
 }
 

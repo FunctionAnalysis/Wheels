@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../core/smart_invoke.hpp"
+#include "../core/const_expr.hpp"
 
 #include "base.hpp"
 #include "ewise.hpp"

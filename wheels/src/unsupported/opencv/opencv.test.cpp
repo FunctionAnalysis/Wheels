@@ -1,4 +1,3 @@
-#if defined(wheels_with_opencv)
 #include <gtest/gtest.h>
 
 #include "../../../tensor"
@@ -17,11 +16,10 @@ TEST(third, opencv) {
 
   auto im = imread(wheels_data_dir_str"/wheels.jpg");
 
-  auto nim = remap(extend_as_subtensor(im), make_shape(800, 200, 3),
+  auto nim = remap(upgrade_as_subtensor(im), make_shape(800, 200, 3),
                    [](auto y, auto x, auto c) {
                      return vec3(x / 2.0 + 300.0, y / 3.0, c / 2.0);
                    })
                  .eval();
-  println(type_of(nim));
+
 }
-#endif

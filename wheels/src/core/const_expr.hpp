@@ -5,18 +5,26 @@
 #include "object_fwd.hpp"
 #include "overloads_fwd.hpp"
 
-#include "utility.hpp"
 #include "const_ints.hpp"
 #include "overloads.hpp"
+#include "utility.hpp"
 
 namespace wheels {
 
 // const_expr_base
-template <class T> struct const_expr_base : category::object<T> {};
-
-// is_const_expr
-template <class T>
-struct is_const_expr : std::is_base_of<const_expr_base<T>, T> {};
+template <class T> struct const_expr_base : category::object<T> {
+  template <class... ArgTs>
+  constexpr decltype(auto) operator()(ArgTs &&... args) const & {
+    return invoke_const_expr(this->derived(), std::forward<ArgTs>(args)...);
+  }
+  template <class... ArgTs> decltype(auto) operator()(ArgTs &&... args) & {
+    return invoke_const_expr(this->derived(), std::forward<ArgTs>(args)...);
+  }
+  template <class... ArgTs> decltype(auto) operator()(ArgTs &&... args) && {
+    return invoke_const_expr(std::move(this->derived()),
+                             std::forward<ArgTs>(args)...);
+  }
+};
 
 // const_symbol
 template <size_t Idx> struct const_symbol : const_expr_base<const_symbol<Idx>> {
@@ -33,6 +41,14 @@ template <char... Cs> constexpr auto operator"" _symbol() {
 }
 }
 
+// invoke_const_expr_impl
+// used by invoke_const_expr
+template <size_t Idx, class EE, class... ArgTs>
+decltype(auto) invoke_const_expr_impl(const const_symbol<Idx> &, EE &&,
+                                      ArgTs &&... args) {
+  return std::get<Idx>(std::forward_as_tuple(std::forward<ArgTs>(args)...));
+}
+
 // const_coeff
 template <class T> struct const_coeff : const_expr_base<const_coeff<T>> {
   T val;
@@ -43,71 +59,35 @@ template <class T> struct const_coeff : const_expr_base<const_coeff<T>> {
   template <class V> decltype(auto) fields(V &&visitor) { return visitor(val); }
 };
 
+// as_const_coeff
+// wrap a non const expr type as a const expr
 namespace details {
 template <class TT, class T>
 constexpr TT &&_as_const_coeff_impl(TT &&v, const const_expr_base<T> &) {
   return static_cast<TT &&>(v);
 }
 template <class TT, class T>
-constexpr const_coeff<T> _as_const_coeff_impl(TT &&v,
-                                              const category::other<T> &) {
-  return const_coeff<T>(std::forward<TT>(v));
+constexpr const_coeff<TT> _as_const_coeff_impl(TT &&v,
+                                               const category::object<T> &) {
+  return const_coeff<TT>(std::forward<TT>(v));
+}
+template <class TT, class T>
+constexpr const_coeff<TT> _as_const_coeff_impl(TT &&v,
+                                               const category::other<T> &) {
+  return const_coeff<TT>(std::forward<TT>(v));
 }
 }
-template <class T>
-constexpr decltype(auto) as_const_coeff(T && v) {
+template <class T> constexpr decltype(auto) as_const_coeff(T &&v) {
   return details::_as_const_coeff_impl(std::forward<T>(v),
                                        category::identify(v));
 }
 
-
-// const_unary_op
-template <class Op, class E>
-struct const_unary_op : const_expr_base<const_unary_op<Op, E>> {
-  Op op;
-  E e;
-  template <class OpT, class T>
-  constexpr const_unary_op(OpT &&op, T &&e)
-      : op(std::forward<OpT>(op)), e(std::forward<T>(e)) {}
-  template <class... ArgTs>
-  constexpr decltype(auto) operator()(ArgTs &&... args) const {
-    return op(e(std::forward<ArgTs>(args)...));
-  }
-  template <class V> decltype(auto) fields(V &&visitor) {
-    return visitor(op, e);
-  }
-};
-
-template <class Op, class E>
-constexpr const_unary_op<Op, E> make_unary_op_expr(const Op &op, E &&e) {
-  return const_unary_op<Op, E>(op, std::forward<E>(e));
-}
-
-// const_binary_op
-template <class Op, class E1, class E2>
-struct const_binary_op : const_expr_base<const_binary_op<Op, E1, E2>> {
-  Op op;
-  E1 e1;
-  E2 e2;
-  template <class OpT, class T1, class T2>
-  constexpr const_binary_op(OpT &&op, T1 &&e1, T2 &&e2)
-      : op(std::forward<OpT>(op)), e1(std::forward<T1>(e1)),
-        e2(std::forward<T2>(e2)) {}
-  template <class... ArgTs>
-  constexpr decltype(auto) operator()(ArgTs &&... args) const {
-    return op(e1(std::forward<ArgTs>(args)...),
-              e2(std::forward<ArgTs>(args)...));
-  }
-  template <class V> decltype(auto) fields(V &&visitor) {
-    return visitor(op, e1, e2);
-  }
-};
-
-template <class Op, class E1, class E2>
-constexpr const_binary_op<Op, E1, E2> make_binary_op_expr(const Op &op, E1 &&e1,
-                                                          E2 &&e2) {
-  return const_binary_op<Op, E1, E2>(op, std::forward<E1>(e1),
-                                     std::forward<E2>(e2));
+// invoke_const_expr_impl
+// used by invoke_const_expr
+template <class T, class EE, class... ArgTs>
+decltype(auto) invoke_const_expr_impl(const const_coeff<T> &, EE &&e,
+                                      ArgTs &&... args) {
+  return std::forward<EE>(e).val;
 }
 
 // const_call_list
@@ -115,44 +95,52 @@ template <class FunT, class... RecordedExprArgTs>
 struct const_call_list
     : const_expr_base<const_call_list<FunT, RecordedExprArgTs...>> {
   FunT functor;
-  std::tuple<RecordedExprArgTs...> eargs;
- /* static_assert(::wheels::all(is_const_expr<std::decay_t<RecordedExprArgTs>>::value...),
-                "All RecordedExprArgTs must be const_expr types");*/
+  std::tuple<RecordedExprArgTs...> bind_expr_args;
 
-  constexpr explicit const_call_list(FunT f, RecordedExprArgTs &&... as)
-      : functor(f), eargs(std::forward<RecordedExprArgTs>(as)...) {}
-  template <class... ArgTs>
-  constexpr decltype(auto) operator()(ArgTs &&... as) const {
-    return const_cast<const_call_list &>(*this)
-        ._call_seq(make_const_sequence_for<RecordedExprArgTs...>(),
-                   std::forward<ArgTs>(as)...);
-  }
-
-private:
-  template <size_t... Is, class... ArgTs>
-  decltype(auto) _call_seq(const const_ints<size_t, Is...> &, ArgTs &&... as) {
-    return functor(std::forward<RecordedExprArgTs>(std::get<Is>(eargs))(
-        std::forward<ArgTs>(as)...)...);
-  }
+  constexpr explicit const_call_list(FunT &&f, RecordedExprArgTs &&... as)
+      : functor(std::forward<FunT>(f)),
+        bind_expr_args(std::forward<RecordedExprArgTs>(as)...) {}
 };
 
+// make_const_call_list
 template <class FunT, class... RecordedExprArgTs>
-constexpr auto make_const_call_list(FunT f, RecordedExprArgTs &&... as) {
+constexpr auto make_const_call_list(FunT &&f, RecordedExprArgTs &&... as) {
   return const_call_list<FunT, RecordedExprArgTs...>(
-      f, std::forward<RecordedExprArgTs>(as)...);
+      std::forward<FunT>(f), std::forward<RecordedExprArgTs>(as)...);
 }
 
+namespace details {
+template <size_t... Is, class EE, class... ArgTs>
+decltype(auto) _invoke_const_call_list_seq(const const_ints<size_t, Is...> &,
+                                           EE &&e, ArgTs &&... args) {
+  return std::forward<EE>(e).functor(
+      invoke_const_expr(std::get<Is>(std::forward<EE>(e).bind_expr_args),
+                        std::forward<ArgTs>(args)...)...);
+}
+}
+
+// invoke_const_expr_impl
+// used by invoke_const_expr
+template <class FunT, class... RecordedExprArgTs, class EE, class... ArgTs>
+decltype(auto)
+invoke_const_expr_impl(const const_call_list<FunT, RecordedExprArgTs...> &,
+                       EE &&e, ArgTs &&... args) {
+  return details::_invoke_const_call_list_seq(
+      make_const_sequence_for<RecordedExprArgTs...>(), std::forward<EE>(e),
+      std::forward<ArgTs>(args)...);
+}
 
 // overload operators
 template <class OpT, class T>
 constexpr auto overload_as(const func_base<OpT> &, const const_expr_base<T> &) {
-  return [](auto &&v) { return make_unary_op_expr(OpT(), wheels_forward(v)); };
+  return
+      [](auto &&v) { return make_const_call_list(OpT(), wheels_forward(v)); };
 }
 template <class OpT, class T1, class T2>
 constexpr auto overload_as(const func_base<OpT> &, const const_expr_base<T1> &,
                            const const_expr_base<T2> &) {
   return [](auto &&v1, auto &&v2) {
-    return make_binary_op_expr(OpT(), wheels_forward(v1), wheels_forward(v2));
+    return make_const_call_list(OpT(), wheels_forward(v1), wheels_forward(v2));
   };
 }
 
@@ -160,19 +148,25 @@ template <class OpT, class T1, class T2>
 constexpr auto overload_as(const func_base<OpT> &, const const_expr_base<T1> &,
                            const category::other<T2> &) {
   return [](auto &&v1, auto &&v2) {
-    return make_binary_op_expr(OpT(), wheels_forward(v1),
-                               as_const_coeff(wheels_forward(v2)));
+    return make_const_call_list(OpT(), wheels_forward(v1),
+                                as_const_coeff(wheels_forward(v2)));
   };
 }
 template <class OpT, class T1, class T2>
 constexpr auto overload_as(const func_base<OpT> &, const category::other<T1> &,
                            const const_expr_base<T2> &) {
   return [](auto &&v1, auto &&v2) {
-    return make_binary_op_expr(OpT(), as_const_coeff(wheels_forward(v1)),
-                               wheels_forward(v2));
+    return make_const_call_list(OpT(), as_const_coeff(wheels_forward(v1)),
+                                wheels_forward(v2));
   };
 }
 
+// invoke_const_expr
+template <class E, class... ArgTs>
+decltype(auto) invoke_const_expr(E &&e, ArgTs &&... args) {
+  return invoke_const_expr_impl(e, std::forward<E>(e),
+                                std::forward<ArgTs>(args)...);
+}
 
 // has_const_expr
 namespace details {
@@ -198,5 +192,30 @@ constexpr no _has_const_expr_impl() { return no(); }
 }
 template <class... ArgTs> constexpr auto has_const_expr(const ArgTs &... args) {
   return details::_has_const_expr_impl(category::identify(args)...);
+}
+
+namespace details {
+// _smart_invoke
+template <class FunT, class... ArgTs>
+constexpr auto _smart_invoke(FunT &&fun, yes there_are_const_exprs,
+                             ArgTs &&... args) {
+  // return _functor_expr<FunT, ArgTs...>(fun, std::forward<ArgTs>(args)...);
+  return make_const_call_list(std::forward<FunT>(fun),
+                              as_const_coeff(std::forward<ArgTs>(args))...);
+}
+template <class FunT, class... ArgTs>
+constexpr decltype(auto) _smart_invoke(FunT &&fun, no there_are_const_exprs,
+                                       ArgTs &&... args) {
+  return std::forward<FunT>(fun)(std::forward<ArgTs>(args)...);
+}
+}
+
+// smart_invoke
+// migrate const_exprs into arguments
+template <class FunT, class... ArgTs>
+constexpr decltype(auto) smart_invoke(FunT &&fun, ArgTs &&... args) {
+  return details::_smart_invoke(std::forward<FunT>(fun),
+                                has_const_expr(args...),
+                                std::forward<ArgTs>(args)...);
 }
 }
