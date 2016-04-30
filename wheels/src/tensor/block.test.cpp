@@ -16,11 +16,13 @@ TEST(tensor, block) {
   // 6, 7, 8, 9, 10,
   // 11, 12, 13, 14, 15,
   // 16, 17, 18, 19, 20
-  matx a(make_shape(4, 5), with_elements, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12,
-         13, 14, 15, 16, 17, 18, 19, 20);
+  matx a(make_shape(4, 5), {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                            16, 17, 18, 19, 20});
+  ASSERT_TRUE(a.vectorized() == iota(20) + 1);
 
   auto r = range(0, 5);
   auto s = r.shape();
+  ASSERT_TRUE(s == make_shape(6_c));
 
   println(a.size(const_index<1>()));
   println(range(0, 5));

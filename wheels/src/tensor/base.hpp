@@ -218,6 +218,15 @@ template <class T> struct tensor_core : category::object<T> {
     return reshape(std::move(this->derived()), ns);
   }
 
+  // vectorized
+  constexpr auto vectorized() const & {
+    return this->reshaped(make_shape(this->numel()));
+  }
+  auto vectorized() & { return this->reshaped(make_shape(this->numel())); }
+  auto vectorized() && {
+    return std::move(derived()).reshaped(make_shape(this->numel()));
+  }
+
   // downgrade
   template <class K, K FixedRank>
   constexpr decltype(auto)
