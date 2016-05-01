@@ -42,7 +42,7 @@ constexpr auto upgrade_as_repeated(InputT &&input,
   return details::_upgrade_as_repeated(input, std::forward<InputT>(input), es);
 }
 
-// upgrade_as_subtensor
+// upgrade_all
 template <class InputT>
-constexpr decltype(auto) upgrade_as_subtensor(InputT &&input);
+constexpr decltype(auto) upgrade_all(InputT &&input);
 }

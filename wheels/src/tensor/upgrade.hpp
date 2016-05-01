@@ -107,7 +107,7 @@ constexpr auto _upgrade_as_repeated(const tensor_base<ET, ShapeT, T> &,
 }
 }
 
-// upgrade_as_subtensor
+// upgrade_all
 namespace details {
 template <class ET, class ShapeT, class T, class ET2, class ShapeT2, class T2,
           class InputT>
@@ -128,7 +128,7 @@ _upgrade_as_subtensor(const subtensor_view<ET, ShapeT, T, FixedRank> &et,
 }
 }
 template <class InputT>
-constexpr decltype(auto) upgrade_as_subtensor(InputT &&input) {
+constexpr decltype(auto) upgrade_all(InputT &&input) {
   assert(input.numel() > 0);
   return details::_upgrade_as_subtensor(element_at_index(input, 0), input,
                                         std::forward<InputT>(input));

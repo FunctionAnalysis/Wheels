@@ -227,7 +227,7 @@ template <class T> struct tensor_core : category::object<T> {
     return std::move(derived()).reshaped(make_shape(this->numel()));
   }
 
-  // downgrade
+  // downgraded
   template <class K, K FixedRank>
   constexpr decltype(auto)
   downgraded(const const_ints<K, FixedRank> &r) const & {
@@ -240,6 +240,29 @@ template <class T> struct tensor_core : category::object<T> {
   template <class K, K FixedRank>
   decltype(auto) downgraded(const const_ints<K, FixedRank> &r) && {
     return downgrade(std::move(this->derived()), r);
+  }
+
+  // upgraded
+  template <class K, K FixedRank>
+  constexpr decltype(auto) upgraded(const const_ints<K, FixedRank> &r) const & {
+    return upgrade(this->derived(), r);
+  }
+  template <class K, K FixedRank>
+  decltype(auto) upgraded(const const_ints<K, FixedRank> &r) & {
+    return upgrade(this->derived(), r);
+  }
+  template <class K, K FixedRank>
+  decltype(auto) upgraded(const const_ints<K, FixedRank> &r) && {
+    return upgrade(std::move(this->derived()), r);
+  }
+
+  // upgraded_all
+  constexpr decltype(auto) upgraded_all() const & {
+    return upgrade_all(this->derived());
+  }
+  decltype(auto) upgraded_all() & { return upgrade_all(this->derived()); }
+  decltype(auto) upgraded_all() && {
+    return upgrade_all(std::move(this->derived()));
   }
 
   // permute
