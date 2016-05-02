@@ -43,8 +43,9 @@ TEST(eigen, time_compare) {
   for (size_t i : iota(10)) {
     for (size_t j : iota(10)) {
       for (size_t k : iota(10)) {
-        Eigen::MatrixXd A1 = Eigen::MatrixXd::Random(i + 1, i + 1 + j);
-        Eigen::MatrixXd B1 = Eigen::MatrixXd::Random(i + 1, k + 1);
+        size_t m = (i + 1) * 10, n = (i + 1 + j) * 10, p = (k + 1) * 10;
+        Eigen::MatrixXd A1 = Eigen::MatrixXd::Random(m, n);
+        Eigen::MatrixXd B1 = Eigen::MatrixXd::Random(m, p);
         matx A2 = map(A1);
         matx B2 = map(B1);
         A1s.push_back(std::move(A1));
@@ -60,25 +61,20 @@ TEST(eigen, time_compare) {
     std::vector<Eigen::MatrixXd> results1;
     std::vector<matx> results2;
     println("Eigen: ", time_cost([&A1s, &B1s, &results1]() {
-              for (int i = 0; i < 100; i++) {
-                for (const auto &a : A1s) {
-                  results1.push_back(a.array() / 5.0 + a.array() + 1.0 -
-                                     (a * 2.0).array());
-                }
-                for (const auto &b : B1s) {
-                  results1.push_back(b.cwiseProduct(b).array() - 1.0 +
-                                     b.array());
-                }
+              for (const auto &a : A1s) {
+                results1.push_back(a.array() / 5.0 + a.array() + 1.0 -
+                                   (a * 2.0).array());
+              }
+              for (const auto &b : B1s) {
+                results1.push_back(b.cwiseProduct(b).array() - 1.0 + b.array());
               }
             }));
     println("wheels: ", time_cost([&A2s, &B2s, &results2]() {
-              for (int i = 0; i < 100; i++) {
-                for (const auto &a : A2s) {
-                  results2.push_back(a.ewised() / 5.0 + a + 1.0 - a * 2.0);
-                }
-                for (const auto &b : B2s) {
-                  results2.push_back(b.ewised() * b - 1.0 + b);
-                }
+              for (const auto &a : A2s) {
+                results2.push_back(a.ewised() / 5.0 + a + 1.0 - a * 2.0);
+              }
+              for (const auto &b : B2s) {
+                results2.push_back(b.ewised() * b - 1.0 + b);
               }
             }));
 
