@@ -1,6 +1,7 @@
 #pragma once
 
-#include <Eigen/Dense>
+#include <Eigen/Core>
+#include <Eigen/StdVector>
 
 #include "../../tensor/map.hpp"
 #include "../../tensor/permute.hpp"
@@ -20,10 +21,9 @@ constexpr auto _map_eigen_matrix_conditionally(RowT rows, ColT cols, T *data,
 }
 
 // map
-template <class Scalar, int Rows, int Cols, int Options, int MaxRows,
-          int MaxCols>
+template <class Scalar, int Rows, int Cols, int Options>
 constexpr auto
-map(const Eigen::Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols> &m) {
+map(const Eigen::Matrix<Scalar, Rows, Cols, Options, Rows, Cols> &m) {
   return details::_map_eigen_matrix_conditionally(
       conditional(const_bool<Rows == Eigen::Dynamic>(), m.rows(),
                   const_int<Rows>()),
@@ -34,8 +34,7 @@ map(const Eigen::Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols> &m) {
 
 template <class Scalar, int Rows, int Cols, int Options, int MaxRows,
           int MaxCols>
-inline auto
-map(Eigen::Matrix<Scalar, Rows, Cols, Options, MaxRows, MaxCols> &m) {
+inline auto map(Eigen::Matrix<Scalar, Rows, Cols, Options, Rows, Cols> &m) {
   return details::_map_eigen_matrix_conditionally(
       conditional(const_bool<Rows == Eigen::Dynamic>(), m.rows(),
                   const_int<Rows>()),
