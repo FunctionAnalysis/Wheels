@@ -78,7 +78,7 @@ TEST(eigen, time_compare) {
               }
             }));
 
-    // check valitidy
+    // check validity
     ASSERT_EQ(results1.size(), results2.size());
     for (int i = 0; i < results1.size(); i++) {
       ASSERT_LE((map(results1[i]) - results2[i]).norm(), 0.01);
@@ -100,7 +100,7 @@ TEST(eigen, time_compare) {
               }
             }));
 
-    // check valitidy
+    // check validity
     ASSERT_EQ(results1.size(), results2.size());
     for (int i = 0; i < results1.size(); i++) {
       ASSERT_LE((A1s[i] * results1[i] - B1s[i]).norm(), 1e-3);
