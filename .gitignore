@@ -9,3 +9,4 @@
 _backup
 /.vscode
 /TODO.txt
+/ext/gtest/googletest-master.zip

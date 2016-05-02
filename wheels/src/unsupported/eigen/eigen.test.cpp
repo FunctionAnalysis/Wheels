@@ -6,7 +6,9 @@
 
 #include "../../../tensor"
 
+#if defined(wheels_with_openblas)
 #include "../../math/auxmath.hpp"
+#endif
 
 #include "eigen.hpp"
 
@@ -85,6 +87,7 @@ TEST(eigen, time_compare) {
     }
   }
 
+#if defined(wheels_with_openblas)
   { // solve test
     println("### solve test ###");
     std::vector<Eigen::MatrixXd> results1;
@@ -107,4 +110,5 @@ TEST(eigen, time_compare) {
       ASSERT_LE((A2s[i] * results2[i] - B2s[i]).norm(), 1e-3);
     }
   }
+#endif
 }

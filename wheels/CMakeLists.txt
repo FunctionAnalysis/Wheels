@@ -5,10 +5,13 @@ set (wheels_includes "")
 set (wheels_test_sources "")
 
 # add essential modules
-set (modules core tensor math)
+set (modules core tensor)
 if (${Cereal_FOUND})
     list (APPEND modules serialize)
 endif ()
+if (${OpenBLAS_FOUND})
+    list (APPEND modules math)
+endif()
 
 foreach (M ${modules})
     file (GLOB "Src"
@@ -68,8 +71,11 @@ endforeach()
 include_directories (${DEPENDENCY_INCLUDES})
 
 if (MSVC)
-    message (WARNING "CMake cannot configure Visual Studio to modify the environment path during program execution, "
-        "therefore you have to do this manually: add 'PATH=\$(PATH);${DEPENDENCY_BIN_PATHS};' to [Project Property]->[Debug]->[Environment] ")
+    message (WARNING "CMake cannot configure Visual Studio to"
+        " modify the environment path during program execution, "
+        "therefore you have to do this manually: "
+        "add 'PATH=\$(PATH);${DEPENDENCY_BIN_PATHS};' "
+        "to [Project Property]->[Debug]->[Environment] ")
 endif ()
 
 
@@ -98,11 +104,11 @@ if (${BuildWheelsUnitTest})
             ${GTEST_LIBS_DIR}/libgtest_main.a)
     else()
         target_link_libraries(Wheels.UnitTest
-            debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}
-            optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES})
+            debug "${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}"
+            optimized "${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}")
         target_link_libraries(Wheels.UnitTest
-            debug ${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES}
-            optimized ${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES})
+            debug "${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES}"
+            optimized "${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES}")
     endif()
 
 endif ()

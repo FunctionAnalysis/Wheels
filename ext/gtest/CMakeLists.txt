@@ -3,12 +3,13 @@ project(GTestProxy C CXX)
 include(ExternalProject)
 
 ExternalProject_Add(googletest
-    GIT_REPOSITORY https://github.com/google/googletest.git
+    URL "file://${CMAKE_CURRENT_SOURCE_DIR}/googletest-master.zip"
     CMAKE_ARGS -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG:PATH=DebugLibs
                -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH=ReleaseLibs
                -Dgtest_force_shared_crt=ON
                -DBUILD_GTEST=ON
-     PREFIX "${CMAKE_CURRENT_BINARY_DIR}"
+    PREFIX "${CMAKE_CURRENT_BINARY_DIR}"
+    STAMP_DIR "${CMAKE_CURRENT_BINARY_DIR}/stemp"
 # Disable install step
     INSTALL_COMMAND ""
 )
