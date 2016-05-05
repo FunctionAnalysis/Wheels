@@ -13,12 +13,14 @@ template <class T, size_t N>
 using vec_ = tensor<T, tensor_shape<size_t, const_size<N>>>;
 using vec2 = vec_<double, 2>;
 using vec3 = vec_<double, 3>;
+using vec4 = vec_<double, 4>;
 
 // gvec_
 template <class E, size_t N, class T>
 using gvec_ = tensor_base<E, tensor_shape<size_t, const_size<N>>, T>;
 template <class T> using gvec2 = gvec_<double, 2, T>;
 template <class T> using gvec3 = gvec_<double, 3, T>;
+template <class T> using gvec4 = gvec_<double, 4, T>;
 
 // vecx_
 template <class T> using vecx_ = tensor<T, tensor_shape<size_t, size_t>>;
@@ -36,6 +38,7 @@ template <class T, size_t M, size_t N>
 using mat_ = tensor<T, tensor_shape<size_t, const_size<M>, const_size<N>>>;
 using mat2 = mat_<double, 2, 2>;
 using mat3 = mat_<double, 3, 3>;
+using mat4 = mat_<double, 4, 4>;
 
 // gmat_
 template <class E, size_t M, size_t N, class T>
@@ -76,6 +79,7 @@ using cube_ =
            tensor_shape<size_t, const_size<M>, const_size<N>, const_size<L>>>;
 using cube2 = cube_<double, 2, 2, 2>;
 using cube3 = cube_<double, 3, 3, 3>;
+using cube4 = cube_<double, 4, 4, 4>;
 
 // cubex_
 template <class T>

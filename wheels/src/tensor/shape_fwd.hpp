@@ -9,6 +9,12 @@ template <class T, class... SizeTs> class tensor_shape;
 // is_tensor_shape
 template <class T> struct is_tensor_shape;
 
+template <class T1, class... SizeT1s, class T2, class... SizeT2s>
+constexpr auto same_rank(const tensor_shape<T1, SizeT1s...> &,
+                         const tensor_shape<T2, SizeT2s...> &) {
+  return const_bool<sizeof...(SizeT1s) == sizeof...(SizeT2s)>();
+}
+
 template <class T, class SizeT, class... SizeTs>
 constexpr auto max_shape_size(const tensor_shape<T, SizeT, SizeTs...> &shape);
 

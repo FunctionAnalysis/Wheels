@@ -330,6 +330,8 @@ private:
 
 template <class T1, class T2>
 constexpr bool operator==(const tensor_core<T1> &a, const tensor_core<T2> &b) {
+  using check_t = decltype(same_rank(a.shape(), b.shape()));
+  static_assert(check_t::value, "shape rank mismatched!");
   return a.shape() == b.shape() &&
          for_each_element(behavior_flag<break_on_false>(),
                           [](auto &&e1, auto &&e2) -> bool { return e1 == e2; },
@@ -337,6 +339,8 @@ constexpr bool operator==(const tensor_core<T1> &a, const tensor_core<T2> &b) {
 }
 template <class T1, class T2>
 constexpr bool operator!=(const tensor_core<T1> &a, const tensor_core<T2> &b) {
+  using check_t = decltype(same_rank(a.shape(), b.shape()));
+  static_assert(check_t::value, "shape rank mismatched!");
   return !(a == b);
 }
 
@@ -602,6 +606,10 @@ bool for_each_element(behavior_flag<nonzero_only>, FunT fun, tensor_core<T> &t,
 // void assign_elements(to, from);
 template <class ToT, class FromT>
 void assign_elements(tensor_core<ToT> &to, const tensor_core<FromT> &from) {
+  using _shape_to = std::decay_t<decltype(to.shape())>;
+  using _shape_from = std::decay_t<decltype(from.shape())>;
+  static_assert(_shape_to::rank == _shape_from::rank, "shape ranks mismatch!");
+
   decltype(auto) s = from.shape();
   if (to.shape() != s) {
     reserve_shape(to.derived(), s);

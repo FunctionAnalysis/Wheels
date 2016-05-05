@@ -1,6 +1,11 @@
 #pragma once
 
 #include "base.hpp"
+#include "block.hpp"
+#include "constants.hpp"
+#include "ewise.hpp"
+#include "iota.hpp"
+#include "tensor.hpp"
 
 #include "matrix_fwd.hpp"
 
@@ -11,12 +16,35 @@ template <class T> struct matrix_base : tensor_core<T> {
   constexpr auto rows() const { return this->size(const_index<0>()); }
   constexpr auto cols() const { return this->size(const_index<1>()); }
 
-  constexpr decltype(auto) t() const & {
-    return ::wheels::transpose(this->derived());
+  constexpr decltype(auto) t() const & { return transpose(this->derived()); }
+  decltype(auto) t() & { return transpose(this->derived()); }
+  decltype(auto) t() && { return transpose(std::move(this->derived())); }
+
+  constexpr decltype(auto) row(size_t r) const & {
+    return at_block(this->derived(), constants(make_shape(), std::move(r)),
+                    iota<size_t>(cols()));
   }
-  decltype(auto) t() & { return ::wheels::transpose(this->derived()); }
-  decltype(auto) t() && {
-    return ::wheels::transpose(std::move(this->derived()));
+  decltype(auto) row(size_t r) & {
+    return at_block(this->derived(), constants(make_shape(), std::move(r)),
+                    iota<size_t>(cols()));
+  }
+  decltype(auto) row(size_t r) && {
+    return at_block(std::move(this->derived()),
+                    constants(make_shape(), std::move(r)),
+                    iota<size_t>(cols()));
+  }
+
+  constexpr decltype(auto) col(size_t r) const & {
+    return at_block(this->derived(), iota<size_t>(rows()),
+                    constants(make_shape(), std::move(r)));
+  }
+  decltype(auto) col(size_t r) & {
+    return at_block(this->derived(), iota<size_t>(rows()),
+                    constants(make_shape(), std::move(r)));
+  }
+  decltype(auto) col(size_t r) && {
+    return at_block(std::move(this->derived()), iota<size_t>(rows()),
+                    constants(make_shape(), std::move(r)));
   }
 };
 
@@ -319,5 +347,99 @@ auto overload_as(const func_base<binary_op_mul> &,
     return make_matrix_mul_result<std::common_type_t<E1, E2>, shape_t, false,
                                   true>(wheels_forward(a), wheels_forward(b));
   };
+}
+
+// translate (TODO transpose or not?)
+template <class E1, class ST1, class MT1, class NT1, class T1, class E2,
+          class ST2, class MT2, class T2>
+inline auto translate(const tensor_base<E1, tensor_shape<ST1, MT1, NT1>, T1> &m,
+                      const tensor_base<E2, tensor_shape<ST2, MT2>, T2> &v) {
+  assert(m.rows() == 4 && m.cols() == 4 && v.numel() == 3);
+  using ele_t = std::common_type_t<E1, E2>;
+  mat_<ele_t, 4, 4> result(m);
+  result.row(3) =
+      m.row(0) * v[0] + m.row(1) * v[1] + m.row(2) * v[2] + m.row(3);
+  return result;
+}
+
+// rotate (TODO transpose or not?)
+template <class E1, class ST1, class MT1, class NT1, class T1, class E2,
+          class EAngle, class ST2, class MT2, class T2>
+inline auto rotate(const tensor_base<E1, tensor_shape<ST1, MT1, NT1>, T1> &m,
+                   const EAngle &angle,
+                   const tensor_base<E2, tensor_shape<ST2, MT2>, T2> &v) {
+  assert(m.rows() == 4 && m.cols() == 4 && v.numel() == 3);
+  using ele_t = std::common_type_t<E1, EAngle, E2>;
+  ele_t const a = angle;
+  ele_t const c = std::cos(a);
+  ele_t const s = std::sin(a);
+
+  vec_<ele_t, 3> axis(v.derived() / v.norm());
+  vec_<ele_t, 3> temp((ele_t(1) - c) * axis);
+
+  mat_<ele_t, 4, 4> rot(m);
+  rot(0, 0) = c + temp[0] * axis[0];
+  rot(0, 1) = 0 + temp[0] * axis[1] + s * axis[2];
+  rot(0, 2) = 0 + temp[0] * axis[2] - s * axis[1];
+
+  rot(1, 0) = 0 + temp[1] * axis[0] - s * axis[2];
+  rot(1, 1) = c + temp[1] * axis[1];
+  rot(1, 2) = 0 + temp[1] * axis[2] + s * axis[0];
+
+  rot(2, 0) = 0 + temp[2] * axis[0] + s * axis[1];
+  rot(2, 1) = 0 + temp[2] * axis[1] - s * axis[0];
+  rot(2, 2) = c + temp[2] * axis[2];
+
+  mat_<ele_t, 4, 4> result(m);
+  result.row(0) =
+      m.row(0) * rot(0, 0) + m.row(1) * rot(0, 1) + m.row(2) * rot(0, 2);
+  result.row(1) =
+      m.row(0) * rot(1, 0) + m.row(1) * rot(1, 1) + m.row(2) * rot(1, 2);
+  result.row(2) =
+      m.row(0) * rot(2, 0) + m.row(1) * rot(2, 1) + m.row(2) * rot(2, 2);
+  result.row(3) = m.row(3);
+
+  return result;
+}
+
+// scale (TODO transpose or not?)
+template <class E1, class ST1, class MT1, class NT1, class T1, class E2,
+          class ST2, class MT2, class T2>
+inline auto scale(const tensor_base<E1, tensor_shape<ST1, MT1, NT1>, T1> &m,
+                  const tensor_base<E2, tensor_shape<ST2, MT2>, T2> &v) {
+  assert(m.rows() == 4 && m.cols() == 4 && v.numel() == 3);
+  using ele_t = std::common_type_t<E1, E2>;
+  mat_<ele_t, 4, 4> result(m);
+  result.row(0) = m.row(0) * v[0];
+  result.row(1) = m.row(1) * v[1];
+  result.row(2) = m.row(2) * v[2];
+  return result;
+}
+
+// camera ops (TODO...)
+template <class E1, class ST1, class MT1, class T1, class E2, class ST2,
+          class MT2, class T2, class E3, class ST3, class MT3, class T3>
+inline auto
+look_at_rh(const tensor_base<E1, tensor_shape<ST1, MT1>, T1> &eye,
+           const tensor_base<E2, tensor_shape<ST2, MT2>, T2> &center,
+           const tensor_base<E3, tensor_shape<ST3, MT3>, T3> &up) {
+  using ele_t = std::common_type_t<E1, E2, E3>;
+  vec_<ele_t, 3> const f((center.derived() - eye.derived()).normalized());
+  vec_<ele_t, 3> const s(cross(f, up.derived()).normalized());
+  vec_<ele_t, 3> const u(cross(s, f));
+  mat_<ele_t, 4, 4> result = ones(4, 4);
+  result(0, 0) = s.x();
+  result(1, 0) = s.y();
+  result(2, 0) = s.z();
+  result(0, 1) = u.x();
+  result(1, 1) = u.y();
+  result(2, 1) = u.z();
+  result(0, 2) = -f.x();
+  result(1, 2) = -f.y();
+  result(2, 2) = -f.z();
+  result(3, 0) = -dot(s, eye.derived());
+  result(3, 1) = -dot(u, eye.derived());
+  result(3, 2) = dot(f, eye.derived());
+  return result;
 }
 }

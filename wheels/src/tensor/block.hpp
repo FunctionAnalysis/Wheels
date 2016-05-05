@@ -37,8 +37,7 @@ namespace details {
 template <class SubsViewT, size_t... Is>
 constexpr auto _shape_of_block_view(SubsViewT &sv,
                                     const const_ints<size_t, Is...> &) {
-  return make_shape(
-      ::wheels::numel_of(std::get<Is>(sv.subs_tensors).derived())...);
+  return make_shape(numel_of(std::get<Is>(sv.subs_tensors).derived())...);
 }
 }
 template <class ET, class ShapeT, class InputTensorT,
