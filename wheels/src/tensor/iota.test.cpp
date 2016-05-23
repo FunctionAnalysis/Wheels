@@ -25,14 +25,14 @@ TEST(tensor, iota) {
   vecx data(make_shape(100));
   std::default_random_engine rng;
   randomize_fields(data, rng);
-  auto fs = 0_symbol + iota(0_symbol);
+  auto fs = 0_arg + iota(0_arg);
   auto fsv = fs(5);
   //vecx rev_data = data[fs];
   /*for (auto i : iota(100)) {
-    ASSERT_EQ(data[i], rev_data[index_tags::last - i]);
+    ASSERT_EQ(data[i], rev_data[tags::last - i]);
   }
 
-  auto fun = iota(0_symbol);
+  auto fun = iota(0_arg);
   auto ff = fun(5).eval();*/
 }
 
@@ -80,5 +80,5 @@ TEST(tensor, range) {
 
  // auto sfd = ;
   //sfd.operator()(1, 2);
-  ASSERT_TRUE(range(0_symbol, 2, 1_symbol)(0, 5) == range(0, 2, 5));
+  ASSERT_TRUE(range(0_arg, 2, 1_arg)(0, 5) == range(0, 2, 5));
 }

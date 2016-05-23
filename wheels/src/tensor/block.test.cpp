@@ -8,7 +8,7 @@
 #include "tensor.hpp"
 
 using namespace wheels;
-using namespace wheels::index_tags;
+using namespace wheels::tags;
 using namespace wheels::literals;
 
 TEST(tensor, block) {

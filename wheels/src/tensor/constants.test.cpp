@@ -7,7 +7,7 @@
 
 using namespace wheels;
 using namespace wheels::literals;
-using namespace wheels::index_tags;
+using namespace wheels::tags;
 
 TEST(tensor, constants) {
   matx m = ones(4, 5);

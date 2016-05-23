@@ -92,23 +92,11 @@ target_link_libraries (Wheels.Lib ${DEPENDENCY_LIBS})
 if (${BuildWheelsUnitTest})
 
     enable_testing()
-    include_directories(${GTEST_INCLUDE_DIRS})
+    include_directories(${GTEST_INCLUDES})
     
     add_executable(Wheels.UnitTest ${wheels_test_sources} ./unittest.cpp)
-    target_link_libraries (Wheels.UnitTest Wheels.Lib ${DEPENDENCY_LIBS})
+    target_link_libraries(Wheels.UnitTest Wheels.Lib ${DEPENDENCY_LIBS})
+    target_link_libraries(Wheels.UnitTest ${GTEST_LIBS})
     add_dependencies(Wheels.UnitTest googletest)
-    
-    if(NOT MSVC)
-        target_link_libraries(Wheels.UnitTest
-            ${GTEST_LIBS_DIR}/libgtest.a
-            ${GTEST_LIBS_DIR}/libgtest_main.a)
-    else()
-        target_link_libraries(Wheels.UnitTest
-            debug "${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}"
-            optimized "${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest${CMAKE_FIND_LIBRARY_SUFFIXES}")
-        target_link_libraries(Wheels.UnitTest
-            debug "${GTEST_LIBS_DIR}/DebugLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES}"
-            optimized "${GTEST_LIBS_DIR}/ReleaseLibs/${CMAKE_FIND_LIBRARY_PREFIXES}gtest_main${CMAKE_FIND_LIBRARY_SUFFIXES}")
-    endif()
 
 endif ()

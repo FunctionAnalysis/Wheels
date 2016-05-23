@@ -13,10 +13,14 @@ template <class T> std::string get_kind_name(const category::object<T> &) {
 template <class T> std::string get_kind_name(const category::other<T> &) {
   return "other";
 }
+template <class T>
+std::string get_kind_name(const category::std_container<T> &) {
+  return "std_container";
+}
 
 TEST(core, object) {
   ASSERT_TRUE(get_kind_name(category::identify(1)) == "other");
-  ASSERT_TRUE(get_kind_name(category::identify(1_symbol)) == "object");
+  ASSERT_TRUE(get_kind_name(category::identify(1_arg)) == "object");
   int a[5];
-  category::identify(a);
+  ASSERT_TRUE(get_kind_name(category::identify(a)) == "std_container");
 }

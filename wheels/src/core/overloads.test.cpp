@@ -47,12 +47,6 @@ TEST(core, overloads) {
   int ia = 0;
   auto nia = -ia;
 
-  const category::other<int> &ic = category::identify(1);
-
-  auto pp =
-      ::wheels::overload_as(binary_op_plus(), ::wheels::category::identify(a),
-                            ::wheels::category::identify(1));
-
   std::cout << a + 1 << std::endl;
   std::cout << 1 + 1 << std::endl;
   std::cout << 1 + a << std::endl;

@@ -5,7 +5,7 @@
 #include "tensor.hpp"
 
 using namespace wheels;
-using namespace wheels::index_tags;
+using namespace wheels::tags;
 
 TEST(tensor, index) {
   vecx a({1, 2, 3, 4, 5});

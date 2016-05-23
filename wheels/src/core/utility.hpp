@@ -23,12 +23,14 @@ constexpr auto conditional(bool b, ThenT &&thenv, ElseT &&elsev) {
 }
 
 // all(...)
+constexpr yes all() { return yes(); }
 template <class T> constexpr T &&all(T &&v) { return static_cast<T &&>(v); }
 template <class T, class... Ts> constexpr auto all(T &&v, Ts &&... vs) {
   return std::forward<T>(v) && all(std::forward<Ts>(vs)...);
 }
 
 // any(...)
+constexpr no any() { return no(); }
 template <class T> constexpr T &&any(T &&v) { return static_cast<T &&>(v); }
 template <class T, class... Ts> constexpr auto any(T &&v, Ts &&... vs) {
   return std::forward<T>(v) || any(std::forward<Ts>(vs)...);

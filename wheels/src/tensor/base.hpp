@@ -32,28 +32,28 @@
 
 namespace wheels {
 
-// index_tags
-namespace index_tags {
+// tags
+namespace tags {
 static const auto first = const_int<0>();
-static const auto length = const_symbol<0>();
+static const auto length = const_arg<0>();
 static const auto last = length - const_int<1>();
 }
 
 namespace details {
 
 template <class T, class E, class SizeT>
-constexpr decltype(auto) _eval_index_expr_impl(T &&e, const const_expr_base<E> &,
-                                          const SizeT &sz) {
+constexpr decltype(auto)
+_eval_index_expr_impl(T &&e, const const_expr_base<E> &, const SizeT &sz) {
   return invoke_const_expr(std::forward<T>(e), sz);
 }
 template <class T, class E, class SizeT>
 constexpr T &&_eval_index_expr_impl(T &&t, const tensor_core<E> &,
-                               const SizeT &) {
+                                    const SizeT &) {
   return static_cast<T &&>(t);
 }
 template <class T, class E, class SizeT>
 constexpr T &&_eval_index_expr_impl(T &&t, const category::other<E> &,
-                               const SizeT &) {
+                                    const SizeT &) {
   return static_cast<T &&>(t);
 }
 
@@ -94,8 +94,7 @@ constexpr TensorTT &&_all_as_tensor_impl(const tensor_core<TensorT> &id,
                                          TensorTT &&inds) {
   return static_cast<TensorTT &&>(inds);
 }
-template <class T>
-constexpr auto _all_as_tensor(T &&t) {
+template <class T> constexpr auto _all_as_tensor(T &&t) {
   return _all_as_tensor_impl(category::identify(t), std::forward<T>(t));
 }
 
@@ -171,7 +170,6 @@ template <class T> struct tensor_core : category::object<T> {
   constexpr decltype(auto) ewised() const & { return ewise(this->derived()); }
   decltype(auto) ewised() & { return ewise(this->derived()); }
   decltype(auto) ewised() && { return ewise(std::move(this->derived())); }
-
 
   // block
   template <class... TensorOrIndexTs>
@@ -282,7 +280,6 @@ template <class T> struct tensor_core : category::object<T> {
   // none
   constexpr bool none() const { return !any_of(this->derived()); }
 
-
   // begin/end
   constexpr tensor_iterator<const T> begin() const {
     return tensor_iterator<const T>(this->derived(), 0);
@@ -315,8 +312,8 @@ private:
   constexpr decltype(auto) _parenthesis_seq(const_ints<size_t, Is...> seq,
                                             const SubEs &... subes) const {
     assert(_valid_subs_seq(seq, subes...));
-    return element_at(
-        this->derived(), details::_eval_index_expr(subes, size(const_size<Is>()))...);
+    return element_at(this->derived(), details::_eval_index_expr(
+                                           subes, size(const_size<Is>()))...);
   }
   template <class... SubEs, size_t... Is>
   decltype(auto) _parenthesis_seq(const_ints<size_t, Is...> seq,
@@ -521,6 +518,8 @@ void _for_each_element_unordered_parallel(FunT &&fun, T &&t, Ts &&... ts) {
 template <class FunT, class T, class... Ts>
 void _for_each_element_unordered_default(no staticShape, FunT fun, T &&t,
                                          Ts &&... ts) {
+  using check_t = decltype(same_rank(t.shape(), ts.shape()...));
+  static_assert(check_t::value, "shape rank mismatched!");
   assert(all_same(t.shape(), ts.shape()...));
   if (t.numel() < _numel_parallel_thres) {
     for_each_element(behavior_flag<index_ascending>(), fun, std::forward<T>(t),
@@ -534,6 +533,9 @@ void _for_each_element_unordered_default(no staticShape, FunT fun, T &&t,
 template <class FunT, class T, class... Ts>
 bool for_each_element(behavior_flag<unordered>, FunT fun,
                       const tensor_core<T> &t, Ts &&... ts) {
+  using check_t = decltype(same_rank(t.shape(), ts.shape()...));
+  static_assert(check_t::value, "shape rank mismatched!");
+  assert(all_same(t.shape(), ts.shape()...));
   details::_for_each_element_unordered_default(
       const_bool<std::decay_t<decltype(t.shape())>::is_static>(), fun,
       t.derived(), ts.derived()...);
@@ -543,6 +545,9 @@ bool for_each_element(behavior_flag<unordered>, FunT fun,
 template <class FunT, class T, class... Ts>
 bool for_each_element(behavior_flag<unordered>, FunT fun, tensor_core<T> &t,
                       Ts &&... ts) {
+  using check_t = decltype(same_rank(t.shape(), ts.shape()...));
+  static_assert(check_t::value, "shape rank mismatched!");
+  assert(all_same(t.shape(), ts.shape()...));
   details::_for_each_element_unordered_default(
       const_bool<std::decay_t<decltype(t.shape())>::is_static>(), fun,
       t.derived(), ts.derived()...);
@@ -553,6 +558,8 @@ bool for_each_element(behavior_flag<unordered>, FunT fun, tensor_core<T> &t,
 template <class FunT, class T, class... Ts>
 bool for_each_element(behavior_flag<break_on_false>, FunT fun,
                       const tensor_core<T> &t, Ts &&... ts) {
+  using check_t = decltype(same_rank(t.shape(), ts.shape()...));
+  static_assert(check_t::value, "shape rank mismatched!");
   assert(all_same(t.shape(), ts.shape()...));
   return for_each_subscript_if(t.shape(), [&](auto &&... subs) {
     return fun(element_at(t.derived(), subs...),
@@ -563,6 +570,8 @@ bool for_each_element(behavior_flag<break_on_false>, FunT fun,
 template <class FunT, class T, class... Ts>
 bool for_each_element(behavior_flag<break_on_false>, FunT fun,
                       tensor_core<T> &t, Ts &&... ts) {
+  using check_t = decltype(same_rank(t.shape(), ts.shape()...));
+  static_assert(check_t::value, "shape rank mismatched!");
   assert(all_same(t.shape(), ts.shape()...));
   return for_each_subscript_if(t.shape(), [&](auto &&... subs) {
     return fun(element_at(t.derived(), subs...),
@@ -574,6 +583,8 @@ bool for_each_element(behavior_flag<break_on_false>, FunT fun,
 template <class FunT, class T, class... Ts>
 bool for_each_element(behavior_flag<nonzero_only>, FunT fun,
                       const tensor_core<T> &t, Ts &&... ts) {
+  using check_t = decltype(same_rank(t.shape(), ts.shape()...));
+  static_assert(check_t::value, "shape rank mismatched!");
   assert(all_same(t.shape(), ts.shape()...));
   bool visited_all = true;
   for_each_subscript(t.shape(), [&](auto &&... subs) {
@@ -590,6 +601,8 @@ bool for_each_element(behavior_flag<nonzero_only>, FunT fun,
 template <class FunT, class T, class... Ts>
 bool for_each_element(behavior_flag<nonzero_only>, FunT fun, tensor_core<T> &t,
                       Ts &&... ts) {
+  using check_t = decltype(same_rank(t.shape(), ts.shape()...));
+  static_assert(check_t::value, "shape rank mismatched!");
   assert(all_same(t.shape(), ts.shape()...));
   bool visited_all = true;
   for_each_subscript(t.shape(), [&](auto &&... subs) {
@@ -606,9 +619,9 @@ bool for_each_element(behavior_flag<nonzero_only>, FunT fun, tensor_core<T> &t,
 // void assign_elements(to, from);
 template <class ToT, class FromT>
 void assign_elements(tensor_core<ToT> &to, const tensor_core<FromT> &from) {
-  using _shape_to = std::decay_t<decltype(to.shape())>;
-  using _shape_from = std::decay_t<decltype(from.shape())>;
-  static_assert(_shape_to::rank == _shape_from::rank, "shape ranks mismatch!");
+  using check_t = decltype(same_rank(to.shape(), from.shape()));
+  static_assert(check_t::value, "shape rank mismatched!");
+  assert(all_same(to.shape(), from.shape()));
 
   decltype(auto) s = from.shape();
   if (to.shape() != s) {
