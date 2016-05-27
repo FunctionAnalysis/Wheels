@@ -6,7 +6,7 @@ list (APPEND CMAKE_MODULE_PATH
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake
 )
 
-option(BuildWheelsUnitTest "build Wheels.UnitTest" on)
+option(BuildUnitTest "build UnitTest" on)
 
 if (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
     message (STATUS "Clang: ${CLANG_VERSION_STRING}")
@@ -25,10 +25,7 @@ elseif (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 endif()
 
-
-set (DEPENDENCY_INCLUDES ${CMAKE_CURRENT_SOURCE_DIR})
-set (DEPENDENCY_LIBS "")
-set (DEPENDENCY_BIN_PATHS "")
+add_subdirectory(ext)
 
 find_package(OpenBLAS)
 if (${OpenBLAS_FOUND})
@@ -39,26 +36,6 @@ if (${OpenBLAS_FOUND})
         add_definitions ( "/Dwheels_with_openblas" )
     else ()
         add_definitions ( "-Dwheels_with_openblas" )
-    endif ()
-endif()
-
-find_package (Cereal)
-if (${Cereal_FOUND})
-    list (APPEND DEPENDENCY_INCLUDES ${CEREAL_INCLUDE_DIR}) 
-    if (MSVC)
-        add_definitions ( "/Dwheels_with_cereal" )
-    else ()
-        add_definitions ( "-Dwheels_with_cereal" )
-    endif ()
-endif()
-
-find_package(Eigen3)
-if (${EIGEN3_FOUND})
-    list (APPEND DEPENDENCY_INCLUDES ${EIGEN3_INCLUDE_DIR})
-    if (MSVC)
-        add_definitions ( "/Dwheels_with_eigen" )
-    else ()
-        add_definitions ( "-Dwheels_with_eigen" )
     endif ()
 endif()
 
@@ -91,11 +68,6 @@ if (${OpenCV_FOUND})
     else ()
         add_definitions ( "-Dwheels_with_opencv" )
     endif ()
-endif()
-
-
-if (${BuildWheelsUnitTest})   
-    add_subdirectory("./ext/gtest")
 endif()
 
 
