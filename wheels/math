@@ -1,4 +1,0 @@
-#pragma once
-
-#include "./src/math/lapack.hpp"
-#include "./src/math/auxmath.hpp"

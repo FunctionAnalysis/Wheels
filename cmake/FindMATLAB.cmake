@@ -40,7 +40,8 @@
 SET(MATLAB_FOUND 0)
 IF(WIN32)
   # Search for a version of Matlab available, starting from the most modern one to older versions
-  FOREACH(MATVER "9.0", "8.6" "8.5" "8.4" "8.3" "8.2" "8.1" "7.14" "7.11" "7.10" "7.9" "7.8" "7.7" "7.6" "7.5" "7.4")
+  FOREACH(MATVER "9.0" "8.6" "8.5" "8.4" "8.3" "8.2" "8.1" "7.14" 
+  	"7.11" "7.10" "7.9" "7.8" "7.7" "7.6" "7.5" "7.4")
     IF((NOT DEFINED MATLAB_ROOT) 
         OR ("${MATLAB_ROOT}" STREQUAL "")
         OR ("${MATLAB_ROOT}" STREQUAL "/registry"))
@@ -74,7 +75,7 @@ IF(WIN32)
   ELSEIF(CMAKE_SIZEOF_VOID_P MATCHES "8")
     SET(WINDIR "win64")
   ELSE(CMAKE_SIZEOF_VOID_P MATCHES "4")
-    MESSAGE(FATAL_ERROR 
+    MESSAGE(FATAL_ERRORO 
       "CMAKE_SIZEOF_VOID_P (${CMAKE_SIZEOF_VOID_P}) doesn't indicate a valid platform")
   ENDIF(CMAKE_SIZEOF_VOID_P MATCHES "4")
 
@@ -96,8 +97,10 @@ IF(WIN32)
     # If the compiler is Visual Studio, but not any of the specific
     # versions above, we try our luck with the microsoft directory
     SET(MATLAB_LIBRARIES_DIR "${MATLAB_ROOT}/extern/lib/${WINDIR}/microsoft/")
+  ELSEIF(${CMAKE_GENERATOR} MATCHES "MSYS Makefiles")
+  	SET(MATLAB_LIBRARIES_DIR "${MATLAB_ROOT}/extern/lib/mingw64")
   ELSE(${CMAKE_GENERATOR} MATCHES "Visual Studio 6")
-    MESSAGE(FATAL_ERROR "Generator not compatible: ${CMAKE_GENERATOR}")
+    MESSAGE(FATAL_ERRORO "Generator not compatible: ${CMAKE_GENERATOR}")
   ENDIF(${CMAKE_GENERATOR} MATCHES "Visual Studio 6")
 
   # Get paths to the Matlab MEX libraries
