@@ -10,3 +10,7 @@ _backup
 /.vscode
 /TODO.txt
 /ext/gtest/googletest-master.zip
+/.idea
+/ext/cereal/cereal-master.zip
+/ext/eigen3/eigen.zip
+/ext/googletest/googletest-master.zip
