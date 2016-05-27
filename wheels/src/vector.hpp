@@ -93,10 +93,10 @@ struct tensor_base<ET, tensor_shape<ST, NT>, T> : tensor_core<T> {
     return ::wheels::element_at(this->derived(), 3);
   }
 
-  decltype(auto) r() { return ::wheels::element_at(derived(), 0); }
-  decltype(auto) g() { return ::wheels::element_at(derived(), 1); }
-  decltype(auto) b() { return ::wheels::element_at(derived(), 2); }
-  decltype(auto) a() { return ::wheels::element_at(derived(), 3); }
+  decltype(auto) r() { return ::wheels::element_at(this->derived(), 0); }
+  decltype(auto) g() { return ::wheels::element_at(this->derived(), 1); }
+  decltype(auto) b() { return ::wheels::element_at(this->derived(), 2); }
+  decltype(auto) a() { return ::wheels::element_at(this->derived(), 3); }
 
   // dot
   template <class ST2, class NT2, class ET2, class T2>

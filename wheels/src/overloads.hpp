@@ -104,7 +104,7 @@ WHEELS_OVERLOAD_BINARY_OP (^, bitwise_xor)
   struct std_func_##name : func_base<std_func_##name> {                        \
     constexpr std_func_##name() {}                                             \
     template <class ArgT1, class ArgT2>                                        \
-    constexpr decltype(auto) operator()(ArgT1 &&v1, ArgT2 &&v2) const {        \
+    constexpr auto operator()(ArgT1 &&v1, ArgT2 &&v2) const {        \
       using std::name;                                                         \
       return name(std::forward<ArgT1>(v1), std::forward<ArgT2>(v2));           \
     }                                                                          \

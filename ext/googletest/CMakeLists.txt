@@ -6,8 +6,9 @@ ExternalProject_Add(googletest
      URL "file://${CMAKE_CURRENT_SOURCE_DIR}/googletest-master.zip"
      CMAKE_ARGS -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_DEBUG:PATH=DebugLibs
                -DCMAKE_ARCHIVE_OUTPUT_DIRECTORY_RELEASE:PATH=ReleaseLibs
-               -Dgtest_force_shared_crt=ON
                -DBUILD_GTEST=ON
+               -DBUILD_GMOCK=OFF
+               -Dgtest_disable_pthreads:BOOL=ON
      PREFIX "${CMAKE_CURRENT_BINARY_DIR}"
      STAMP_DIR "${CMAKE_CURRENT_BINARY_DIR}"
 # Disable install step
@@ -20,10 +21,12 @@ set(GTEST_INCLUDES ${source_dir}/googletest/include PARENT_SCOPE)
 
 # Specify gtest libs
 ExternalProject_Get_Property(googletest binary_dir)
-set(GTEST_LIBS_DIR ${binary_dir}/googlemock/gtest)
+set(GTEST_LIBS_DIR ${binary_dir}/googletest)
+message (WARNING "GTEST_LIBS_DIR = ${GTEST_LIBS_DIR}")
 if(NOT MSVC)
     set(GTEST_LIBS 
-        "${GTEST_LIBS_DIR}/libgtest.a ${GTEST_LIBS_DIR}/libgtest_main.a" 
+        ${GTEST_LIBS_DIR}/libgtest.a
+        ${GTEST_LIBS_DIR}/libgtest_main.a
         PARENT_SCOPE)
 else()
     set(GTEST_LIBS

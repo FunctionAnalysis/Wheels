@@ -224,7 +224,7 @@ template <class T> struct tensor_core : category::object<T> {
   }
   auto vectorized() & { return this->reshaped(make_shape(this->numel())); }
   auto vectorized() && {
-    return std::move(derived()).reshaped(make_shape(this->numel()));
+    return std::move(this->derived()).reshaped(make_shape(this->numel()));
   }
 
   // downgraded

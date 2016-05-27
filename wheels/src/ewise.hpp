@@ -45,7 +45,7 @@ shape_of(const ewise_op_result<EleT, ShapeT, OpT, InputT, InputTs...> &ts) {
 namespace details {
 template <class EwiseOpResultT, size_t... Is, class... SubTs>
 constexpr decltype(auto)
-_element_at_ewise_op_result_seq(EwiseOpResultT &ts,
+_element_at_ewise_op_result_seq(EwiseOpResultT &&ts,
                                 const const_ints<size_t, Is...> &,
                                 const SubTs &... subs) {
   return ts.op(element_at(std::get<Is>(ts.inputs), subs...)...);
@@ -64,7 +64,7 @@ element_at(const ewise_op_result<EleT, ShapeT, OpT, InputT, InputTs...> &ts,
 namespace details {
 template <class EwiseOpResultT, size_t... Is, class IndexT>
 constexpr decltype(auto)
-_element_at_index_ewise_op_result_seq(EwiseOpResultT &ts,
+_element_at_index_ewise_op_result_seq(EwiseOpResultT &&ts,
                                       const const_ints<size_t, Is...> &,
                                       const IndexT &index) {
   return ts.op(element_at_index(std::get<Is>(ts.inputs), index)...);

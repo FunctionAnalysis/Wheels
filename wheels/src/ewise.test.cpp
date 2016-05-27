@@ -36,14 +36,8 @@ TEST(tensor, ewise_ops2) {
   rr.t().for_each([](double e) { ASSERT_EQ(e, min(1.0, sin(1) + 2)); });
   rr.t().t().for_each([](double e) { ASSERT_EQ(e, min(1.0, sin(1) + 2)); });
 
-  //auto rrr = t1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1;
-  ////for_each_element(behavior_flag<unordered>(), [](double){}, rrr);
-  //details::_for_each_element_unordered_parallel([](auto ...){}, rrr);
-
-  //rr.for_each([](double e) {});
-  //rr.eval().for_each([](double e) {});
-  //rr.t().for_each([](double e) {});
-  //rr.t().t().for_each([](double e) {});
+  auto rrr = t1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1;
+  for_each_element(behavior_flag<unordered>(), [](double){}, rrr);
 
   decltype(auto) rre = rr.t().t().t().t();
   ASSERT_TRUE(&rr == &rre);
@@ -79,5 +73,5 @@ TEST(tensor, ewise_ops3) {
   std::cout << result2 << std::endl;
   auto t = result2.eval();
   std::cout << t << std::endl;
-  // ASSERT_TRUE(t == vec3(4, 4, 5));
+  ASSERT_TRUE(t == vec3(4, 4, 5));
 }

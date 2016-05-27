@@ -13,3 +13,5 @@ _backup
 /ext/cereal/cereal-master.zip
 /ext/googletest/googletest-master.zip
 /ext/nanogui/nanogui.zip
+/.idea
+/ext/eigen3/eigen.zip

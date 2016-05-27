@@ -95,7 +95,7 @@ template <class T,
               !std::is_convertible<const T &, const object<T> &>::value &&
               !std::is_integral<T>::value && !std::is_floating_point<T>::value>>
 constexpr const other<T> &identify_impl(const T &t) {
-  return *reinterpret_cast<const other<T> *>(nullptr);
+  return *(const other<T> *)(0);
 }
 
 // identify

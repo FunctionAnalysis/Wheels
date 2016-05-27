@@ -1,7 +1,7 @@
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-set (wheels_sources "./dummy.cpp")
-set (wheels_test_sources "./unittest.cpp")
+set (wheels_sources "")
+set (wheels_test_sources "")
 
 file (GLOB wheels_sources 
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp" 
@@ -61,7 +61,7 @@ message(STATUS "wheels_sources:")
 foreach(i ${wheels_sources})
     message (STATUS ${i})  
 endforeach()
-add_library(Wheels.Lib ${wheels_includes} ${wheels_sources})
+add_library(Wheels.Lib ${wheels_includes} ${wheels_sources} ./dummy.cpp)
 target_include_directories (Wheels.Lib PUBLIC ${DEPENDENCY_INCLUDES})
 target_link_libraries (Wheels.Lib ${DEPENDENCY_LIBS})
 add_dependencies(Wheels.Lib ${DEPENDENCY_NAMES})
@@ -70,11 +70,12 @@ add_dependencies(Wheels.Lib ${DEPENDENCY_NAMES})
 # the test project
 if (${BuildUnitTest})
     enable_testing()    
-    add_executable(Wheels.UnitTest ${wheels_test_sources})
+    add_executable(Wheels.UnitTest ${wheels_test_sources} ./unittest.cpp)
     target_include_directories (Wheels.UnitTest PUBLIC
         ${DEPENDENCY_INCLUDES} ${TEST_DEPENDENCY_INCLUDES})
-    target_link_libraries (Wheels.UnitTest Wheels.Lib 
-        ${DEPENDENCY_LIBS} ${TEST_DEPENDENCY_LIBS})
+    target_link_libraries (Wheels.UnitTest Wheels.Lib)
+    target_link_libraries (Wheels.UnitTest ${DEPENDENCY_LIBS})
+    target_link_libraries (Wheels.UnitTest ${TEST_DEPENDENCY_LIBS})
     add_dependencies(Wheels.UnitTest Wheels.Lib 
         ${DEPENDENCY_NAMES} ${TEST_DEPENDENCY_NAMES})
 endif ()

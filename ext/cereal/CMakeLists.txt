@@ -4,7 +4,7 @@ include(ExternalProject)
 
 ExternalProject_Add(cereal
      URL "file://${CMAKE_CURRENT_SOURCE_DIR}/cereal-master.zip"
-     CMAKE_ARGS -DSKIP_SANDBOX:BOOL=OFF
+     CMAKE_ARGS -DSKIP_SANDBOX:BOOL=ON
      PREFIX "${CMAKE_CURRENT_BINARY_DIR}"
      STAMP_DIR "${CMAKE_CURRENT_BINARY_DIR}"
 # Disable install step

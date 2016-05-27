@@ -1,12 +1,16 @@
 cmake_minimum_required (VERSION 3.0)
 PROJECT (Wheels VERSION 0.1 LANGUAGES CXX)
 
+option (USE_OPENBLAS "use OpenBLAS" off)
+option (USE_MATLAB "use MATLAB" off)
+option (USE_OPENCV "use OpenCV" off)
+
+option (BuildUnitTest "build UnitTest" on)
+
 set (CMAKE_ALLOW_LOOSE_CONSTRUCTS true)
 list (APPEND CMAKE_MODULE_PATH 
     ${CMAKE_CURRENT_SOURCE_DIR}/cmake
 )
-
-option(BuildUnitTest "build UnitTest" on)
 
 if (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
     message (STATUS "Clang: ${CLANG_VERSION_STRING}")
@@ -27,6 +31,7 @@ endif()
 
 add_subdirectory(ext)
 
+if (${USE_OPENBLAS})
 find_package(OpenBLAS)
 if (${OpenBLAS_FOUND})
 	list (APPEND DEPENDENCY_INCLUDES ${OpenBLAS_INCLUDE_DIR})
@@ -38,7 +43,9 @@ if (${OpenBLAS_FOUND})
         add_definitions ( "-Dwheels_with_openblas" )
     endif ()
 endif()
+endif()
 
+if (${USE_MATLAB})
 find_package(MATLAB)
 if (${MATLAB_FOUND})
     #  MATLAB_INCLUDE_DIR: include path for mex.h, engine.h
@@ -57,7 +64,9 @@ if (${MATLAB_FOUND})
         add_definitions ( "-Dwheels_with_matlab" )
     endif ()
 endif()
+endif()
 
+if (${USE_OPENCV})
 find_package(OpenCV)
 if (${OpenCV_FOUND})
     list (APPEND DEPENDENCY_INCLUDES ${OpenCV_INCLUDE_DIRS})
@@ -69,7 +78,7 @@ if (${OpenCV_FOUND})
         add_definitions ( "-Dwheels_with_opencv" )
     endif ()
 endif()
-
+endif()
 
 get_filename_component(wheels_data_dir "${CMAKE_CURRENT_SOURCE_DIR}/data/" REALPATH)
 message (STATUS "data directory: " ${wheels_data_dir})
@@ -77,7 +86,12 @@ if (MSVC)
     add_definitions ( "/DNOMINMAX /W3 /wd4503 /D_USE_MATH_DEFINES /D_CRT_SECURE_NO_WARNINGS")
     add_definitions ( "/Dwheels_data_dir_str=\"${wheels_data_dir}\"" )
 else ()
+	add_definitions ( "-D_USE_MATH_DEFINES" )
     add_definitions ( "-Dwheels_data_dir_str=\"${wheels_data_dir}\"" )
 endif ()
+
+foreach (i ${TEST_DEPENDENCY_LIBS})
+    message(WARNING "TEST_DEPENDENCY_LIBS: ${i}")
+endforeach()
 
 add_subdirectory (wheels)
