@@ -119,7 +119,7 @@ constexpr auto overload_as(const func_base<OpT> &op,
       std::decay_t<decltype(OpT()(std::declval<EleT1>(), std::declval<T2>()))>;
   return [](auto &&t1, auto &&t2) {
     return make_ewise_op_result<ele_t, ShapeT1>(
-        OpT()(const_symbol<0>(), wheels_forward(t2)), wheels_forward(t1));
+        OpT()(const_arg<0>(), wheels_forward(t2)), wheels_forward(t1));
   };
 }
 
@@ -132,7 +132,7 @@ constexpr auto overload_as(const func_base<OpT> &op,
       std::decay_t<decltype(OpT()(std::declval<T1>(), std::declval<EleT2>()))>;
   return [](auto &&t1, auto &&t2) {
     return make_ewise_op_result<ele_t, ShapeT2>(
-        OpT()(wheels_forward(t1), const_symbol<0>()), wheels_forward(t2));
+        OpT()(wheels_forward(t1), const_arg<0>()), wheels_forward(t2));
   };
 }
 
@@ -203,7 +203,7 @@ template <class EleT1, class ShapeT1, class T1, class T2, class TT1, class TT2>
 constexpr auto _ewise_equals(const tensor_base<EleT1, ShapeT1, T1> &,
                              const category::other<T2> &, TT1 &&t1, TT2 &&t2) {
   return make_ewise_op_result<bool, ShapeT1>(
-      binary_op_eq()(const_symbol<0>(), std::forward<TT2>(t2)),
+      binary_op_eq()(const_arg<0>(), std::forward<TT2>(t2)),
       std::forward<TT1>(t1));
 }
 
@@ -222,7 +222,7 @@ constexpr auto _ewise_not_equals(const tensor_base<EleT1, ShapeT1, T1> &,
                                  const category::other<T2> &, TT1 &&t1,
                                  TT2 &&t2) {
   return make_ewise_op_result<bool, ShapeT1>(
-      binary_op_neq()(const_symbol<0>(), std::forward<TT2>(t2)),
+      binary_op_neq()(const_arg<0>(), std::forward<TT2>(t2)),
       std::forward<TT1>(t1));
 }
 }

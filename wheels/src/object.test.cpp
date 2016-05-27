@@ -16,7 +16,5 @@ template <class T> std::string get_kind_name(const category::other<T> &) {
 
 TEST(core, object) {
   ASSERT_TRUE(get_kind_name(category::identify(1)) == "other");
-  ASSERT_TRUE(get_kind_name(category::identify(1_symbol)) == "object");
-  int a[5];
-  category::identify(a);
+  ASSERT_TRUE(get_kind_name(category::identify(1_arg)) == "object");
 }

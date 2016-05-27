@@ -11,12 +11,12 @@ template <class T> struct const_expr_base;
 template <class E, class... ArgTs>
 decltype(auto) invoke_const_expr(E &&e, ArgTs &&... args);
 
-// const_symbol
-template <size_t Idx> struct const_symbol;
+// const_arg
+template <size_t Idx> struct const_arg;
 
 namespace literals {
-// ""_symbol
-template <char... Cs> constexpr auto operator"" _symbol();
+// ""_arg
+template <char... Cs> constexpr auto operator"" _arg();
 }
 
 template <class T> struct const_coeff;

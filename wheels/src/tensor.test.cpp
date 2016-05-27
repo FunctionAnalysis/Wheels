@@ -13,7 +13,7 @@
 
 using namespace wheels;
 using namespace wheels::literals;
-using namespace wheels::index_tags;
+using namespace wheels::tags;
 
 TEST(tensor, tensor) {
   static_assert(std::is_standard_layout<mat2>::value, "");

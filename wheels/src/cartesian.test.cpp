@@ -11,7 +11,7 @@
 #include "vector.hpp"
 
 using namespace wheels;
-using namespace wheels::index_tags;
+using namespace wheels::tags;
 
 TEST(tensor, meshgrid) {
   matx xx, yy;

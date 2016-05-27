@@ -437,6 +437,20 @@ for_each_subscript_until(const tensor_shape<T, SizeT, SizeTs...> &shape,
   }
 }
 
+// same_rank
+namespace details {
+template <class T1, class... SizeT1s, class T2, class... SizeT2s>
+constexpr auto _same_rank2(const tensor_shape<T1, SizeT1s...> &,
+                           const tensor_shape<T2, SizeT2s...> &) {
+  return const_bool<sizeof...(SizeT1s) == sizeof...(SizeT2s)>();
+}
+}
+template <class T1, class... SizeT1s, class... ShapeTs>
+constexpr auto same_rank(const tensor_shape<T1, SizeT1s...> &shape1,
+                         const ShapeTs &... shapes) {
+  return all(details::_same_rank2(shape1, shapes)...);
+}
+
 // max_shape_size
 namespace details {
 template <class ShapeT, size_t... Is>

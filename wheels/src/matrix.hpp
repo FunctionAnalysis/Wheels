@@ -417,6 +417,7 @@ inline auto scale(const tensor_base<E1, tensor_shape<ST1, MT1, NT1>, T1> &m,
 }
 
 // camera ops (TODO...)
+// look_at_rh
 template <class E1, class ST1, class MT1, class T1, class E2, class ST2,
           class MT2, class T2, class E3, class ST3, class MT3, class T3>
 inline auto
@@ -427,7 +428,7 @@ look_at_rh(const tensor_base<E1, tensor_shape<ST1, MT1>, T1> &eye,
   vec_<ele_t, 3> const f((center.derived() - eye.derived()).normalized());
   vec_<ele_t, 3> const s(cross(f, up.derived()).normalized());
   vec_<ele_t, 3> const u(cross(s, f));
-  mat_<ele_t, 4, 4> result = ones(4, 4);
+  mat_<ele_t, 4, 4> result; // TODO
   result(0, 0) = s.x();
   result(1, 0) = s.y();
   result(2, 0) = s.z();
@@ -437,9 +438,75 @@ look_at_rh(const tensor_base<E1, tensor_shape<ST1, MT1>, T1> &eye,
   result(0, 2) = -f.x();
   result(1, 2) = -f.y();
   result(2, 2) = -f.z();
+
   result(3, 0) = -dot(s, eye.derived());
   result(3, 1) = -dot(u, eye.derived());
   result(3, 2) = dot(f, eye.derived());
+  result(3, 3) = 1;
+  return result;
+}
+
+// perspective_fov_rh
+template <class T>
+inline auto perspective_fov_rh(const T &fov, const T &width, const T &height,
+                               const T &z_near, const T &z_far) {
+  assert(width > 0 && height > 0 && fov > 0);
+  T const rad = fov;
+  T const h =
+      std::cos(static_cast<T>(0.5) * rad) / std::sin(static_cast<T>(0.5) * rad);
+  T const w =
+      h * height / width; /// todo max(width , Height) / min(width , Height)?
+
+  mat_<T, 4, 4> result;
+  result(0, 0) = w;
+  result(1, 1) = h;
+  result(2, 2) = -(z_far + z_near) / (z_far - z_near);
+  result(2, 3) = -static_cast<T>(1);
+  result(3, 2) = -(static_cast<T>(2) * z_far * z_near) / (z_far - z_near);
+  return result;
+}
+
+// perspective_rh
+template <class T>
+inline auto perspective_rh(const T &fovy, const T &aspect, const T &z_near,
+                           const T &z_far) {
+  assert(std::abs(aspect - std::numeric_limits<T>::epsilon()) >
+         static_cast<T>(0));
+  T const tan_half_fov = std::tan(fovy / static_cast<T>(2));
+
+  mat_<T, 4, 4> result;
+  result(0, 0) = static_cast<T>(1) / (aspect * tan_half_fov);
+  result(1, 1) = static_cast<T>(1) / (tan_half_fov);
+  result(2, 2) = -(z_far + z_near) / (z_far - z_near);
+  result(2, 3) = -static_cast<T>(1);
+  result(3, 2) = -(static_cast<T>(2) * z_far * z_near) / (z_far - z_near);
+  return result;
+}
+
+template <class T>
+inline auto perspective_screen(const T &fx, const T &fy, const T &cx,
+                               const T &cy, const T &z_near, const T &z_far) {
+  mat_<T, 4, 4> result;
+  result(0, 0) = fx / cx;
+  result(1, 1) = fy / cy;
+  result(2, 2) = -(z_far + z_near) / (z_far - z_near);
+  result(2, 3) = -static_cast<T>(1);
+  result(3, 2) = -(static_cast<T>(2) * z_far * z_near) / (z_far - z_near);
+  return result;
+}
+
+// ortho
+template <class T>
+inline auto ortho(const T &left, const T &right, const T &bottom, const T &top,
+                  const T &z_near, const T &z_far) {
+  mat_<T, 4, 4> result;
+  result(0, 0) = static_cast<T>(2) / (right - left);
+  result(1, 1) = static_cast<T>(2) / (top - bottom);
+  result(2, 2) = -static_cast<T>(2) / (z_far - z_near);
+  result(3, 0) = -(right + left) / (right - left);
+  result(3, 1) = -(top + bottom) / (top - bottom);
+  result(3, 2) = -(z_far + z_near) / (z_far - z_near);
   return result;
 }
 }
+

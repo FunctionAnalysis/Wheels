@@ -32,10 +32,10 @@
 
 namespace wheels {
 
-// index_tags
-namespace index_tags {
+// tags
+namespace tags {
 static const auto first = const_int<0>();
-static const auto length = const_symbol<0>();
+static const auto length = const_arg<0>();
 static const auto last = length - const_int<1>();
 }
 

@@ -62,7 +62,7 @@ auto solve(const tensor_base<ET, tensor_shape<ST1, MT1, NT1>, T1> &A,
     *succeed = info == 0;
   }
 
-  return std::move(Bdata).t().block(iota(n), iota(index_tags::length));
+  return std::move(Bdata).t().block(iota(n), iota(tags::length));
 }
 
 // solve min |AX - B|

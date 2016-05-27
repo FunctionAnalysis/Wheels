@@ -11,7 +11,7 @@
 
 using namespace wheels;
 using namespace wheels::literals;
-using namespace wheels::index_tags;
+using namespace wheels::tags;
 
 TEST(tensor, ewise_ops1) {
   ASSERT_TRUE(cube2().ewised() * cube2() == cube2());
@@ -55,7 +55,7 @@ TEST(tensor, ewise_ops2) {
   auto efirst2 = rr(0, 0); // via tensor subscripts
   ASSERT_EQ(efirst2, min(1.0, sin(1) + 2));
   // index tags can be used to represent sizes
-  using namespace wheels::index_tags;
+  using namespace wheels::tags;
   auto e1 = rr[length - 1]; // same with rr[100*200-1]
   auto e2 =
       rr(length / 2, (length - 20) / 2);  // same with rr(100/2, (200-20)/2)
@@ -65,10 +65,10 @@ TEST(tensor, ewise_ops2) {
 }
 
 TEST(tensor, ewise_ops3) {
-  auto fun = max(0_symbol + 1, 1_symbol * 2);
-  auto result1 = fun(3, 2); // 0_symbol->3, 1_symbol->2, result1 = 4 of int
+  auto fun = max(0_arg + 1, 1_arg * 2);
+  auto result1 = fun(3, 2); // 0_arg->3, 1_arg->2, result1 = 4 of int
   ASSERT_EQ(result1, max(4, 4));
-  auto result2 = fun(vec3(2, 3, 4).ewised(), ones(3).ewised() * 2); // 0_symbol->vec3(2, 3, 4),
+  auto result2 = fun(vec3(2, 3, 4).ewised(), ones(3).ewised() * 2); // 0_arg->vec3(2, 3, 4),
   auto e0 = element_at(result2, 0ull);
   auto e1 = element_at(result2, 1ull);
   auto e2 = element_at(result2, 2ull);

@@ -26,25 +26,25 @@ template <class T> struct const_expr_base : category::object<T> {
   }
 };
 
-// const_symbol
-template <size_t Idx> struct const_symbol : const_expr_base<const_symbol<Idx>> {
-  constexpr const_symbol() {}
+// const_arg
+template <size_t Idx> struct const_arg : const_expr_base<const_arg<Idx>> {
+  constexpr const_arg() {}
   template <class... ArgTs> constexpr auto operator()(ArgTs &&... args) const {
     return std::get<Idx>(std::forward_as_tuple(std::forward<ArgTs>(args)...));
   }
 };
 
 namespace literals {
-// ""_symbol
-template <char... Cs> constexpr auto operator"" _symbol() {
-  return const_symbol<details::_parse_int<size_t, Cs...>::value>();
+// ""_arg
+template <char... Cs> constexpr auto operator"" _arg() {
+  return const_arg<details::_parse_int<size_t, Cs...>::value>();
 }
 }
 
 // invoke_const_expr_impl
 // used by invoke_const_expr
 template <size_t Idx, class EE, class... ArgTs>
-decltype(auto) invoke_const_expr_impl(const const_symbol<Idx> &, EE &&,
+decltype(auto) invoke_const_expr_impl(const const_arg<Idx> &, EE &&,
                                       ArgTs &&... args) {
   return std::get<Idx>(std::forward_as_tuple(std::forward<ArgTs>(args)...));
 }

@@ -22,7 +22,7 @@ TEST(tensor, iota) {
   // reverse
   std::default_random_engine rng;
   vecx data = rand(make_shape(100), rng);
-  auto fs = 0_symbol + iota(0_symbol);
+  auto fs = 0_arg + iota(0_arg);
   auto fsv = fs(5);
 }
 
@@ -70,5 +70,5 @@ TEST(tensor, range) {
 
  // auto sfd = ;
   //sfd.operator()(1, 2);
-  ASSERT_TRUE(range(0_symbol, 2, 1_symbol)(0, 5) == range(0, 2, 5));
+  ASSERT_TRUE(range(0_arg, 2, 1_arg)(0, 5) == range(0, 2, 5));
 }
