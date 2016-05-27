@@ -1,7 +1,7 @@
 # Wheels
 Tensors for C++ programming.
 
-## Tested Compilers
+## Compilers Tested
 * Visual Studio 2015
 * MinGW GCC 5.3.0
 
@@ -56,7 +56,7 @@ auto t2 = zeros<std::complex<double>>(2, 2, 2, 2);
 vec3 t3(1, 2, 3);
 
 // t4: a 3-vector, with dynamic shape, initialized with 1, 2, 3
-vecx t4(1, 2, 3);
+vecx t4({1, 2, 3});
 
 // t5: a 500x500 matrix, with dynamic shape, filled with 5's
 matx t5(make_shape(500, 500), 5);
