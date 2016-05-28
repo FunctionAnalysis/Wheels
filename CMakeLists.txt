@@ -4,6 +4,8 @@ PROJECT (Wheels VERSION 0.1 LANGUAGES CXX)
 option (USE_OPENBLAS "use OpenBLAS" off)
 option (USE_MATLAB "use MATLAB" off)
 option (USE_OPENCV "use OpenCV" off)
+option (USE_EIGEN3 "use Eigen3" on)
+OPTION (USE_SOIL "use SOIL" on)
 
 option (BuildUnitTest "build UnitTest" on)
 
@@ -89,9 +91,5 @@ else ()
 	add_definitions ( "-D_USE_MATH_DEFINES" )
     add_definitions ( "-Dwheels_data_dir_str=\"${wheels_data_dir}\"" )
 endif ()
-
-foreach (i ${TEST_DEPENDENCY_LIBS})
-    message(WARNING "TEST_DEPENDENCY_LIBS: ${i}")
-endforeach()
 
 add_subdirectory (wheels)

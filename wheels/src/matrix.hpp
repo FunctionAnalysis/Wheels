@@ -16,6 +16,9 @@ template <class T> struct matrix_base : tensor_core<T> {
   constexpr auto rows() const { return this->size(const_index<0>()); }
   constexpr auto cols() const { return this->size(const_index<1>()); }
 
+  constexpr auto width() const { return cols(); }
+  constexpr auto height() const { return rows(); }
+
   constexpr decltype(auto) t() const & { return transpose(this->derived()); }
   decltype(auto) t() & { return transpose(this->derived()); }
   decltype(auto) t() && { return transpose(std::move(this->derived())); }
