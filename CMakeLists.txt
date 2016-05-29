@@ -1,11 +1,11 @@
 cmake_minimum_required (VERSION 3.0)
 PROJECT (Wheels VERSION 0.1 LANGUAGES CXX)
 
-option (USE_OPENBLAS "use OpenBLAS" off)
-option (USE_MATLAB "use MATLAB" off)
-option (USE_OPENCV "use OpenCV" off)
-option (USE_EIGEN3 "use Eigen3" on)
-OPTION (USE_SOIL "use SOIL" on)
+option (USE_AUXMATH "use auxmath module" off)
+option (USE_MATLAB "use matlab module" off)
+option (USE_OPENCV "use opencv module" off)
+option (USE_EIGEN "use eigen module" on)
+option (USE_IMAGE "use image module" on)
 
 option (BuildUnitTest "build UnitTest" on)
 
@@ -33,7 +33,7 @@ endif()
 
 add_subdirectory(ext)
 
-if (${USE_OPENBLAS})
+if (${USE_AUXMATH})
 find_package(OpenBLAS)
 if (${OpenBLAS_FOUND})
 	list (APPEND DEPENDENCY_INCLUDES ${OpenBLAS_INCLUDE_DIR})
