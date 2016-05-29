@@ -103,4 +103,19 @@ template <class T> constexpr decltype(auto) identify(const T &t) {
   return identify_impl(t);
 }
 }
+
+// eval_impl
+template <class T, class K>
+constexpr T eval_impl(const K &v, const category::object<T> &) {
+  return T(v);
+}
+template <class T, class K>
+constexpr T eval_impl(const K &v, const category::other<T> &) {
+  return T(v);
+}
+
+// eval
+template <class T> constexpr auto eval(const T &v) {
+  return eval_impl(v, category::identify(v));
+}
 }

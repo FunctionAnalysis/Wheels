@@ -1,8 +1,10 @@
 #pragma once
 
+#include "object_fwd.hpp"
 #include "ewise_fwd.hpp"
 
 #include "overloads.hpp"
+#include "object.hpp"
 
 #include "tensor_base.hpp"
 #include "extension.hpp"
@@ -87,7 +89,7 @@ constexpr auto overload_as(const func_base<OpT> &op,
                            const tensor_base<EleTs, ShapeTs, Ts> &... ts) {
   assert(all_same(t.shape(), ts.shape()...));
   using ele_t = std::decay_t<decltype(
-      OpT()(std::declval<EleT>(), std::declval<EleTs>()...))>;
+      eval(OpT()(std::declval<EleT>(), std::declval<EleTs>()...)))>;
   return [](auto &&t, auto &&... ts) {
     return make_ewise_op_result<ele_t, ShapeT>(OpT(), wheels_forward(t),
                                                wheels_forward(ts)...);
@@ -103,7 +105,7 @@ constexpr auto overload_as(const func_base<OpT> &op,
                            const tensor_base<EleTs, ShapeTs, Ts> &... ts) {
   assert(all_same(t.shape(), ts.shape()...));
   using ele_t = std::decay_t<decltype(
-      OpT()(std::declval<EleT>(), std::declval<EleTs>()...))>;
+      eval(OpT()(std::declval<EleT>(), std::declval<EleTs>()...)))>;
   return [](auto &&t, auto &&... ts) {
     return make_ewise_op_result<ele_t, ShapeT>(OpT(), wheels_forward(t),
                                                wheels_forward(ts)...);
@@ -116,7 +118,7 @@ constexpr auto overload_as(const func_base<OpT> &op,
                            const tensor_base<EleT1, ShapeT1, T1> &,
                            const category::other<T2> &) {
   using ele_t =
-      std::decay_t<decltype(OpT()(std::declval<EleT1>(), std::declval<T2>()))>;
+      std::decay_t<decltype(eval(OpT()(std::declval<EleT1>(), std::declval<T2>())))>;
   return [](auto &&t1, auto &&t2) {
     return make_ewise_op_result<ele_t, ShapeT1>(
         OpT()(const_arg<0>(), wheels_forward(t2)), wheels_forward(t1));
@@ -128,8 +130,8 @@ template <class OpT, class T1, class EleT2, class ShapeT2, class T2>
 constexpr auto overload_as(const func_base<OpT> &op,
                            const category::other<T1> &,
                            const tensor_base<EleT2, ShapeT2, T2> &) {
-  using ele_t =
-      std::decay_t<decltype(OpT()(std::declval<T1>(), std::declval<EleT2>()))>;
+  using ele_t = std::decay_t<decltype(
+      eval(OpT()(std::declval<T1>(), std::declval<EleT2>())))>;
   return [](auto &&t1, auto &&t2) {
     return make_ewise_op_result<ele_t, ShapeT2>(
         OpT()(wheels_forward(t1), const_arg<0>()), wheels_forward(t2));
@@ -162,13 +164,13 @@ namespace details {
 // auto transform(ts)
 template <class EleT, class ShapeT, class T, class FunT>
 constexpr auto _transform(const tensor_base<EleT, ShapeT, T> &t, FunT &&fun) {
-  using ele_t = std::decay_t<decltype(fun(std::declval<EleT>()))>;
+  using ele_t = std::decay_t<decltype(eval(fun(std::declval<EleT>())))>;
   return make_ewise_op_result<ele_t, ShapeT>(std::forward<FunT>(fun),
                                              t.derived());
 }
 template <class EleT, class ShapeT, class T, class FunT>
 constexpr auto _transform(tensor_base<EleT, ShapeT, T> &&t, FunT &&fun) {
-  using ele_t = std::decay_t<decltype(fun(std::declval<EleT>()))>;
+  using ele_t = std::decay_t<decltype(eval(fun(std::declval<EleT>())))>;
   return make_ewise_op_result<ele_t, ShapeT>(std::forward<FunT>(fun),
                                              std::move(t.derived()));
 }

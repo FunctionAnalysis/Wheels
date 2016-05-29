@@ -87,13 +87,15 @@ public:
   tensor &operator=(const tensor &) = default;
   tensor &operator=(tensor &&) = default;
 
-  template <class AnotherT>
-  constexpr tensor(const tensor_core<AnotherT> &another)
+  template <class AnotherShapeT, class AnotherT,
+            class = std::enable_if_t<AnotherShapeT::rank == ShapeT::rank>>
+  constexpr tensor(const tensor_base<ET, AnotherShapeT, AnotherT> &another)
       : _storage(another.shape()) {
     assign_elements(*this, another.derived());
   }
-  template <class AnotherT>
-  tensor &operator=(const tensor_core<AnotherT> &another) {
+  template <class AnotherShapeT, class AnotherT,
+            class = std::enable_if_t<AnotherShapeT::rank == ShapeT::rank>>
+  tensor &operator=(const tensor_base<ET, AnotherShapeT, AnotherT> &another) {
     assign_elements(*this, another.derived());
     return *this;
   }
@@ -109,15 +111,39 @@ public:
   }
 
   // +=
-  template <class T> tensor &operator+=(const tensor_core<T> &t) {
+  template <class AnotherShapeT, class AnotherT,
+            class = std::enable_if_t<AnotherShapeT::rank == ShapeT::rank>>
+  tensor &operator+=(const tensor_base<ET, AnotherShapeT, AnotherT> &t) {
     assert(this->shape() == t.shape());
     *this = *this + t.derived();
     return *this;
   }
+  tensor &operator+=(const ET &e) {
+    for_each_element(behavior_flag<unordered>(), [&e](auto &&ele) { ele += e; },
+                     *this);
+    return *this;
+  }
   // -=
-  template <class T> tensor &operator-=(const tensor_core<T> &t) {
+  template <class AnotherShapeT, class AnotherT,
+            class = std::enable_if_t<AnotherShapeT::rank == ShapeT::rank>>
+  tensor &operator-=(const tensor_base<ET, AnotherShapeT, AnotherT> &t) {
     assert(this->shape() == t.shape());
     *this = *this - t.derived();
+    return *this;
+  }
+  tensor &operator-=(const ET &e) {
+    for_each_element(behavior_flag<unordered>(), [&e](auto &&ele) { ele -= e; },
+                     *this);
+    return *this;
+  }
+  tensor &operator*=(const ET &e) {
+    for_each_element(behavior_flag<unordered>(), [&e](auto &&ele) { ele *= e; },
+                     *this);
+    return *this;
+  }
+  tensor &operator/=(const ET &e) {
+    for_each_element(behavior_flag<unordered>(), [&e](auto &&ele) { ele /= e; },
+                     *this);
     return *this;
   }
 

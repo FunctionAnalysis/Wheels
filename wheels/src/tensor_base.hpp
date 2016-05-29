@@ -328,6 +328,11 @@ private:
   }
 };
 
+// eval_impl
+template <class T, class K> auto eval_impl(const K &v, const tensor_core<T> &) {
+  return v.eval();
+}
+
 template <class T1, class T2>
 constexpr bool operator==(const tensor_core<T1> &a, const tensor_core<T2> &b) {
   using check_t = decltype(same_rank(a.shape(), b.shape()));
