@@ -72,9 +72,6 @@ using colvecx_ = tensor<T, tensor_shape<size_t, size_t, const_size<1>>>;
 using rowvecx = rowvecx_<double>;
 using colvecx = colvecx_<double>;
 
-// image_
-template <class T> using image_ = matx_<T>;
-
 // cube_
 template <class T, size_t M, size_t N, size_t L>
 using cube_ =

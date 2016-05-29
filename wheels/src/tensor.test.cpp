@@ -118,11 +118,4 @@ TEST(tensor, demo2) {
   // promote the string from a vector to a matrix,
   // repeat it along rows, and transpose it
   println(repeat(promote(1_c, greeting), 3, 1).t());
-
-  image_<vec_<float, 1>> im =
-      constants(make_shape(30, 30), vec_<float, 1>(1));
-  std::string x = typeid(image_<vec_<uint8_t, 4>>).name();
-  println(x);
-
-  println(x);
 }
