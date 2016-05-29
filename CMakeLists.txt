@@ -91,7 +91,7 @@ else ()
 endif ()
 
 foreach (i ${TEST_DEPENDENCY_LIBS})
-    message(WARNING "TEST_DEPENDENCY_LIBS: ${i}")
+    message(STATUS "TEST_DEPENDENCY_LIBS: ${i}")
 endforeach()
 
 add_subdirectory (wheels)

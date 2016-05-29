@@ -8,7 +8,7 @@ Tensors for C++ programming.
 ## Examples
 Let's start with the standard hello world program:
 ```cpp
-#include <wheels/tensor>
+#include <wheels/wheels.hpp>
 
 using namespace wheels;
 using namespace wheels::literals; // to use user defined literals like '_ts'

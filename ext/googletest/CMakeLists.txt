@@ -22,7 +22,7 @@ set(GTEST_INCLUDES ${source_dir}/googletest/include PARENT_SCOPE)
 # Specify gtest libs
 ExternalProject_Get_Property(googletest binary_dir)
 set(GTEST_LIBS_DIR ${binary_dir}/googletest)
-message (WARNING "GTEST_LIBS_DIR = ${GTEST_LIBS_DIR}")
+message (STATUS "GTEST_LIBS_DIR = ${GTEST_LIBS_DIR}")
 if(NOT MSVC)
     set(GTEST_LIBS 
         ${GTEST_LIBS_DIR}/libgtest.a
