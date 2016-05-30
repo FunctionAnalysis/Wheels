@@ -167,11 +167,19 @@ template <class T> struct tensor_core : category::object<T> {
         details::_eval_index_expr(std::forward<E>(e), this->numel()));
   }
 
-  // ewise
+  // ewised
   constexpr decltype(auto) ewised() const & { return ewise(this->derived()); }
   decltype(auto) ewised() & { return ewise(this->derived()); }
   decltype(auto) ewised() && { return ewise(std::move(this->derived())); }
 
+  // scalarized
+  constexpr decltype(auto) scalarized() const & {
+    return scalarize(this->derived());
+  }
+  decltype(auto) scalarized() & { return scalarize(this->derived()); }
+  decltype(auto) scalarized() && {
+    return scalarize(std::move(this->derived()));
+  }
 
   // block
   template <class... TensorOrIndexTs>
@@ -527,13 +535,13 @@ template <class FunT, class T, class... Ts>
 void _for_each_element_unordered_default(no staticShape, FunT fun, T &&t,
                                          Ts &&... ts) {
   assert(all_same(t.shape(), ts.shape()...));
-  if (t.numel() < _numel_parallel_thres) {
+  //if (t.numel() < _numel_parallel_thres) {
     for_each_element(behavior_flag<index_ascending>(), fun, std::forward<T>(t),
                      std::forward<Ts>(ts)...);
-  } else {
+  /*} else {
     _for_each_element_unordered_parallel(fun, std::forward<T>(t),
                                          std::forward<Ts>(ts)...);
-  }
+  }*/
 }
 }
 template <class FunT, class T, class... Ts>

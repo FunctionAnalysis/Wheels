@@ -3,6 +3,7 @@
 #include "tensor_base.hpp"
 
 #include "block_fwd.hpp"
+#include "ewise_fwd.hpp"
 
 namespace wheels {
 
@@ -17,13 +18,75 @@ public:
         subs_tensors(std::forward<SubscriptTensorTs>(subts)...) {}
 
   // operator=
-  template <class AnotherT>
-  block_view &operator=(const tensor_core<AnotherT> &another) {
+  template <class AnotherShapeT, class AnotherT,
+            class = std::enable_if_t<AnotherShapeT::rank == ShapeT::rank>>
+  block_view &
+  operator=(const tensor_base<ET, AnotherShapeT, AnotherT> &another) {
     assign_elements(*this, another.derived());
     return *this;
   }
   block_view &operator=(const ET &e) {
     fill_elements_with(*this, e);
+    return *this;
+  }
+
+  // +=
+  template <class AnotherShapeT, class AnotherT,
+            class = std::enable_if_t<AnotherShapeT::rank == ShapeT::rank>>
+  block_view &operator+=(const tensor_base<ET, AnotherShapeT, AnotherT> &t) {
+    assert(this->shape() == t.shape());
+    for_each_element(behavior_flag<unordered>(),
+                     [](auto &ele1, auto &&ele2) { ele1 += ele2; }, *this,
+                     t.derived());
+    return *this;
+  }
+  block_view &operator+=(const ET &e) {
+    for_each_element(behavior_flag<unordered>(), [&e](auto &&ele) { ele += e; },
+                     *this);
+    return *this;
+  }
+  template <class AnotherET, class AnotherShapeT, class AnotherT>
+  block_view &
+  operator+=(const scalarize_wrapper<AnotherET, AnotherShapeT, AnotherT> &t) {
+    for_each_element(behavior_flag<unordered>(),
+                     [&t](auto &ele) { ele += t.host; }, *this);
+    return *this;
+  }
+
+  // -=
+  template <class AnotherShapeT, class AnotherT,
+            class = std::enable_if_t<AnotherShapeT::rank == ShapeT::rank>>
+  block_view &operator-=(const tensor_base<ET, AnotherShapeT, AnotherT> &t) {
+    assert(this->shape() == t.shape());
+    for_each_element(behavior_flag<unordered>(),
+                     [](auto &ele1, auto &&ele2) { ele1 -= ele2; }, *this,
+                     t.derived());
+    return *this;
+  }
+  block_view &operator-=(const ET &e) {
+    for_each_element(behavior_flag<unordered>(), [&e](auto &ele) { ele -= e; },
+                     *this);
+    return *this;
+  }
+  template <class AnotherET, class AnotherShapeT, class AnotherT>
+  block_view &
+  operator-=(const scalarize_wrapper<AnotherET, AnotherShapeT, AnotherT> &t) {
+    for_each_element(behavior_flag<unordered>(),
+                     [&t](auto &ele) { ele -= t.host; }, *this);
+    return *this;
+  }
+
+  // *=
+  block_view &operator*=(const ET &e) {
+    for_each_element(behavior_flag<unordered>(), [&e](auto &ele) { ele *= e; },
+                     *this);
+    return *this;
+  }
+
+  // /=
+  block_view &operator/=(const ET &e) {
+    for_each_element(behavior_flag<unordered>(), [&e](auto &ele) { ele /= e; },
+                     *this);
     return *this;
   }
 
@@ -52,7 +115,7 @@ shape_of(const block_view<ET, ShapeT, InputTensorT, SubscriptTensorTs...> &t) {
 namespace details {
 template <class SubsViewT, class SubsTupleT, size_t... Is>
 constexpr decltype(auto)
-_element_at_subscript_view_seq(SubsViewT &sv, SubsTupleT &&subs,
+_element_at_subscript_view_seq(SubsViewT &&sv, SubsTupleT &&subs,
                                const const_ints<size_t, Is...> &) {
   return element_at(
       sv.input_tensor,
@@ -63,6 +126,15 @@ template <class ET, class ShapeT, class InputTensorT,
           class... SubscriptTensorTs, class... SubTs>
 constexpr decltype(auto)
 element_at(const block_view<ET, ShapeT, InputTensorT, SubscriptTensorTs...> &t,
+           const SubTs &... subs) {
+  return details::_element_at_subscript_view_seq(
+      t, std::forward_as_tuple(subs...),
+      make_const_sequence_for<SubscriptTensorTs...>());
+}
+template <class ET, class ShapeT, class InputTensorT,
+          class... SubscriptTensorTs, class... SubTs>
+decltype(auto)
+element_at(block_view<ET, ShapeT, InputTensorT, SubscriptTensorTs...> &t,
            const SubTs &... subs) {
   return details::_element_at_subscript_view_seq(
       t, std::forward_as_tuple(subs...),

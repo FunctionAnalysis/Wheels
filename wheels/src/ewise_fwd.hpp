@@ -5,11 +5,12 @@
 
 #include "const_ints.hpp"
 
-#include "tensor_base_fwd.hpp"
 #include "extension_fwd.hpp"
+#include "tensor_base_fwd.hpp"
 
 namespace wheels {
 
+// explicitly declare as ewise op for disambiguity
 struct extension_tag_ewise {};
 
 template <class EleT, class ShapeT, class T>
@@ -48,6 +49,29 @@ template <class T>
 constexpr auto ewise(T &&t)
     -> decltype(extend<extension_tag_ewise>(std::forward<T>(t))) {
   return extend<extension_tag_ewise>(std::forward<T>(t));
+}
+
+// explicitly treat as a scalar in ewise ops
+struct extension_tag_scalarize {};
+
+template <class EleT, class ShapeT, class T>
+class tensor_extension_base<extension_tag_scalarize, EleT, ShapeT, T>
+    : public tensor_base<EleT, ShapeT, T> {
+public:
+  using value_type = EleT;
+  using shape_type = ShapeT;
+};
+
+// scalarize_wrapper
+template <class EleT, class ShapeT, class T>
+using scalarize_wrapper =
+    tensor_extension_wrapper<extension_tag_scalarize, EleT, ShapeT, T>;
+
+// scalarize
+template <class T>
+constexpr auto scalarize(T &&t)
+    -> decltype(extend<extension_tag_scalarize>(std::forward<T>(t))) {
+  return extend<extension_tag_scalarize>(std::forward<T>(t));
 }
 
 // ewise_op_result
@@ -96,10 +120,22 @@ constexpr auto overload_as(const func_base<OpT> &op,
                            const tensor_base<EleT1, ShapeT1, T1> &,
                            const category::other<T2> &);
 
+template <class OpT, class EleT1, class ShapeT1, class EleT2, class ShapeT2,
+          class T1, class T2>
+constexpr auto overload_as(const func_base<OpT> &op,
+                           const tensor_base<EleT1, ShapeT1, T1> &,
+                           const scalarize_wrapper<EleT2, ShapeT2, T2> &);
+
 // scalar vs tensor
 template <class OpT, class T1, class EleT2, class ShapeT2, class T2>
 constexpr auto overload_as(const func_base<OpT> &op,
                            const category::other<T1> &,
+                           const tensor_base<EleT2, ShapeT2, T2> &);
+
+template <class OpT, class EleT1, class ShapeT1, class EleT2, class ShapeT2,
+          class T1, class T2>
+constexpr auto overload_as(const func_base<OpT> &op,
+                           const scalarize_wrapper<EleT1, ShapeT1, T1> &,
                            const tensor_base<EleT2, ShapeT2, T2> &);
 
 // tensor vs const_expr

@@ -15,7 +15,7 @@
     <DisplayString Condition='strcmp("unsigned short", "$T1") == 0'>
       {{UINT16, {((wheels::tensor_shape&lt;unsigned __int64,unsigned __int64&gt;*)(&amp;(this->_storage._shape)))->_val} x {this->_storage._shape._val}}}
     </DisplayString>
-    <DisplayString Condition='strcmp("__int32", "$T1") == 0'>
+    <DisplayString Condition='strcmp("int", "$T1") == 0'>
       {{INT32, {((wheels::tensor_shape&lt;unsigned __int64,unsigned __int64&gt;*)(&amp;(this->_storage._shape)))->_val} x {this->_storage._shape._val}}}
     </DisplayString>
     <DisplayString Condition='strcmp("float", "$T1") == 0'>
@@ -31,7 +31,7 @@
       <Synthetic Name="[type]" Condition='strcmp("unsigned short", "$T1") == 0'>
         <DisplayString>UINT16</DisplayString>
       </Synthetic>
-      <Synthetic Name="[type]" Condition='strcmp("__int32", "$T1") == 0'>
+      <Synthetic Name="[type]" Condition='strcmp("int", "$T1") == 0'>
         <DisplayString>INT32</DisplayString>
       </Synthetic>
       <Synthetic Name="[type]" Condition='strcmp("float", "$T1") == 0'>
@@ -60,7 +60,7 @@
     <DisplayString Condition='strcmp("unsigned short", "$T1") == 0'>
       {{UINT16, {(size_t)$T2} x {((wheels::tensor_shape&lt;unsigned __int64,unsigned __int64&gt;*)(&amp;(this->_storage._shape)))->_val} x {this->_storage._shape._val}}}
     </DisplayString>
-    <DisplayString Condition='strcmp("__int32", "$T1") == 0'>
+    <DisplayString Condition='strcmp("int", "$T1") == 0'>
       {{INT32, {(size_t)$T2} x {((wheels::tensor_shape&lt;unsigned __int64,unsigned __int64&gt;*)(&amp;(this->_storage._shape)))->_val} x {this->_storage._shape._val}}}
     </DisplayString>
     <DisplayString Condition='strcmp("float", "$T1") == 0'>
@@ -76,7 +76,7 @@
       <Synthetic Name="[type]" Condition='strcmp("unsigned short", "$T1") == 0'>
         <DisplayString>UINT16</DisplayString>
       </Synthetic>
-      <Synthetic Name="[type]" Condition='strcmp("__int32", "$T1") == 0'>
+      <Synthetic Name="[type]" Condition='strcmp("int", "$T1") == 0'>
         <DisplayString>INT32</DisplayString>
       </Synthetic>
       <Synthetic Name="[type]" Condition='strcmp("float", "$T1") == 0'>

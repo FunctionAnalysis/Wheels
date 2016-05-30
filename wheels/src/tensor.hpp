@@ -115,7 +115,9 @@ public:
             class = std::enable_if_t<AnotherShapeT::rank == ShapeT::rank>>
   tensor &operator+=(const tensor_base<ET, AnotherShapeT, AnotherT> &t) {
     assert(this->shape() == t.shape());
-    *this = *this + t.derived();
+    for_each_element(behavior_flag<unordered>(),
+                     [](auto &&ele1, auto &&ele2) { ele1 += ele2; }, *this,
+                     t.derived());
     return *this;
   }
   tensor &operator+=(const ET &e) {
@@ -123,12 +125,22 @@ public:
                      *this);
     return *this;
   }
+  template <class AnotherET, class AnotherShapeT, class AnotherT>
+  tensor &
+  operator+=(const scalarize_wrapper<AnotherET, AnotherShapeT, AnotherT> &t) {
+    for_each_element(behavior_flag<unordered>(),
+                     [&t](auto &&ele) { ele += t.host; }, *this);
+    return *this;
+  }
+
   // -=
   template <class AnotherShapeT, class AnotherT,
             class = std::enable_if_t<AnotherShapeT::rank == ShapeT::rank>>
   tensor &operator-=(const tensor_base<ET, AnotherShapeT, AnotherT> &t) {
     assert(this->shape() == t.shape());
-    *this = *this - t.derived();
+    for_each_element(behavior_flag<unordered>(),
+                     [](auto &&ele1, auto &&ele2) { ele1 -= ele2; }, *this,
+                     t.derived());
     return *this;
   }
   tensor &operator-=(const ET &e) {
@@ -136,11 +148,22 @@ public:
                      *this);
     return *this;
   }
+  template <class AnotherET, class AnotherShapeT, class AnotherT>
+  tensor &
+  operator-=(const scalarize_wrapper<AnotherET, AnotherShapeT, AnotherT> &t) {
+    for_each_element(behavior_flag<unordered>(),
+                     [&t](auto &&ele) { ele -= t.host; }, *this);
+    return *this;
+  }
+
+  // *=
   tensor &operator*=(const ET &e) {
     for_each_element(behavior_flag<unordered>(), [&e](auto &&ele) { ele *= e; },
                      *this);
     return *this;
   }
+
+  // /=
   tensor &operator/=(const ET &e) {
     for_each_element(behavior_flag<unordered>(), [&e](auto &&ele) { ele /= e; },
                      *this);
