@@ -27,11 +27,6 @@ constexpr auto _extend(const tensor_base<EleT, ShapeT, T> &, TT &&host) {
   return tensor_extension_wrapper<ExtensionT, EleT, ShapeT, TT>(
       std::forward<TT>(host));
 }
-template <class ExtensionT, class EleT, class ShapeT, class T, class TT>
-constexpr TT &&
-_extend(const tensor_extension_base<ExtensionT, EleT, ShapeT, T> &, TT &&host) {
-  return static_cast<TT &&>(host);
-}
 }
 
 // -- necessary tensor functions

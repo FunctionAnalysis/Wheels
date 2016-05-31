@@ -95,6 +95,14 @@ public:
       : _storage(another.shape()) {
     assign_elements(*this, another.derived());
   }
+  template <class AnotherET, class AnotherShapeT, class AnotherT,
+            class = std::enable_if_t<!std::is_same<ET, AnotherET>::value &&
+                                     AnotherShapeT::rank == ShapeT::rank>>
+  constexpr explicit tensor(
+      const tensor_base<AnotherET, AnotherShapeT, AnotherT> &another)
+      : _storage(another.shape()) {
+    assign_elements_forced(*this, another.derived());
+  }
 
   constexpr const ET *ptr() const { return _storage.data(); }
   ET *ptr() { return _storage.data(); }

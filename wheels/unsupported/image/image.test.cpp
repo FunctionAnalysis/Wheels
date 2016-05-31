@@ -5,6 +5,7 @@
 #include "../../src/iota.hpp"
 #include "../../src/permute.hpp"
 #include "../../src/matrix.hpp"
+#include "../../src/remap.hpp"
 
 #include "image.hpp"
 
@@ -27,6 +28,6 @@ TEST(image, load) {
   imd2.block(range(0, 50, last), range(0, last)) +=
       (vec3(255, 255, 255)).eval().scalarized();
   auto imdiff = (imd2 - imd).eval();
-  auto im_scaled = (im * 0.5).eval();
-  println(imdiff.shape());
+  auto im_scaled = resample(imd, make_shape((size_t)600, (size_t)600)).eval();
+  println(im_scaled.shape());
 }

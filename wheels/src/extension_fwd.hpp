@@ -13,9 +13,6 @@ class tensor_extension_wrapper;
 namespace details {
 template <class ExtensionT, class EleT, class ShapeT, class T, class TT>
 constexpr auto _extend(const tensor_base<EleT, ShapeT, T> &, TT &&host);
-template <class ExtensionT, class EleT, class ShapeT, class T, class TT>
-constexpr TT &&
-_extend(const tensor_extension_base<ExtensionT, EleT, ShapeT, T> &, TT &&host);
 }
 
 // extend

@@ -637,6 +637,21 @@ void assign_elements(tensor_core<ToT> &to, const tensor_core<FromT> &from) {
                    },
                    to.derived(), from.derived());
 }
+template <class ToET, class ToShapeT, class ToT, class FromET, class FromShapeT,
+          class FromT>
+void assign_elements_forced(
+    tensor_base<ToET, ToShapeT, ToT> &to,
+    const tensor_base<FromET, FromShapeT, FromT> &from) {
+  static_assert(ToShapeT::rank == FromShapeT::rank, "shape ranks mismatch!");
+
+  decltype(auto) s = from.shape();
+  if (to.shape() != s) {
+    reserve_shape(to.derived(), s);
+  }
+  for_each_element(behavior_flag<unordered>(),
+                   [](auto &&to_e, auto &&from_e) { to_e = ToET(from_e); },
+                   to.derived(), from.derived());
+}
 
 // void fill_elements_with(to, scalar)
 template <class T, class E>

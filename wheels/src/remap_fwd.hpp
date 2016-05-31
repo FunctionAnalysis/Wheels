@@ -17,19 +17,62 @@ template <class ET, class ShapeT, class T, class MapFunT,
 class remap_result;
 
 // remap
+namespace details {
+// w. outlier
 template <class ToST, class... ToSizeTs, class ET, class ShapeT, class T,
-          class MapFunT, class ET2 = ET,
+          class TT, class MapFunT, class ET2, interpolate_method_enum IPMethod>
+constexpr auto _remap(const tensor_base<ET, ShapeT, T> &, TT &&t,
+                      const tensor_shape<ToST, ToSizeTs...> &toshape,
+                      MapFunT mapfun, ET2 &&outlier,
+                      const interpolate_method<IPMethod> &);
+// w.o outlier
+template <class ToST, class... ToSizeTs, class ET, class ShapeT, class T,
+          class TT, class MapFunT, interpolate_method_enum IPMethod>
+constexpr auto _remap(const tensor_base<ET, ShapeT, T> &, TT &&t,
+                      const tensor_shape<ToST, ToSizeTs...> &toshape,
+                      MapFunT mapfun, const interpolate_method<IPMethod> &);
+}
+// w. outlier
+template <class ToST, class... ToSizeTs, class T, class MapFunT, class ET,
           interpolate_method_enum IPMethod = linear_interpolate>
-constexpr auto remap(const tensor_base<ET, ShapeT, T> &t,
-                     const tensor_shape<ToST, ToSizeTs...> &toshape,
-                     MapFunT mapfun, ET2 &&outlier = types<ET2>::zero(),
-                     const interpolate_method<IPMethod> & = {});
+constexpr auto remap(T &&t, const tensor_shape<ToST, ToSizeTs...> &toshape,
+                     MapFunT mapfun, ET &&outlier,
+                     const interpolate_method<IPMethod> &m = {})
+    -> decltype(details::_remap(t, std::forward<T>(t), toshape, mapfun,
+                                std::forward<ET>(outlier), m)) {
+  return details::_remap(t, std::forward<T>(t), toshape, mapfun,
+                         std::forward<ET>(outlier), m);
+}
+// w.o outlier
+template <class ToST, class... ToSizeTs, class T, class MapFunT,
+          interpolate_method_enum IPMethod = linear_interpolate>
+constexpr auto remap(T &&t, const tensor_shape<ToST, ToSizeTs...> &toshape,
+                     MapFunT mapfun, const interpolate_method<IPMethod> &m = {})
+    -> decltype(details::_remap(t, std::forward<T>(t), toshape, mapfun, m)) {
+  return details::_remap(t, std::forward<T>(t), toshape, mapfun, m);
+}
 
-template <class ToST, class... ToSizeTs, class ET, class ShapeT, class T,
-          class MapFunT, class ET2 = ET,
+namespace details {
+template <class FromShapeT, class ToShapeT> struct _resample_map_functor;
+template <class FromShapeT, class ToShapeT>
+_resample_map_functor<FromShapeT, ToShapeT>
+_make_resample_map_functor(const FromShapeT &from_shape,
+                           const ToShapeT &to_shape);
+}
+
+// resample
+template <class ToST, class... ToSizeTs, class T,
           interpolate_method_enum IPMethod = linear_interpolate>
-constexpr auto remap(tensor_base<ET, ShapeT, T> &&t,
-                     const tensor_shape<ToST, ToSizeTs...> &toshape,
-                     MapFunT mapfun, ET2 &&outlier = types<ET2>::zero(),
-                     interpolate_method<IPMethod> = {});
+constexpr auto
+resample(T &&t, const tensor_shape<ToST, ToSizeTs...> &toshape,
+         const interpolate_method<IPMethod> & = interpolate_method<IPMethod>())
+    -> decltype(details::_remap(t, std::forward<T>(t), toshape,
+                                details::_make_resample_map_functor(t.shape(),
+                                                                    toshape),
+                                interpolate_method<IPMethod>())) {
+  return details::_remap(
+      t, std::forward<T>(t), toshape,
+      details::_make_resample_map_functor(t.shape(), toshape),
+      interpolate_method<IPMethod>());
+}
 }

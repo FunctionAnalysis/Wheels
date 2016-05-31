@@ -104,17 +104,17 @@ ET _element_at_remap_result_seq(
   constexpr size_t input_rank =
       std::decay_t<decltype(std::declval<T>().shape())>::rank;
   // the size of subsInput should be same with input_rank
-  return (ET)_linear_interpolated_sampling(
-      const_size<input_rank>(),
-      [&r, &subsInput](auto &&... noyeses) {
-        return _element_at_ceil_or_floor_helper(
-            r.input(), r.outlier_value(), subsInput,
-            std::forward_as_tuple(noyeses...),
-            make_const_sequence(const_size<sizeof...(noyeses)>()));
-      },
-      [&subsInput](const auto &dim) {
-        return subsInput[dim] - std::floor(subsInput[dim]);
-      });
+  auto sampler_fun = [&r, &subsInput](auto &&... noyeses) {
+    return _element_at_ceil_or_floor_helper(
+        r.input(), r.outlier_value(), subsInput,
+        std::forward_as_tuple(noyeses...),
+        make_const_sequence(const_size<sizeof...(noyeses)>()));
+  };
+  auto dist0_fun = [&subsInput](const auto &dim) {
+    return subsInput[dim] - std::floor(subsInput[dim]);
+  };
+  return ET(_linear_interpolated_sampling(
+      const_size<input_rank>(), std::move(sampler_fun), std::move(dist0_fun)));
 }
 }
 
@@ -128,25 +128,54 @@ constexpr ET element_at(const remap_result<ET, ShapeT, T, MapFunT, IPMethod> &r,
 }
 
 // remap
+namespace details {
 template <class ToST, class... ToSizeTs, class ET, class ShapeT, class T,
-          class MapFunT, class ET2, interpolate_method_enum IPMethod>
-constexpr auto remap(const tensor_base<ET, ShapeT, T> &t,
-                     const tensor_shape<ToST, ToSizeTs...> &toshape,
-                     MapFunT mapfun, ET2 &&outlier,
-                     const interpolate_method<IPMethod> &) {
-  return remap_result<ET, tensor_shape<ToST, ToSizeTs...>, const T &, MapFunT,
-                      IPMethod>(t.derived(), toshape, mapfun,
+          class TT, class MapFunT, class ET2, interpolate_method_enum IPMethod>
+constexpr auto _remap(const tensor_base<ET, ShapeT, T> &, TT &&t,
+                      const tensor_shape<ToST, ToSizeTs...> &toshape,
+                      MapFunT mapfun, ET2 &&outlier,
+                      const interpolate_method<IPMethod> &) {
+  return remap_result<ET, tensor_shape<ToST, ToSizeTs...>, TT, MapFunT,
+                      IPMethod>(std::forward<TT>(t), toshape, mapfun,
                                 std::forward<ET2>(outlier));
+}
+template <class ToST, class... ToSizeTs, class ET, class ShapeT, class T,
+          class TT, class MapFunT, interpolate_method_enum IPMethod>
+constexpr auto _remap(const tensor_base<ET, ShapeT, T> &, TT &&t,
+                      const tensor_shape<ToST, ToSizeTs...> &toshape,
+                      MapFunT mapfun, const interpolate_method<IPMethod> &) {
+  return remap_result<ET, tensor_shape<ToST, ToSizeTs...>, TT, MapFunT,
+                      IPMethod>(std::forward<TT>(t), toshape, mapfun,
+                                types<ET>::zero());
+}
 }
 
-template <class ToST, class... ToSizeTs, class ET, class ShapeT, class T,
-          class MapFunT, class ET2, interpolate_method_enum IPMethod>
-constexpr auto remap(tensor_base<ET, ShapeT, T> &&t,
-                     const tensor_shape<ToST, ToSizeTs...> &toshape,
-                     MapFunT mapfun, ET2 &&outlier,
-                     interpolate_method<IPMethod>) {
-  return remap_result<ET, tensor_shape<ToST, ToSizeTs...>, T, MapFunT,
-                      IPMethod>(std::move(t.derived()), toshape, mapfun,
-                                std::forward<ET2>(outlier));
+namespace details {
+template <class FromShapeT, class ToShapeT> struct _resample_map_functor {
+  static_assert(FromShapeT::rank == ToShapeT::rank, "shape ranks mismatch!");
+  FromShapeT from_shape;
+  ToShapeT to_shape;
+  template <class NewSubsTupleT, size_t... Is>
+  constexpr auto _invoke_seq(NewSubsTupleT &&new_subs,
+                             const const_ints<size_t, Is...> &) const {
+    return std::array<double, sizeof...(Is)>{
+        {static_cast<double>(std::get<Is>(new_subs)) *
+         (from_shape.at(const_index<Is>()) - 1.0) /
+         (to_shape.at(const_index<Is>()) - 1.0)...}};
+  }
+  template <class... SubTs> constexpr auto operator()(SubTs... new_subs) const {
+    static_assert(FromShapeT::rank == sizeof...(new_subs),
+                  "subscripts num and shape rank mismatch!");
+    return _invoke_seq(std::forward_as_tuple(new_subs...),
+                       make_const_sequence_for<SubTs...>());
+  }
+};
+template <class FromShapeT, class ToShapeT>
+_resample_map_functor<FromShapeT, ToShapeT>
+_make_resample_map_functor(const FromShapeT &from_shape,
+                           const ToShapeT &to_shape) {
+  return _resample_map_functor<FromShapeT, ToShapeT>{from_shape, to_shape};
 }
+}
+
 }

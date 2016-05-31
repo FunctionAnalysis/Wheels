@@ -124,6 +124,17 @@ constexpr auto overload_as(const func_base<OpT> &op,
         OpT()(const_arg<0>(), wheels_forward(t2)), wheels_forward(t1));
   };
 }
+template <class OpT, class EleT1, class ShapeT1, class T1, class T2>
+constexpr auto overload_as(const func_base<OpT> &op,
+                           const tensor_base<EleT1, ShapeT1, T1> &,
+                           const category::scalar<T2> &) {
+  using ele_t = std::decay_t<decltype(
+      eval(OpT()(std::declval<EleT1>(), std::declval<T2>())))>;
+  return [](auto &&t1, auto t2) {
+    return make_ewise_op_result<ele_t, ShapeT1>(
+        OpT()(const_arg<0>(), std::move(t2)), wheels_forward(t1));
+  };
+}
 
 template <class OpT, class EleT1, class ShapeT1, class EleT2, class ShapeT2,
           class T1, class T2>
@@ -148,6 +159,17 @@ constexpr auto overload_as(const func_base<OpT> &op,
   return [](auto &&t1, auto &&t2) {
     return make_ewise_op_result<ele_t, ShapeT2>(
         OpT()(wheels_forward(t1), const_arg<0>()), wheels_forward(t2));
+  };
+}
+template <class OpT, class T1, class EleT2, class ShapeT2, class T2>
+constexpr auto overload_as(const func_base<OpT> &op,
+                           const category::scalar<T1> &,
+                           const tensor_base<EleT2, ShapeT2, T2> &) {
+  using ele_t = std::decay_t<decltype(
+      eval(OpT()(std::declval<T1>(), std::declval<EleT2>())))>;
+  return [](auto t1, auto &&t2) {
+    return make_ewise_op_result<ele_t, ShapeT2>(
+        OpT()(std::move(t1), const_arg<0>()), wheels_forward(t2));
   };
 }
 
