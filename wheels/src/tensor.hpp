@@ -3,6 +3,7 @@
 #include "aligned.hpp"
 #include "ewise.hpp"
 #include "storage.hpp"
+#include "tensor_view_base.hpp"
 
 #include "tensor_fwd.hpp"
 
@@ -27,8 +28,9 @@ _make_shape_from_magnitude_seq(size_t magnitude, const_ints<size_t, Is...>) {
 
 // tensor
 template <class ET, class ShapeT>
-class tensor
-    : public tensor_continuous_data_base<ET, ShapeT, tensor<ET, ShapeT>> {
+class tensor : public tensor_view_base<ET, ShapeT, tensor<ET, ShapeT>, true> {
+  using _base_t = tensor_view_base<ET, ShapeT, tensor<ET, ShapeT>, true>;
+
 public:
   using value_type = ET;
   using shape_type = ShapeT;
@@ -93,12 +95,6 @@ public:
       : _storage(another.shape()) {
     assign_elements(*this, another.derived());
   }
-  template <class AnotherShapeT, class AnotherT,
-            class = std::enable_if_t<AnotherShapeT::rank == ShapeT::rank>>
-  tensor &operator=(const tensor_base<ET, AnotherShapeT, AnotherT> &another) {
-    assign_elements(*this, another.derived());
-    return *this;
-  }
 
   constexpr const ET *ptr() const { return _storage.data(); }
   ET *ptr() { return _storage.data(); }
@@ -110,65 +106,11 @@ public:
     return visitor(_storage);
   }
 
-  // +=
-  template <class AnotherShapeT, class AnotherT,
-            class = std::enable_if_t<AnotherShapeT::rank == ShapeT::rank>>
-  tensor &operator+=(const tensor_base<ET, AnotherShapeT, AnotherT> &t) {
-    assert(this->shape() == t.shape());
-    for_each_element(behavior_flag<unordered>(),
-                     [](auto &&ele1, auto &&ele2) { ele1 += ele2; }, *this,
-                     t.derived());
-    return *this;
-  }
-  tensor &operator+=(const ET &e) {
-    for_each_element(behavior_flag<unordered>(), [&e](auto &&ele) { ele += e; },
-                     *this);
-    return *this;
-  }
-  template <class AnotherET, class AnotherShapeT, class AnotherT>
-  tensor &
-  operator+=(const scalarize_wrapper<AnotherET, AnotherShapeT, AnotherT> &t) {
-    for_each_element(behavior_flag<unordered>(),
-                     [&t](auto &&ele) { ele += t.host; }, *this);
-    return *this;
-  }
-
-  // -=
-  template <class AnotherShapeT, class AnotherT,
-            class = std::enable_if_t<AnotherShapeT::rank == ShapeT::rank>>
-  tensor &operator-=(const tensor_base<ET, AnotherShapeT, AnotherT> &t) {
-    assert(this->shape() == t.shape());
-    for_each_element(behavior_flag<unordered>(),
-                     [](auto &&ele1, auto &&ele2) { ele1 -= ele2; }, *this,
-                     t.derived());
-    return *this;
-  }
-  tensor &operator-=(const ET &e) {
-    for_each_element(behavior_flag<unordered>(), [&e](auto &&ele) { ele -= e; },
-                     *this);
-    return *this;
-  }
-  template <class AnotherET, class AnotherShapeT, class AnotherT>
-  tensor &
-  operator-=(const scalarize_wrapper<AnotherET, AnotherShapeT, AnotherT> &t) {
-    for_each_element(behavior_flag<unordered>(),
-                     [&t](auto &&ele) { ele -= t.host; }, *this);
-    return *this;
-  }
-
-  // *=
-  tensor &operator*=(const ET &e) {
-    for_each_element(behavior_flag<unordered>(), [&e](auto &&ele) { ele *= e; },
-                     *this);
-    return *this;
-  }
-
-  // /=
-  tensor &operator/=(const ET &e) {
-    for_each_element(behavior_flag<unordered>(), [&e](auto &&ele) { ele /= e; },
-                     *this);
-    return *this;
-  }
+  using _base_t::operator=;
+  using _base_t::operator+=;
+  using _base_t::operator-=;
+  using _base_t::operator*=;
+  using _base_t::operator/=;
 
 private:
   storage<value_type, shape_type> _storage;

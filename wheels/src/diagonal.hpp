@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tensor_base.hpp"
+#include "tensor_view_base.hpp"
 #include "constants.hpp"
 
 #include "diagonal_fwd.hpp"
@@ -73,7 +74,10 @@ constexpr bool any_of(const make_diag_result<ET, ShapeT, T> &r) {
 
 // diag_view
 template <class ET, class ShapeT, class T>
-class diag_view : public tensor_base<ET, ShapeT, diag_view<ET, ShapeT, T>> {
+class diag_view
+    : public tensor_view_base<ET, ShapeT, diag_view<ET, ShapeT, T>, false> {
+  using _base_t = tensor_view_base<ET, ShapeT, diag_view<ET, ShapeT, T>, false>;
+
 public:
   constexpr explicit diag_view(T &&in) : _input(std::forward<T>(in)) {}
   constexpr auto shape() const {
@@ -83,16 +87,11 @@ public:
   T &input() & { return _input; }
   T &&input() && { return _input; }
 
-  // operator=
-  template <class AnotherT>
-  diag_view &operator=(const tensor_core<AnotherT> &another) {
-    assign_elements(*this, another.derived());
-    return *this;
-  }
-  diag_view &operator=(const ET &e) {
-    fill_elements_with(*this, e);
-    return *this;
-  }
+  using _base_t::operator=;
+  using _base_t::operator+=;
+  using _base_t::operator-=;
+  using _base_t::operator*=;
+  using _base_t::operator/=;
 
 private:
   T _input;

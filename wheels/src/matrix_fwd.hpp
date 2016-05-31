@@ -5,7 +5,7 @@
 namespace wheels {
 
 // matrix base
-template <class T> struct matrix_base;
+template <class T> class matrix_base;
 
 // auto matrix_mul(ts1, ts2);
 template <class EleT, class ShapeT, class A, class B, bool AIsMat, bool BIsMat>

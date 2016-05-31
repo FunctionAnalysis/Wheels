@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tensor_base.hpp"
+#include "tensor_view_base.hpp"
 #include "tensor.hpp"
 
 #include "downgrade_fwd.hpp"
@@ -16,27 +17,23 @@ struct _is_same_intrinsic : std::is_same<std::decay_t<T1>, std::decay_t<T2>> {};
 // subtensor_view
 template <class ET, class SubShapeT, class InputT, size_t FixedRank>
 class subtensor_view
-    : public tensor_base<ET, SubShapeT,
-                         subtensor_view<ET, SubShapeT, InputT, FixedRank>> {
+    : public tensor_view_base<ET, SubShapeT,
+                              subtensor_view<ET, SubShapeT, InputT, FixedRank>,
+                              false> {
+  using _base_t =
+      tensor_view_base<ET, SubShapeT,
+                       subtensor_view<ET, SubShapeT, InputT, FixedRank>, false>;
+
 public:
   template <class... SubTs>
   constexpr subtensor_view(InputT &&in, const SubTs &... subs)
       : input(std::forward<InputT>(in)), fixed_subs{{(size_t)subs...}} {}
 
-  // operator=
-  template <class AnotherT>
-  subtensor_view &operator=(const tensor_core<AnotherT> &another) {
-    assign_elements(*this, another.derived());
-    return *this;
-  }
-  //template <class InputT2, class = std::enable_if_t<details::_is_same_intrinsic<
-  //                             InputT, InputT2>::value>>
-  //subtensor_view &
-  //operator=(const subtensor_view<ET, SubShapeT, InputT2, FixedRank> &t) {
-  //  input = t.input;
-  //  fixed_subs = t.fixed_subs;
-  //  return *this;
-  //}
+  using _base_t::operator=;
+  using _base_t::operator+=;
+  using _base_t::operator-=;
+  using _base_t::operator*=;
+  using _base_t::operator/=;
 
 public:
   InputT input;
@@ -132,22 +129,25 @@ constexpr auto _subtensor_at(const tensor_base<ET, ShapeT, T> &, TT &&input,
 // downgrade_view
 template <class ET, class ShapeT, class InputT, size_t FixedRank>
 class downgrade_view
-    : public tensor_base<
+    : public tensor_view_base<
           tensor<ET, details::_tail_of_shape_t<ShapeT, FixedRank>>,
           details::_head_of_shape_t<ShapeT, FixedRank>,
-          downgrade_view<ET, ShapeT, InputT, FixedRank>> {
+          downgrade_view<ET, ShapeT, InputT, FixedRank>, false> {
   static_assert(FixedRank <= ShapeT::rank, "fixed rank overflow");
+  using _base_t =
+      tensor_view_base<tensor<ET, details::_tail_of_shape_t<ShapeT, FixedRank>>,
+                       details::_head_of_shape_t<ShapeT, FixedRank>,
+                       downgrade_view<ET, ShapeT, InputT, FixedRank>, false>;
 
 public:
   constexpr explicit downgrade_view(InputT &&in)
       : input(std::forward<InputT>(in)) {}
 
-  // operator=
-  template <class AnotherT>
-  downgrade_view &operator=(const tensor_core<AnotherT> &another) {
-    assign_elements(*this, another.derived());
-    return *this;
-  }
+  using _base_t::operator=;
+  using _base_t::operator+=;
+  using _base_t::operator-=;
+  using _base_t::operator*=;
+  using _base_t::operator/=;
 
 public:
   InputT input;

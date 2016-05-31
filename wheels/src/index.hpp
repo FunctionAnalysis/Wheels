@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tensor_base.hpp"
+#include "tensor_view_base.hpp"
 #include "tensor.hpp"
 
 #include "index_fwd.hpp"
@@ -9,23 +10,22 @@ namespace wheels {
 
 template <class ET, class ShapeT, class IndexTensorT, class InputTensorT>
 class index_view
-    : public tensor_base<ET, ShapeT,
-                         index_view<ET, ShapeT, IndexTensorT, InputTensorT>> {
+    : public tensor_view_base<
+          ET, ShapeT, index_view<ET, ShapeT, IndexTensorT, InputTensorT>,
+          false> {
+  using _base_t = tensor_view_base<
+      ET, ShapeT, index_view<ET, ShapeT, IndexTensorT, InputTensorT>, false>;
+
 public:
   index_view(IndexTensorT &&indt, InputTensorT &&inpt)
       : index_tensor(std::forward<IndexTensorT>(indt)),
         input_tensor(std::forward<InputTensorT>(inpt)) {}
 
-  // operator=
-  template <class AnotherT>
-  index_view &operator=(const tensor_core<AnotherT> &another) {
-    assign_elements(*this, another.derived());
-    return *this;
-  }
-  index_view &operator=(const ET &e) {
-    fill_elements_with(*this, e);
-    return *this;
-  }
+  using _base_t::operator=;
+  using _base_t::operator+=;
+  using _base_t::operator-=;
+  using _base_t::operator*=;
+  using _base_t::operator/=;
 
 public:
   IndexTensorT index_tensor;

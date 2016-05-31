@@ -12,7 +12,8 @@
 namespace wheels {
 
 // matrix base
-template <class T> struct matrix_base : tensor_core<T> {
+template <class T> class matrix_base : public tensor_core<T> {
+public:
   constexpr auto rows() const { return this->size(const_index<0>()); }
   constexpr auto cols() const { return this->size(const_index<1>()); }
 
@@ -53,7 +54,8 @@ template <class T> struct matrix_base : tensor_core<T> {
 
 // 2 dimensional tensor (matrix)
 template <class ET, class ST, class MT, class NT, class T>
-struct tensor_base<ET, tensor_shape<ST, MT, NT>, T> : matrix_base<T> {
+class tensor_base<ET, tensor_shape<ST, MT, NT>, T> : public matrix_base<T> {
+public:
   using value_type = ET;
   using shape_type = tensor_shape<ST, MT, NT>;
   static constexpr size_t rank = 2;
@@ -73,8 +75,9 @@ struct tensor_base<ET, tensor_shape<ST, MT, NT>, T> : matrix_base<T> {
 
 // col vec
 template <class ET, class ST, class MT, class T>
-struct tensor_base<ET, tensor_shape<ST, MT, const_ints<ST, (ST)1>>, T>
-    : matrix_base<T> {
+class tensor_base<ET, tensor_shape<ST, MT, const_ints<ST, (ST)1>>, T>
+    : public matrix_base<T> {
+public:
   using value_type = ET;
   using shape_type = tensor_shape<ST, MT, const_ints<ST, (ST)1>>;
   static constexpr size_t rank = 2;
@@ -143,8 +146,9 @@ struct tensor_base<ET, tensor_shape<ST, MT, const_ints<ST, (ST)1>>, T>
 
 // row vec
 template <class ET, class ST, class NT, class T>
-struct tensor_base<ET, tensor_shape<ST, const_ints<ST, (ST)1>, NT>, T>
-    : matrix_base<T> {
+class tensor_base<ET, tensor_shape<ST, const_ints<ST, (ST)1>, NT>, T>
+    : public matrix_base<T> {
+public:
   using value_type = ET;
   using shape_type = tensor_shape<ST, const_ints<ST, (ST)1>, NT>;
   static constexpr size_t rank = 2;

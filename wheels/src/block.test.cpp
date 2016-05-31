@@ -46,4 +46,8 @@ TEST(tensor, block) {
   println(matx(make_shape(2, 3), with_elements, 5, 3, 1, 20, 18, 16));
   ASSERT_TRUE(a.block(range(0, 3, last), range(last, -2, 0)) ==
               matx(make_shape(2, 3), with_elements, 5, 3, 1, 20, 18, 16));
+
+  a.block(range(0, 3, last), range(last, -2, 0)) += 5.0;
+  ASSERT_TRUE(a.block(range(0, 3, last), range(last, -2, 0)) ==
+              matx(make_shape(2, 3), with_elements, 5, 3, 1, 20, 18, 16) + 5.0);
 }

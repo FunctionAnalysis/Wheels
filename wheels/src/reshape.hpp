@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tensor_base.hpp"
+#include "tensor_view_base.hpp"
 
 #include "reshape_fwd.hpp"
 
@@ -9,7 +10,10 @@ namespace wheels {
 // reshape_view
 template <class ET, class ShapeT, class T>
 class reshape_view
-    : public tensor_base<ET, ShapeT, reshape_view<ET, ShapeT, T>> {
+    : public tensor_view_base<ET, ShapeT, reshape_view<ET, ShapeT, T>, false> {
+  using _base_t =
+      tensor_view_base<ET, ShapeT, reshape_view<ET, ShapeT, T>, false>;
+
 public:
   using value_type = ET;
   using shape_type = ShapeT;
@@ -18,16 +22,11 @@ public:
     assert(s.magnitude() == _input.numel());
   }
 
-  // operator=
-  template <class AnotherT>
-  reshape_view &operator=(const tensor_core<AnotherT> &another) {
-    assign_elements(*this, another.derived());
-    return *this;
-  }
-  reshape_view &operator=(const ET &e) {
-    fill_elements_with(*this, e);
-    return *this;
-  }
+  using _base_t::operator=;
+  using _base_t::operator+=;
+  using _base_t::operator-=;
+  using _base_t::operator*=;
+  using _base_t::operator/=;
 
   const ShapeT &shape() const { return _shape; }
   const T &input() const & { return _input; }

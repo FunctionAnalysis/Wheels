@@ -43,7 +43,8 @@ constexpr auto cross(const tensor_base<E1, tensor_shape<ST1, NT1>, T1> &a,
 
 // 1 dimensional tensor (vector)
 template <class ET, class ST, class NT, class T>
-struct tensor_base<ET, tensor_shape<ST, NT>, T> : tensor_core<T> {
+class tensor_base<ET, tensor_shape<ST, NT>, T> : public tensor_core<T> {
+public:
   using value_type = ET;
   using shape_type = tensor_shape<ST, NT>;
   static constexpr size_t rank = 1;

@@ -19,8 +19,14 @@ TEST(image, load) {
                      })
                      .eval();
   auto im_transposed = im.t().eval();
-  auto im_minused = im;
-  im_minused.block(range(0, 50, last), range(0, last)) +=
-      (ones<uint8_t>(3) * 255).ewised().cast<uint8_t>().scalarized();
+  auto imd =
+      im.ewised()
+          .transform([](auto &e) { return e.ewised().cast<double>(); })
+          .eval();
+  auto imd2 = imd;
+  imd2.block(range(0, 50, last), range(0, last)) +=
+      (vec3(255, 255, 255)).eval().scalarized();
+  auto imdiff = (imd2 - imd).eval();
   auto im_scaled = (im * 0.5).eval();
+  println(imdiff.shape());
 }

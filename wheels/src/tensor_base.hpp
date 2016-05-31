@@ -390,7 +390,9 @@ template <class T> struct tensor_iterator {
 template <class ET, class ShapeT> class tensor;
 
 // tensor_base<ET, ShapeT, T>
-template <class ET, class ShapeT, class T> struct tensor_base : tensor_core<T> {
+template <class ET, class ShapeT, class T>
+class tensor_base : public tensor_core<T> {
+public:
   using value_type = ET;
   using shape_type = ShapeT;
   static constexpr size_t rank = ShapeT::rank;
@@ -410,7 +412,8 @@ template <class ET, class ShapeT, class T> struct tensor_base : tensor_core<T> {
 
 // 0 dimensional tensor (scalar)
 template <class ET, class ST, class T>
-struct tensor_base<ET, tensor_shape<ST>, T> : tensor_core<T> {
+class tensor_base<ET, tensor_shape<ST>, T> : public tensor_core<T> {
+public:
   using value_type = ET;
   using shape_type = tensor_shape<ST>;
   static constexpr size_t rank = 0;
@@ -535,13 +538,13 @@ template <class FunT, class T, class... Ts>
 void _for_each_element_unordered_default(no staticShape, FunT fun, T &&t,
                                          Ts &&... ts) {
   assert(all_same(t.shape(), ts.shape()...));
-  //if (t.numel() < _numel_parallel_thres) {
+  if(true) {//if (t.numel() < _numel_parallel_thres) { // FIXME
     for_each_element(behavior_flag<index_ascending>(), fun, std::forward<T>(t),
                      std::forward<Ts>(ts)...);
-  /*} else {
+  } else {
     _for_each_element_unordered_parallel(fun, std::forward<T>(t),
                                          std::forward<Ts>(ts)...);
-  }*/
+  }
 }
 }
 template <class FunT, class T, class... Ts>

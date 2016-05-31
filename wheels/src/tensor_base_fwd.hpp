@@ -15,7 +15,7 @@ constexpr bool operator==(const tensor_core<T1> &a, const tensor_core<T2> &b);
 template <class T1, class T2>
 constexpr bool operator!=(const tensor_core<T1> &a, const tensor_core<T2> &b);
 
-template <class ET, class ShapeT, class T> struct tensor_base;
+template <class ET, class ShapeT, class T> class tensor_base;
 
 // -- necessary tensor functions
 // Shape shape_of(ts);

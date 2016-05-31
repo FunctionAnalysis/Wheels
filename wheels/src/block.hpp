@@ -1,94 +1,32 @@
 #pragma once
 
-#include "tensor_base.hpp"
-
 #include "block_fwd.hpp"
 #include "ewise_fwd.hpp"
+
+#include "tensor_view_base.hpp"
 
 namespace wheels {
 
 template <class ET, class ShapeT, class InputTensorT,
           class... SubscriptTensorTs>
 class block_view
-    : public tensor_base<ET, ShapeT, block_view<ET, ShapeT, InputTensorT,
-                                                SubscriptTensorTs...>> {
+    : public tensor_view_base<
+          ET, ShapeT,
+          block_view<ET, ShapeT, InputTensorT, SubscriptTensorTs...>, false> {
+  using _base_t = tensor_view_base<
+      ET, ShapeT, block_view<ET, ShapeT, InputTensorT, SubscriptTensorTs...>,
+      false>;
+
 public:
   constexpr block_view(InputTensorT &&in, SubscriptTensorTs &&... subts)
       : input_tensor(std::forward<InputTensorT>(in)),
         subs_tensors(std::forward<SubscriptTensorTs>(subts)...) {}
 
-  // operator=
-  template <class AnotherShapeT, class AnotherT,
-            class = std::enable_if_t<AnotherShapeT::rank == ShapeT::rank>>
-  block_view &
-  operator=(const tensor_base<ET, AnotherShapeT, AnotherT> &another) {
-    assign_elements(*this, another.derived());
-    return *this;
-  }
-  block_view &operator=(const ET &e) {
-    fill_elements_with(*this, e);
-    return *this;
-  }
-
-  // +=
-  template <class AnotherShapeT, class AnotherT,
-            class = std::enable_if_t<AnotherShapeT::rank == ShapeT::rank>>
-  block_view &operator+=(const tensor_base<ET, AnotherShapeT, AnotherT> &t) {
-    assert(this->shape() == t.shape());
-    for_each_element(behavior_flag<unordered>(),
-                     [](auto &ele1, auto &&ele2) { ele1 += ele2; }, *this,
-                     t.derived());
-    return *this;
-  }
-  block_view &operator+=(const ET &e) {
-    for_each_element(behavior_flag<unordered>(), [&e](auto &&ele) { ele += e; },
-                     *this);
-    return *this;
-  }
-  template <class AnotherET, class AnotherShapeT, class AnotherT>
-  block_view &
-  operator+=(const scalarize_wrapper<AnotherET, AnotherShapeT, AnotherT> &t) {
-    for_each_element(behavior_flag<unordered>(),
-                     [&t](auto &ele) { ele += t.host; }, *this);
-    return *this;
-  }
-
-  // -=
-  template <class AnotherShapeT, class AnotherT,
-            class = std::enable_if_t<AnotherShapeT::rank == ShapeT::rank>>
-  block_view &operator-=(const tensor_base<ET, AnotherShapeT, AnotherT> &t) {
-    assert(this->shape() == t.shape());
-    for_each_element(behavior_flag<unordered>(),
-                     [](auto &ele1, auto &&ele2) { ele1 -= ele2; }, *this,
-                     t.derived());
-    return *this;
-  }
-  block_view &operator-=(const ET &e) {
-    for_each_element(behavior_flag<unordered>(), [&e](auto &ele) { ele -= e; },
-                     *this);
-    return *this;
-  }
-  template <class AnotherET, class AnotherShapeT, class AnotherT>
-  block_view &
-  operator-=(const scalarize_wrapper<AnotherET, AnotherShapeT, AnotherT> &t) {
-    for_each_element(behavior_flag<unordered>(),
-                     [&t](auto &ele) { ele -= t.host; }, *this);
-    return *this;
-  }
-
-  // *=
-  block_view &operator*=(const ET &e) {
-    for_each_element(behavior_flag<unordered>(), [&e](auto &ele) { ele *= e; },
-                     *this);
-    return *this;
-  }
-
-  // /=
-  block_view &operator/=(const ET &e) {
-    for_each_element(behavior_flag<unordered>(), [&e](auto &ele) { ele /= e; },
-                     *this);
-    return *this;
-  }
+  using _base_t::operator=;
+  using _base_t::operator+=;
+  using _base_t::operator-=;
+  using _base_t::operator*=;
+  using _base_t::operator/=;
 
 public:
   InputTensorT input_tensor;
