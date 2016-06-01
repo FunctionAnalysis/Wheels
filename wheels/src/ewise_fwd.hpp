@@ -1,5 +1,6 @@
 #pragma once
 
+#include "types_fwd.hpp"
 #include "const_expr_fwd.hpp"
 #include "overloads_fwd.hpp"
 
@@ -32,8 +33,9 @@ public:
   template <class FunT> auto transform(FunT &&fun) &;
   template <class FunT> auto transform(FunT &&fun) &&;
 
-  template <class TargetEleT> constexpr auto cast() const &;
-  template <class TargetEleT> auto cast() &&;
+  template <cast_type_enum cast_type, class TargetEleT>
+  constexpr auto cast() const &;
+  template <cast_type_enum cast_type, class TargetEleT> auto cast() &&;
 };
 
 // ewise_base

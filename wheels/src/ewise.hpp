@@ -222,18 +222,6 @@ constexpr auto _transform(tensor_base<EleT, ShapeT, T> &&t, FunT &&fun) {
   return make_ewise_op_result<ele_t, ShapeT>(std::forward<FunT>(fun),
                                              std::move(t.derived()));
 }
-
-// cast
-template <class TargetEleT, class EleT, class ShapeT, class T>
-constexpr auto _static_ecast(const tensor_base<EleT, ShapeT, T> &t) {
-  return _transform(t.derived(),
-                    [](const auto &e) { return static_cast<TargetEleT>(e); });
-}
-template <class TargetEleT, class EleT, class ShapeT, class T>
-constexpr auto _static_ecast(tensor_base<EleT, ShapeT, T> &&t) {
-  return _transform(std::move(t.derived()),
-                    [](const auto &e) { return static_cast<TargetEleT>(e); });
-}
 }
 
 // equals & not_equals
@@ -357,16 +345,21 @@ tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::transform(
 
 // cast
 template <class EleT, class ShapeT, class T>
-template <class TargetEleT>
+template <cast_type_enum cast_type, class TargetEleT>
 inline constexpr auto
 tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::cast() const & {
-  return details::_static_ecast<TargetEleT>(this->derived());
+  return details::_transform(this->derived(), [](const auto &e) -> TargetEleT {
+    return ::wheels::cast<cast_type, TargetEleT>(e);
+  });
 }
 template <class EleT, class ShapeT, class T>
-template <class TargetEleT>
+template <cast_type_enum cast_type, class TargetEleT>
 inline auto
 tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::cast() && {
-  return details::_static_ecast<TargetEleT>(std::move(this->derived()));
+  return details::_transform(std::move(this->derived()),
+                             [](auto &&e) -> TargetEleT {
+                               return ::wheels::cast<cast_type, TargetEleT>(e);
+                             });
 }
 
 // _as_tuple_seq

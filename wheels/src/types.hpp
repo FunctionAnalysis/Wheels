@@ -3,7 +3,6 @@
 #include <complex>
 
 #include "types_fwd.hpp"
-#include "utility_fwd.hpp"
 
 #include "const_ints.hpp"
 #include "utility.hpp"
@@ -145,13 +144,6 @@ template <class... Ts> constexpr auto type_of(Ts &&... t) {
   return types<Ts &&...>();
 }
 
-//template <class... Ts>
-//inline std::ostream &operator<<(std::ostream &os, const types<Ts...> &) {
-//  os << "{";
-//  print_sep_to(os, ",", types<Ts>::name()...);
-//  return os << "}";
-//}
-
 // ==
 template <class... T1s, class... T2s,
           class = std::enable_if_t<sizeof...(T1s) != sizeof...(T2s)>>
@@ -231,16 +223,22 @@ template <class T> bool is_zero(const std::complex<T> &v) {
   return is_zero(v.real()) && is_zero(v.imag());
 }
 
-// type_restrict
-namespace details {
-template <class RestrictT, class T>
-constexpr T &&_type_restrict(const RestrictT &, T &&t) {
-  return static_cast<T &&>(t);
-}
-}
-template <class RestrictT, class T>
-constexpr auto type_restrict(T &&t)
-    -> decltype(details::_type_restrict<RestrictT>(t, std::forward<T>(t))) {
-  return details::_type_restrict<RestrictT>(t, std::forward<T>(t));
+// cast
+template <cast_type_enum cast_type> struct caster;
+#define WHEELS_DECLARE_CASTER(cast_type, cast_fun)                             \
+  template <> struct caster<cast_type> {                                       \
+    template <class T, class K> constexpr T perform(K &&v) const {             \
+      return cast_fun;                                                         \
+    }                                                                          \
+  };
+WHEELS_DECLARE_CASTER(by_static, static_cast<T>(v))
+WHEELS_DECLARE_CASTER(by_dynamic, dynamic_cast<T>(v))
+WHEELS_DECLARE_CASTER(by_reinterpret, reinterpret_cast<T>(v))
+WHEELS_DECLARE_CASTER(by_construct, T(v))
+WHEELS_DECLARE_CASTER(by_c_style, (T)v)
+#undef WHEELS_DECLARE_CASTER
+
+template <cast_type_enum cast_type, class T, class K> constexpr T cast(K &&v) {
+  return caster<cast_type>().template perform<T>(v);
 }
 }
