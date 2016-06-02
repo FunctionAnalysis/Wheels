@@ -227,7 +227,7 @@ template <class T> bool is_zero(const std::complex<T> &v) {
 template <cast_type_enum cast_type> struct caster;
 #define WHEELS_DECLARE_CASTER(cast_type, cast_fun)                             \
   template <> struct caster<cast_type> {                                       \
-    template <class T, class K> constexpr T perform(K &&v) const {             \
+    template <class T, class K> static constexpr T perform(K &&v) {            \
       return cast_fun;                                                         \
     }                                                                          \
   };
@@ -239,6 +239,6 @@ WHEELS_DECLARE_CASTER(by_c_style, (T)v)
 #undef WHEELS_DECLARE_CASTER
 
 template <cast_type_enum cast_type, class T, class K> constexpr T cast(K &&v) {
-  return caster<cast_type>().template perform<T>(v);
+  return caster<cast_type>::perform<T>(v);
 }
 }
