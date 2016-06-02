@@ -6,6 +6,7 @@
 
 #include "const_ints.hpp"
 #include "utility.hpp"
+#include "what.hpp"
 
 namespace wheels {
 namespace details {
@@ -18,14 +19,6 @@ template <class T, class... Ts> struct _types_element<0, T, Ts...> {
 template <size_t Idx, class T, class... Ts>
 struct _types_element<Idx, T, Ts...> {
   using type = typename _types_element<Idx - 1, Ts...>::type;
-};
-
-// is_empty helper
-template <class T> struct _is_empty {
-  struct _helper : T {
-    int x;
-  };
-  static constexpr bool value = sizeof(_helper) == sizeof(int);
 };
 }
 
@@ -240,5 +233,22 @@ WHEELS_DECLARE_CASTER(by_c_style, (T)v)
 
 template <cast_type_enum cast_type, class T, class K> constexpr T cast(K &&v) {
   return caster<cast_type>::perform<T>(v);
+}
+
+// eval_impl
+namespace details {
+template <class T, class K>
+constexpr T _eval(const K &v, const object_base<T> &) {
+  return T(v);
+}
+template <class T, class K>
+constexpr T _eval(const K &v, const proxy_base<T> &) {
+  return T(v);
+}
+}
+
+// eval
+template <class T> constexpr auto eval(const T &v) {
+  return details::_eval(v, what(v));
 }
 }

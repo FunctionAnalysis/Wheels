@@ -1,10 +1,9 @@
 #pragma once
 
 #include "ewise_fwd.hpp"
-#include "object_fwd.hpp"
 
-#include "object.hpp"
 #include "overloads.hpp"
+#include "what.hpp"
 
 #include "extension.hpp"
 #include "tensor_base.hpp"
@@ -116,7 +115,7 @@ constexpr auto overload_as(const func_base<OpT> &op,
 template <class OpT, class EleT1, class ShapeT1, class T1, class T2>
 constexpr auto overload_as(const func_base<OpT> &op,
                            const tensor_base<EleT1, ShapeT1, T1> &,
-                           const category::other<T2> &) {
+                           const proxy_base<T2> &) {
   using ele_t = std::decay_t<decltype(
       eval(OpT()(std::declval<EleT1>(), std::declval<T2>())))>;
   return [](auto &&t1, auto &&t2) {
@@ -127,7 +126,7 @@ constexpr auto overload_as(const func_base<OpT> &op,
 template <class OpT, class EleT1, class ShapeT1, class T1, class T2>
 constexpr auto overload_as(const func_base<OpT> &op,
                            const tensor_base<EleT1, ShapeT1, T1> &,
-                           const category::scalar<T2> &) {
+                           const scalar<T2> &) {
   using ele_t = std::decay_t<decltype(
       eval(OpT()(std::declval<EleT1>(), std::declval<T2>())))>;
   return [](auto &&t1, auto t2) {
@@ -151,8 +150,7 @@ constexpr auto overload_as(const func_base<OpT> &op,
 
 // scalar vs tensor
 template <class OpT, class T1, class EleT2, class ShapeT2, class T2>
-constexpr auto overload_as(const func_base<OpT> &op,
-                           const category::other<T1> &,
+constexpr auto overload_as(const func_base<OpT> &op, const proxy_base<T1> &,
                            const tensor_base<EleT2, ShapeT2, T2> &) {
   using ele_t = std::decay_t<decltype(
       eval(OpT()(std::declval<T1>(), std::declval<EleT2>())))>;
@@ -162,8 +160,7 @@ constexpr auto overload_as(const func_base<OpT> &op,
   };
 }
 template <class OpT, class T1, class EleT2, class ShapeT2, class T2>
-constexpr auto overload_as(const func_base<OpT> &op,
-                           const category::scalar<T1> &,
+constexpr auto overload_as(const func_base<OpT> &op, const scalar<T1> &,
                            const tensor_base<EleT2, ShapeT2, T2> &) {
   using ele_t = std::decay_t<decltype(
       eval(OpT()(std::declval<T1>(), std::declval<EleT2>())))>;
@@ -239,7 +236,7 @@ constexpr auto _ewise_equals(const tensor_base<EleT1, ShapeT1, T1> &,
 // with scalar
 template <class EleT1, class ShapeT1, class T1, class T2, class TT1, class TT2>
 constexpr auto _ewise_equals(const tensor_base<EleT1, ShapeT1, T1> &,
-                             const category::other<T2> &, TT1 &&t1, TT2 &&t2) {
+                             const proxy_base<T2> &, TT1 &&t1, TT2 &&t2) {
   return make_ewise_op_result<bool, ShapeT1>(
       binary_op_eq()(const_arg<0>(), std::forward<TT2>(t2)),
       std::forward<TT1>(t1));
@@ -257,8 +254,7 @@ constexpr auto _ewise_not_equals(const tensor_base<EleT1, ShapeT1, T1> &,
 // with scalar
 template <class EleT1, class ShapeT1, class T1, class T2, class TT1, class TT2>
 constexpr auto _ewise_not_equals(const tensor_base<EleT1, ShapeT1, T1> &,
-                                 const category::other<T2> &, TT1 &&t1,
-                                 TT2 &&t2) {
+                                 const proxy_base<T2> &, TT1 &&t1, TT2 &&t2) {
   return make_ewise_op_result<bool, ShapeT1>(
       binary_op_neq()(const_arg<0>(), std::forward<TT2>(t2)),
       std::forward<TT1>(t1));
@@ -270,23 +266,23 @@ template <class AnotherT>
 inline constexpr auto
 tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::equals(
     AnotherT &&t) const & {
-  return details::_ewise_equals(this->derived(), category::identify(t),
-                                this->derived(), std::forward<AnotherT>(t));
+  return details::_ewise_equals(this->derived(), what(t), this->derived(),
+                                std::forward<AnotherT>(t));
 }
 
 template <class EleT, class ShapeT, class T>
 template <class AnotherT>
 inline auto tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::equals(
     AnotherT &&t) & {
-  return details::_ewise_equals(this->derived(), category::identify(t),
-                                this->derived(), std::forward<AnotherT>(t));
+  return details::_ewise_equals(this->derived(), what(t), this->derived(),
+                                std::forward<AnotherT>(t));
 }
 
 template <class EleT, class ShapeT, class T>
 template <class AnotherT>
 inline auto tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::equals(
     AnotherT &&t) && {
-  return details::_ewise_equals(this->derived(), category::identify(t),
+  return details::_ewise_equals(this->derived(), what(t),
                                 std::move(this->derived()),
                                 std::forward<AnotherT>(t));
 }
@@ -296,8 +292,8 @@ template <class AnotherT>
 inline constexpr auto
 tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::not_equals(
     AnotherT &&t) const & {
-  return details::_ewise_not_equals(this->derived(), category::identify(t),
-                                    this->derived(), std::forward<AnotherT>(t));
+  return details::_ewise_not_equals(this->derived(), what(t), this->derived(),
+                                    std::forward<AnotherT>(t));
 }
 
 template <class EleT, class ShapeT, class T>
@@ -305,8 +301,8 @@ template <class AnotherT>
 inline auto
 tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::not_equals(
     AnotherT &&t) & {
-  return details::_ewise_not_equals(this->derived(), category::identify(t),
-                                    this->derived(), std::forward<AnotherT>(t));
+  return details::_ewise_not_equals(this->derived(), what(t), this->derived(),
+                                    std::forward<AnotherT>(t));
 }
 
 template <class EleT, class ShapeT, class T>
@@ -314,7 +310,7 @@ template <class AnotherT>
 inline auto
 tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::not_equals(
     AnotherT &&t) && {
-  return details::_ewise_not_equals(this->derived(), category::identify(t),
+  return details::_ewise_not_equals(this->derived(), what(t),
                                     std::move(this->derived()),
                                     std::forward<AnotherT>(t));
 }

@@ -1,13 +1,13 @@
 #include <gtest/gtest.h>
 
-#include "object.hpp"
-#include "types.hpp"
+#include "what.hpp"
 #include "overloads.hpp"
+#include "types.hpp"
 
 using namespace wheels;
 using namespace wheels::literals;
 
-template <class T> struct A : category::object<A<T>> {};
+template <class T> struct A : object_base<A<T>> {};
 
 namespace wheels {
 namespace details {
@@ -28,14 +28,12 @@ template <class OpT, class T> auto overload_as(const OpT &, const A<T> &) {
 }
 
 template <class T, class K>
-auto overload_as(const binary_op_plus &, const A<T> &,
-                 const category::other<K> &) {
+auto overload_as(const binary_op_plus &, const A<T> &, const proxy_base<K> &) {
   return [](auto &&, auto &&) { return "A<T> + int"; };
 }
 
 template <class T, class K>
-auto overload_as(const binary_op_plus &, const category::other<K> &,
-                 const A<T> &) {
+auto overload_as(const binary_op_plus &, const proxy_base<K> &, const A<T> &) {
   return [](auto &&, auto &&) { return "int + A<T>"; };
 }
 }
@@ -47,11 +45,10 @@ TEST(core, overloads) {
   int ia = 0;
   auto nia = -ia;
 
-  const category::other<int> &ic = category::identify(1);
+  const proxy_base<int> &ic = what(1);
 
-  auto pp =
-      ::wheels::overload_as(binary_op_plus(), ::wheels::category::identify(a),
-                            ::wheels::category::identify(1));
+  auto pp = ::wheels::overload_as(binary_op_plus(), ::wheels::what(a),
+                                  ::wheels::what(1));
 
   std::cout << a + 1 << std::endl;
   std::cout << 1 + 1 << std::endl;

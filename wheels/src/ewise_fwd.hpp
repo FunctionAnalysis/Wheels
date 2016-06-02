@@ -120,7 +120,7 @@ constexpr auto overload_as(const func_base<OpT> &op,
 template <class OpT, class EleT1, class ShapeT1, class T1, class T2>
 constexpr auto overload_as(const func_base<OpT> &op,
                            const tensor_base<EleT1, ShapeT1, T1> &,
-                           const category::other<T2> &);
+                           const proxy_base<T2> &);
 
 template <class OpT, class EleT1, class ShapeT1, class EleT2, class ShapeT2,
           class T1, class T2>
@@ -131,7 +131,7 @@ constexpr auto overload_as(const func_base<OpT> &op,
 // scalar vs tensor
 template <class OpT, class T1, class EleT2, class ShapeT2, class T2>
 constexpr auto overload_as(const func_base<OpT> &op,
-                           const category::other<T1> &,
+                           const proxy_base<T1> &,
                            const tensor_base<EleT2, ShapeT2, T2> &);
 
 template <class OpT, class EleT1, class ShapeT1, class EleT2, class ShapeT2,

@@ -2,17 +2,16 @@
 
 #include "const_expr_fwd.hpp"
 #include "const_ints_fwd.hpp"
-#include "object_fwd.hpp"
 #include "overloads_fwd.hpp"
+#include "what_fwd.hpp"
 
 #include "const_ints.hpp"
 #include "overloads.hpp"
 #include "utility.hpp"
 
 namespace wheels {
-
 // const_expr_base
-template <class T> struct const_expr_base : category::object<T> {
+template <class T> struct const_expr_base : object_base<T> {
   template <class... ArgTs>
   constexpr decltype(auto) operator()(ArgTs &&... args) const & {
     return invoke_const_expr(this->derived(), std::forward<ArgTs>(args)...);
@@ -67,19 +66,16 @@ constexpr TT &&_as_const_coeff_impl(TT &&v, const const_expr_base<T> &) {
   return static_cast<TT &&>(v);
 }
 template <class TT, class T>
-constexpr const_coeff<TT> _as_const_coeff_impl(TT &&v,
-                                               const category::object<T> &) {
+constexpr const_coeff<TT> _as_const_coeff_impl(TT &&v, const object_base<T> &) {
   return const_coeff<TT>(std::forward<TT>(v));
 }
 template <class TT, class T>
-constexpr const_coeff<TT> _as_const_coeff_impl(TT &&v,
-                                               const category::other<T> &) {
+constexpr const_coeff<TT> _as_const_coeff_impl(TT &&v, const proxy_base<T> &) {
   return const_coeff<TT>(std::forward<TT>(v));
 }
 }
 template <class T> constexpr decltype(auto) as_const_coeff(T &&v) {
-  return details::_as_const_coeff_impl(std::forward<T>(v),
-                                       category::identify(v));
+  return details::_as_const_coeff_impl(std::forward<T>(v), what(v));
 }
 
 // invoke_const_expr_impl
@@ -146,14 +142,14 @@ constexpr auto overload_as(const func_base<OpT> &, const const_expr_base<T1> &,
 
 template <class OpT, class T1, class T2>
 constexpr auto overload_as(const func_base<OpT> &, const const_expr_base<T1> &,
-                           const category::other<T2> &) {
+                           const proxy_base<T2> &) {
   return [](auto &&v1, auto &&v2) {
     return make_const_call_list(OpT(), wheels_forward(v1),
                                 as_const_coeff(wheels_forward(v2)));
   };
 }
 template <class OpT, class T1, class T2>
-constexpr auto overload_as(const func_base<OpT> &, const category::other<T1> &,
+constexpr auto overload_as(const func_base<OpT> &, const proxy_base<T1> &,
                            const const_expr_base<T2> &) {
   return [](auto &&v1, auto &&v2) {
     return make_const_call_list(OpT(), as_const_coeff(wheels_forward(v1)),
@@ -174,7 +170,7 @@ template <class T, class... ArgTs>
 constexpr yes _has_const_expr_impl(const const_expr_base<T> &,
                                    const ArgTs &...);
 template <class T, class... ArgTs>
-constexpr auto _has_const_expr_impl(const category::other<T> &,
+constexpr auto _has_const_expr_impl(const proxy_base<T> &,
                                     const ArgTs &... args);
 constexpr no _has_const_expr_impl();
 
@@ -184,14 +180,14 @@ constexpr yes _has_const_expr_impl(const const_expr_base<T> &,
   return yes();
 }
 template <class T, class... ArgTs>
-constexpr auto _has_const_expr_impl(const category::other<T> &,
+constexpr auto _has_const_expr_impl(const proxy_base<T> &,
                                     const ArgTs &... args) {
   return _has_const_expr_impl(args...);
 }
 constexpr no _has_const_expr_impl() { return no(); }
 }
 template <class... ArgTs> constexpr auto has_const_expr(const ArgTs &... args) {
-  return details::_has_const_expr_impl(category::identify(args)...);
+  return details::_has_const_expr_impl(what(args)...);
 }
 
 namespace details {

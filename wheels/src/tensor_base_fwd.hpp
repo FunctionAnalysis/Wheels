@@ -5,7 +5,6 @@
 #include "shape_fwd.hpp"
 
 namespace wheels {
-
 template <class T> struct tensor_core;
 
 template <class T> struct tensor_iterator;

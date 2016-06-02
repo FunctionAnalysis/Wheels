@@ -48,7 +48,7 @@ endif()
 endif()
 
 if (${USE_MATLAB})
-find_package(MATLAB)
+find_package(MATLAB REQUIRED)
 if (${MATLAB_FOUND})
     #  MATLAB_INCLUDE_DIR: include path for mex.h, engine.h
     #  MATLAB_LIBRARIES:   required libraries: libmex, etc
@@ -69,7 +69,7 @@ endif()
 endif()
 
 if (${USE_OPENCV})
-find_package(OpenCV)
+find_package(OpenCV REQUIRED)
 if (${OpenCV_FOUND})
     list (APPEND DEPENDENCY_INCLUDES ${OpenCV_INCLUDE_DIRS})
     list (APPEND DEPENDENCY_LIBS ${OpenCV_LIBS})
