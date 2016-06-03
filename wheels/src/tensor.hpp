@@ -109,11 +109,6 @@ public:
   constexpr decltype(auto) shape() const { return _storage.shape(); }
   void reshape(const shape_type &s) { _storage.reshape(s); }
 
-  template <class ArcT> void serialize(ArcT &ar) { ar(_storage); }
-  template <class V> decltype(auto) fields(V &&visitor) {
-    return visitor(_storage);
-  }
-
   using _base_t::operator=;
   using _base_t::operator+=;
   using _base_t::operator-=;

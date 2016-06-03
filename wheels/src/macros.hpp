@@ -45,3 +45,21 @@
   claz &operator=(const claz &) = delete;
 
 #define wheels_forward(v) std::forward<decltype(v)>(v)
+
+#ifndef wheels_no_exception
+#define wheels_no_exception false
+#endif
+
+#if wheels_no_exception
+#define wheels_try if(true)
+#define wheels_catch(x) else
+#define wheels_catch_all else
+#define wheels_throw(x) (0)
+#define wheels_rethrow (0)
+#else
+#define wheels_try try
+#define wheels_catch(x) catch(x)
+#define wheels_catch_all catch(...)
+#define wheels_throw(x) throw x
+#define wheels_rethrow throw
+#endif
