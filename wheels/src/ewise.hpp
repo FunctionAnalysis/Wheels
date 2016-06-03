@@ -7,6 +7,7 @@
 
 #include "extension.hpp"
 #include "tensor_base.hpp"
+#include "types.hpp"
 
 namespace wheels {
 

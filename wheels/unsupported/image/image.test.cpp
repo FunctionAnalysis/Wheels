@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 
 #include "../../src/diagonal.hpp"
-#include "../../src/upgrade.hpp"
 #include "../../src/iota.hpp"
-#include "../../src/permute.hpp"
 #include "../../src/matrix.hpp"
+#include "../../src/permute.hpp"
 #include "../../src/remap.hpp"
+#include "../../src/upgrade.hpp"
 
 #include "image.hpp"
 
@@ -21,11 +21,13 @@ TEST(image, load) {
                      .eval();
   auto im_transposed = im.t().eval();
   auto imd = im.ewised()
-                 .transform([](auto &e) {
+                 .transform([](auto &&e) {
                    return e.ewised().cast<by_static, double>();
                  })
                  .eval();
-	auto imd3 = im.ewised().cast<by_construct, vec3>().eval();
+  auto kkk = eval(vec3().ewised().cast<by_static, double>());
+  static_assert(std::is_same<decltype(kkk), vec3>::value, "");
+  auto imd3 = im.ewised().cast<by_construct, vec3>().eval();
   auto imd2 = imd;
   imd2.block(range(0, 50, last), range(0, last)) +=
       (vec3(255, 255, 255)).eval().scalarized();

@@ -232,23 +232,17 @@ WHEELS_DECLARE_CASTER(by_c_style, (T)v)
 #undef WHEELS_DECLARE_CASTER
 
 template <cast_type_enum cast_type, class T, class K> constexpr T cast(K &&v) {
-  return caster<cast_type>::perform<T>(v);
+  return caster<cast_type>::template perform<T>(v);
 }
 
 // eval_impl
-namespace details {
 template <class T, class K>
-constexpr T _eval(const K &v, const object_base<T> &) {
+constexpr T eval_what(const K &v, const proxy_base<T> &) {
   return T(v);
-}
-template <class T, class K>
-constexpr T _eval(const K &v, const proxy_base<T> &) {
-  return T(v);
-}
 }
 
 // eval
 template <class T> constexpr auto eval(const T &v) {
-  return details::_eval(v, what(v));
+  return eval_what(v, what(v));
 }
 }

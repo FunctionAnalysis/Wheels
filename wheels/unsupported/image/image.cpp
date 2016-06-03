@@ -1,5 +1,6 @@
 #include "image.hpp"
 
+#include <cstdlib>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
@@ -12,7 +13,7 @@ image_<uint8_t, ForceChannels> _load_image(const char *file_name) {
       stbi_load(file_name, &width, &height, &channels, ForceChannels);
   image_<uint8_t, ForceChannels> im(make_shape(height, width));
   static_assert(sizeof(vec_<uint8_t, ForceChannels>) == ForceChannels, "");
-  std::memcpy(im.ptr(), data, width * height * ForceChannels);
+  memcpy(im.ptr(), data, width * height * ForceChannels);
   stbi_image_free(data);
   return im;
 }

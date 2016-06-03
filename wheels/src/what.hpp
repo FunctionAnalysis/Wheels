@@ -8,6 +8,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "const_ints.hpp"
 #include "what_fwd.hpp"
 
 namespace wheels {

@@ -49,7 +49,7 @@ public:
   T &operator+=(const tensor_base<ET, AnotherShapeT, AnotherT> &t) {
     assert(this->shape() == t.shape());
     for_each_element(behavior_flag<unordered>(),
-                     [](auto &ele1, auto &&ele2) { ele1 += ele2; },
+                     [](auto &&ele1, auto &&ele2) { ele1 += ele2; },
                      this->derived(), t.derived());
     return this->derived();
   }
@@ -62,7 +62,7 @@ public:
   T &operator+=(
       const scalarize_wrapper<AnotherET, AnotherShapeT, AnotherT> &t) {
     for_each_element(behavior_flag<unordered>(),
-                     [&t](auto &ele) { ele += t.host; }, this->derived());
+                     [&t](auto &&ele) { ele += t.host; }, this->derived());
     return this->derived();
   }
 
@@ -72,12 +72,12 @@ public:
   T &operator-=(const tensor_base<ET, AnotherShapeT, AnotherT> &t) {
     assert(this->shape() == t.shape());
     for_each_element(behavior_flag<unordered>(),
-                     [](auto &ele1, auto &&ele2) { ele1 -= ele2; },
+                     [](auto &&ele1, auto &&ele2) { ele1 -= ele2; },
                      this->derived(), t.derived());
     return this->derived();
   }
   T &operator-=(const ET &e) {
-    for_each_element(behavior_flag<unordered>(), [&e](auto &ele) { ele -= e; },
+    for_each_element(behavior_flag<unordered>(), [&e](auto &&ele) { ele -= e; },
                      this->derived());
     return this->derived();
   }
@@ -85,20 +85,20 @@ public:
   T &operator-=(
       const scalarize_wrapper<AnotherET, AnotherShapeT, AnotherT> &t) {
     for_each_element(behavior_flag<unordered>(),
-                     [&t](auto &ele) { ele -= t.host; }, this->derived());
+                     [&t](auto &&ele) { ele -= t.host; }, this->derived());
     return this->derived();
   }
 
   // *=
   T &operator*=(const ET &e) {
-    for_each_element(behavior_flag<unordered>(), [&e](auto &ele) { ele *= e; },
+    for_each_element(behavior_flag<unordered>(), [&e](auto &&ele) { ele *= e; },
                      this->derived());
     return this->derived();
   }
 
   // /=
   T &operator/=(const ET &e) {
-    for_each_element(behavior_flag<unordered>(), [&e](auto &ele) { ele /= e; },
+    for_each_element(behavior_flag<unordered>(), [&e](auto &&ele) { ele /= e; },
                      this->derived());
     return this->derived();
   }

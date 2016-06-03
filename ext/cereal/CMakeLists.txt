@@ -7,6 +7,7 @@ ExternalProject_Add(cereal
      CMAKE_ARGS -DSKIP_SANDBOX:BOOL=ON
      PREFIX "${CMAKE_CURRENT_BINARY_DIR}"
      STAMP_DIR "${CMAKE_CURRENT_BINARY_DIR}"
+	 BUILD_COMMAND ""
 # Disable install step
      INSTALL_COMMAND ""
 )

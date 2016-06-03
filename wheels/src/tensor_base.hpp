@@ -14,11 +14,11 @@
 #include "ewise_fwd.hpp"
 #include "index_fwd.hpp"
 #include "iota_fwd.hpp"
-#include "tensor_map_fwd.hpp"
 #include "permute_fwd.hpp"
 #include "remap_fwd.hpp"
 #include "reshape_fwd.hpp"
 #include "tensor_fwd.hpp"
+#include "tensor_map_fwd.hpp"
 #include "upgrade_fwd.hpp"
 
 #include "const_expr.hpp"
@@ -334,10 +334,8 @@ private:
 };
 
 // details::_eval
-namespace details {
-template <class T, class K> auto _eval(const K &v, const tensor_core<T> &) {
+template <class T, class K> auto eval_what(const K &v, const tensor_core<T> &) {
   return v.eval();
-}
 }
 
 template <class T1, class T2>

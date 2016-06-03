@@ -25,6 +25,11 @@ template <class T> struct const_expr_base : object_base<T> {
   }
 };
 
+template <class T, class K>
+constexpr T eval_what(const K &v, const const_expr_base<T> &) {
+  return T(v);
+}
+
 // const_arg
 template <size_t Idx> struct const_arg : const_expr_base<const_arg<Idx>> {
   constexpr const_arg() {}
