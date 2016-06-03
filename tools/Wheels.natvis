@@ -148,4 +148,65 @@
       </ArrayItems>
     </Expand>
   </Type>
+  
+  <!-- mapped vector -->
+  <Type Name="wheels::tensor_map&lt;*,wheels::tensor_shape&lt;unsigned __int64,unsigned __int64&gt;&gt;">
+    <DisplayString>{this->_storage._ptr}</DisplayString>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">this->_storage._shape._val</Item>
+      <ArrayItems>
+        <Size>this->_storage._shape._val</Size>
+        <ValuePointer>this->_storage._ptr</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+  
+  <!--string-->
+  <Type Name="wheels::tensor_map&lt;char const,wheels::tensor_shape&lt;unsigned __int64,unsigned __int64&gt;&gt;">
+    <DisplayString>{this->_storage._ptr}</DisplayString>
+    <StringView>this->_storage._shape._val,this->_storage._ptr</StringView>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">this->_storage._shape._val</Item>
+      <ArrayItems>
+        <Size>this->_storage._shape._val</Size>
+        <ValuePointer>this->_storage._ptr</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="wheels::tensor_map&lt;wchar_t const,wheels::tensor_shape&lt;unsigned __int64,unsigned __int64&gt;&gt;">
+    <DisplayString>{this->_storage._ptr}</DisplayString>
+    <StringView>this->_storage._shape._val,this->_storage._ptr</StringView>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">this->_storage._shape._val</Item>
+      <ArrayItems>
+        <Size>this->_storage._shape._val</Size>
+        <ValuePointer>this->_storage._ptr</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="wheels::tensor_map&lt;char16_t const,wheels::tensor_shape&lt;unsigned __int64,unsigned __int64&gt;&gt;">
+    <DisplayString>{this->_storage._ptr}</DisplayString>
+    <StringView>this->_storage._shape._val,this->_storage._ptr</StringView>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">this->_storage._shape._val</Item>
+      <ArrayItems>
+        <Size>this->_storage._shape._val</Size>
+        <ValuePointer>this->_storage._ptr</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="wheels::tensor_map&lt;char32_t const,wheels::tensor_shape&lt;unsigned __int64,unsigned __int64&gt;&gt;">
+    <DisplayString>{this->_storage._ptr}</DisplayString>
+    <StringView>this->_storage._shape._val,this->_storage._ptr</StringView>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">this->_storage._shape._val</Item>
+      <ArrayItems>
+        <Size>this->_storage._shape._val</Size>
+        <ValuePointer>this->_storage._ptr</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
 </AutoVisualizer>
