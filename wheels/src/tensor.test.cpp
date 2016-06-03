@@ -19,10 +19,6 @@ TEST(tensor, tensor) {
   static_assert(std::is_standard_layout<mat2>::value, "");
   static_assert(!std::is_standard_layout<matx>::value, "");
 
-  std::max(1, 2);
-
-  constexpr auto sss = sizeof(vec3);
-
   vec3().for_each([](double e) { ASSERT_EQ(e, 0.0); });
   vec3(5, 5, 5).for_each([](double e) { ASSERT_EQ(e, 5.0); });
   vecx({6, 6, 6}).for_each([](double e) { ASSERT_EQ(e, 6.0); });

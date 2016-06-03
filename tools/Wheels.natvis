@@ -45,6 +45,12 @@
   <Type Name="wheels::binary_op_mod">
     <DisplayString>%</DisplayString>
   </Type>
+  <Type Name="wheels::std_func_max">
+    <DisplayString>max</DisplayString>
+  </Type>
+  <Type Name="wheels::std_func_min">
+    <DisplayString>min</DisplayString>
+  </Type>
 
   <Type Name="wheels::const_arg&lt;*&gt;">
     <DisplayString>arg{$T1}</DisplayString>
