@@ -3,7 +3,7 @@
 #include <Eigen/Core>
 #include <Eigen/StdVector>
 
-#include "../../src/map.hpp"
+#include "../../src/tensor_map.hpp"
 #include "../../src/permute.hpp"
 
 namespace wheels {

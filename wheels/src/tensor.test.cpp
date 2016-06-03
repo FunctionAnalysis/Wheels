@@ -4,7 +4,7 @@
 #include "constants.hpp"
 #include "ewise.hpp"
 #include "index.hpp"
-#include "map.hpp"
+#include "tensor_map.hpp"
 #include "matrix.hpp"
 #include "permute.hpp"
 #include "reformulate.hpp"

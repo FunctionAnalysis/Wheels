@@ -2,7 +2,7 @@
 
 #include "cat.hpp"
 #include "ewise.hpp"
-#include "map.hpp"
+#include "tensor_map.hpp"
 #include "shape.hpp"
 #include "tensor.hpp"
 

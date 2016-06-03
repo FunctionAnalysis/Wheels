@@ -62,7 +62,7 @@ constexpr const pointer<T> &it_is(const T &t) {
 
 // null_pointer
 template <class T> struct null_pointer : proxy_base<T> {};
-inline const null_pointer<nullptr_t> &it_is(nullptr_t) {
+constexpr const null_pointer<nullptr_t> &it_is(nullptr_t) {
   return details::_gen_ref<null_pointer<nullptr_t>>();
 }
 

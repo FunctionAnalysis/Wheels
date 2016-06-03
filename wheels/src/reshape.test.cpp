@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 
-#include "map.hpp"
+#include "tensor_map.hpp"
 #include "reshape.hpp"
 #include "shape.hpp"
 #include "tensor.hpp"

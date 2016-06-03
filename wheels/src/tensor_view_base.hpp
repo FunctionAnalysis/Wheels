@@ -5,7 +5,6 @@
 #include "tensor_base.hpp"
 
 namespace wheels {
-
 namespace details {
 template <class ET, class ShapeT, class T, bool IsContinuousData>
 struct _select_tensor_base;

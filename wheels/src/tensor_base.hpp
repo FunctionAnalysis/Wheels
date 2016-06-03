@@ -14,7 +14,7 @@
 #include "ewise_fwd.hpp"
 #include "index_fwd.hpp"
 #include "iota_fwd.hpp"
-#include "map_fwd.hpp"
+#include "tensor_map_fwd.hpp"
 #include "permute_fwd.hpp"
 #include "remap_fwd.hpp"
 #include "reshape_fwd.hpp"

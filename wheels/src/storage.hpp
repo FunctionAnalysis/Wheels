@@ -5,7 +5,6 @@
 #include "storage_fwd.hpp"
 
 namespace wheels {
-
 namespace details {
 template <class ArcT, class ST, class... SS>
 void _save_shape(ArcT &ar, const tensor_shape<ST, SS...> &s) {
@@ -81,6 +80,34 @@ public:
 
 private:
   std::array<value_type, shape_type::static_magnitude> _data;
+};
+
+template <class T, class ShapeT> class map_storage<T, ShapeT, true> {
+  static_assert(is_tensor_shape<ShapeT>::value,
+                "ShapeT must be a tensor_shape");
+
+public:
+  using value_type = T;
+  using shape_type = ShapeT;
+
+public:
+  constexpr map_storage() : _ptr(nullptr) {}
+  constexpr explicit map_storage(const shape_type &, value_type *ptr)
+      : _ptr(ptr) {}
+
+  map_storage(const map_storage &) = delete;
+  map_storage &operator=(const map_storage &) = delete;
+  map_storage(map_storage &&) = default;
+  map_storage &operator=(map_storage &&) = default;
+
+  constexpr shape_type shape() const { return shape_type(); }
+  constexpr const value_type *data() const { return _ptr; }
+  value_type *data() { return _ptr; }
+
+  void reshape(const shape_type &nshape) { assert(nshape == shape()); }
+
+private:
+  value_type *_ptr;
 };
 
 namespace details {
@@ -283,5 +310,36 @@ private:
   size_t _capacity;
   value_type *_data;
   std::allocator<value_type> _alloc;
+};
+
+template <class T, class ShapeT> class map_storage<T, ShapeT, false> {
+	static_assert(is_tensor_shape<ShapeT>::value,
+                "ShapeT must be a tensor_shape");
+
+public:
+	using value_type = T;
+  using shape_type = ShapeT;
+
+  constexpr map_storage() : _ptr(nullptr) {}
+  constexpr explicit map_storage(const shape_type &s, value_type *ptr)
+      : _shape(s), _ptr(ptr) {}
+
+  map_storage(const map_storage &) = delete;
+  map_storage &operator=(const map_storage &) = delete;
+  map_storage(map_storage &&) = default;
+  map_storage &operator=(map_storage &&) = default;
+
+  constexpr const shape_type & shape() const { return _shape; }
+  constexpr const value_type *data() const { return _ptr; }
+  value_type *data() { return _ptr; }
+
+  void reshape(const shape_type &nshape) {
+    assert(nshape.magnitude() == _shape.magnitude());
+    _shape = nshape;
+  }
+
+private:
+	shape_type _shape;
+	value_type * _ptr;
 };
 }

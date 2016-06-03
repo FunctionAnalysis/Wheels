@@ -3,11 +3,7 @@
 #include "tensor_base_fwd.hpp"
 
 namespace wheels {
-
-template <class ET, class ShapeT, class PtrT, class T, bool StaticShape>
-class tensor_map_storage;
-
-template <class ET, class ShapeT, class PtrT = ET *> class tensor_map;
+template <class ET, class ShapeT> class tensor_map;
 
 template <class E, class ST, class... SizeTs>
 constexpr auto map(const tensor_shape<ST, SizeTs...> &shape, E *mem);

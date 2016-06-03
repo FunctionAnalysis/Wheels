@@ -3,7 +3,7 @@
 #include "diagonal.hpp"
 #include "ewise.hpp"
 #include "iota.hpp"
-#include "map.hpp"
+#include "tensor_map.hpp"
 #include "tensor.hpp"
 
 using namespace wheels;
