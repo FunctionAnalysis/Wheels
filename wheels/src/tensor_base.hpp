@@ -210,7 +210,7 @@ template <class T> struct tensor_core : object_base<T> {
                      std::move(this->derived()));
   }
 
-  // reshape
+  // reshaped
   template <class ST, class... SizeTs>
   constexpr auto reshaped(const tensor_shape<ST, SizeTs...> &ns) const & {
     return reshape(this->derived(), ns);
@@ -222,6 +222,22 @@ template <class T> struct tensor_core : object_base<T> {
   template <class ST, class... SizeTs>
   auto reshaped(const tensor_shape<ST, SizeTs...> &ns) && {
     return reshape(std::move(this->derived()), ns);
+  }
+
+  // resampled
+  template <interpolate_method_enum IPMethod = linear_interpolate, class ST,
+            class... SizeTs>
+  constexpr auto resampled(const tensor_shape<ST, SizeTs...> &ns,
+                           const interpolate_method<IPMethod> &method =
+                               interpolate_method<IPMethod>()) const & {
+    return resample(this->derived(), ns, method);
+  }
+  template <interpolate_method_enum IPMethod = linear_interpolate, class ST,
+            class... SizeTs>
+  auto resampled(const tensor_shape<ST, SizeTs...> &ns,
+                 const interpolate_method<IPMethod> &method =
+                     interpolate_method<IPMethod>()) && {
+    return resample(std::move(this->derived()), ns, method);
   }
 
   // vectorized

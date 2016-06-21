@@ -175,7 +175,7 @@ constexpr size_t _range_count(
                              t1 / t2 + 1);
 }
 
-struct _range_impl {
+struct _range_impl3 {
   template <class BeginT, class StepT, class EndT>
   constexpr auto operator()(BeginT &&b, StepT &&s, EndT &&e) const {
     using _t =
@@ -185,6 +185,9 @@ struct _range_impl {
     return std::forward<BeginT>(b) +
            iota<_t>(_range_count(e - b, s)) * std::forward<StepT>(s);
   }
+};
+
+struct _range_impl2 {
   template <class BeginT, class EndT>
   constexpr auto operator()(BeginT &&b, EndT &&e) const {
     using _t =
@@ -196,12 +199,12 @@ struct _range_impl {
 }
 template <class BeginT, class StepT, class EndT>
 constexpr decltype(auto) range(BeginT &&b, StepT &&s, EndT &&e) {
-  return smart_invoke(details::_range_impl(), std::forward<BeginT>(b),
+  return smart_invoke(details::_range_impl3(), std::forward<BeginT>(b),
                       std::forward<StepT>(s), std::forward<EndT>(e));
 }
 template <class BeginT, class EndT>
 constexpr decltype(auto) range(BeginT &&b, EndT &&e) {
-  return smart_invoke(details::_range_impl(), std::forward<BeginT>(b),
+  return smart_invoke(details::_range_impl2(), std::forward<BeginT>(b),
                       std::forward<EndT>(e));
 }
 }

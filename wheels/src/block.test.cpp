@@ -20,13 +20,6 @@ TEST(tensor, block) {
                             16, 17, 18, 19, 20});
   ASSERT_TRUE(a.vectorized() == iota(20) + 1);
 
-  auto r = range(0, 5);
-  auto s = r.shape();
-  ASSERT_TRUE(s == make_shape(6_c));
-
-  println(a.size(const_index<1>()));
-  println(range(0, 5));
-  println(a.block(0, range(0, last)).shape());
   ASSERT_TRUE(a.block(0, range(0, last)) == rowvecx({1.0, 2.0, 3.0, 4.0, 5.0}));
   ASSERT_TRUE(a.block(1, range(0, last)) == rowvecx({6, 7, 8, 9, 10}));
 
