@@ -7,7 +7,7 @@
 
 using namespace wheels;
 
-TEST(tensor, matrix) {
+TEST(matrix, row_col) {
   ASSERT_TRUE(eye(4).row(0).vectorized() == vec4(1, 0, 0, 0));
   ASSERT_TRUE(eye(4).row(1).vectorized() == vec4(0, 1, 0, 0));
   ASSERT_TRUE(eye(4).row(2).vectorized() == vec4(0, 0, 1, 0));
@@ -30,7 +30,10 @@ TEST(tensor, matrix) {
   }
 }
 
-TEST(tensor, matrix_ops) {
+TEST(matrix, matrix_ops) {
+	std::default_random_engine rng;
+	auto identity = eye(make_shape(4ull, 4ull)).eval();
+	auto rand_mat = rand(make_shape(4ull, 4ull), rng);
   println(translate(eye(4), vec3(1, 1, 1)));
   println(rotate(eye(4), M_PI_2, vec3(1, 0, 0)));
   println(scale(eye(4), vec3(0.1, 0.2, 0.3)));

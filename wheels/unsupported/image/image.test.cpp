@@ -20,18 +20,16 @@ TEST(image, load) {
                      })
                      .eval();
   auto im_transposed = im.t().eval();
-  auto imd = im.ewised()
+  auto im_d3 = im.ewised()
                  .transform([](auto &&e) {
                    return e.ewised().cast<by_static, double>();
                  })
                  .eval();
-  auto kkk = eval(vec3().ewised().cast<by_static, double>());
-  static_assert(std::is_same<decltype(kkk), vec3>::value, "");
   auto imd3 = im.ewised().cast<by_construct, vec3>().eval();
-  auto imd2 = imd;
+  auto imd2 = im_d3;
   imd2.block(range(0, 50, last), range(0, last)) +=
-      (vec3(255, 255, 255)).eval().scalarized();
-  auto imdiff = (imd2 - imd).eval();
-  auto im_scaled = resample(imd, make_shape((size_t)600, (size_t)600)).eval();
+      vec3(255, 255, 255).scalarized();
+  auto imdiff = (imd2 - imd3).eval();
+  auto im_scaled = im_d3.resampled(make_shape(600ull, 600ull)).eval();
   println(im_scaled.shape());
 }

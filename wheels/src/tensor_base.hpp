@@ -1,3 +1,27 @@
+/* * *
+ * The MIT License (MIT)
+ * 
+ * Copyright (c) 2016 Hao Yang (yangh2007@gmail.com)
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * * */
+
 #pragma once
 
 #include <cassert>
@@ -211,7 +235,7 @@ template <class T> struct tensor_core : object_base<T> {
                      std::move(this->derived()));
   }
 
-  // reshape
+  // reshaped
   template <class ST, class... SizeTs>
   constexpr auto reshaped(const tensor_shape<ST, SizeTs...> &ns) const & {
     return reshape(this->derived(), ns);
@@ -223,6 +247,22 @@ template <class T> struct tensor_core : object_base<T> {
   template <class ST, class... SizeTs>
   auto reshaped(const tensor_shape<ST, SizeTs...> &ns) && {
     return reshape(std::move(this->derived()), ns);
+  }
+
+  // resampled
+  template <interpolate_method_enum IPMethod = linear_interpolate, class ST,
+            class... SizeTs>
+  constexpr auto resampled(const tensor_shape<ST, SizeTs...> &ns,
+                           const interpolate_method<IPMethod> &method =
+                               interpolate_method<IPMethod>()) const & {
+    return resample(this->derived(), ns, method);
+  }
+  template <interpolate_method_enum IPMethod = linear_interpolate, class ST,
+            class... SizeTs>
+  auto resampled(const tensor_shape<ST, SizeTs...> &ns,
+                 const interpolate_method<IPMethod> &method =
+                     interpolate_method<IPMethod>()) && {
+    return resample(std::move(this->derived()), ns, method);
   }
 
   // vectorized

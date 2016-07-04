@@ -1,3 +1,27 @@
+/* * *
+ * The MIT License (MIT)
+ * 
+ * Copyright (c) 2016 Hao Yang (yangh2007@gmail.com)
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * * */
+
 #pragma once
 
 #include "ewise_fwd.hpp"
@@ -81,6 +105,54 @@ constexpr decltype(auto) element_at_index(
   assert(is_between(index, 0, (typename int_traits<IndexT>::type)ts.numel()));
   return detail::_element_at_index_ewise_op_result_seq(
       ts, make_const_sequence_for<InputT, InputTs...>(), index);
+}
+
+// for_each_element
+namespace details {
+template <class FunT, class EwiseOpResultT, class... InputTs,
+          class AllElesTupleT, size_t... Is, size_t... Js>
+constexpr decltype(auto) _for_element_in_ewise_op_result_helper(
+    FunT fun, const EwiseOpResultT &t, AllElesTupleT &&all_eles,
+    const const_ints<size_t, Is...> &, const const_ints<size_t, Js...> &) {
+  return fun(t.op(std::get<Is>(all_eles)...),
+             std::get<Js + sizeof...(Is)>(all_eles)...);
+}
+
+template <class FunT, class EleT, class ShapeT, class OpT, class InputT,
+          class... InputTs, class... AllEleTs>
+constexpr decltype(auto) _for_element_in_ewise_op_result(
+    FunT fun, const ewise_op_result<EleT, ShapeT, OpT, InputT, InputTs...> &t,
+    AllEleTs &&... all_eles) {
+  return _for_element_in_ewise_op_result_helper(
+      fun, t, std::forward_as_tuple(std::forward<AllEleTs>(all_eles)...),
+      make_const_sequence_for<InputT, InputTs...>(),
+      make_const_sequence(
+          const_size<sizeof...(AllEleTs)-1 - sizeof...(InputTs)>()));
+}
+
+template <behavior_flag_enum F, class FunT, class EleT, class ShapeT, class OpT,
+          class InputT, class... InputTs, size_t... Is, class... Ts>
+constexpr bool _for_each_element_in_ewise_op_result_seq(
+    behavior_flag<F> f, FunT fun,
+    const ewise_op_result<EleT, ShapeT, OpT, InputT, InputTs...> &t,
+    const const_ints<size_t, Is...> &, Ts &&... ts) {
+  return for_each_element(f,
+                          [fun, &t](auto &&... es) {
+                            return _for_element_in_ewise_op_result(
+                                fun, t, wheels_forward(es)...);
+                          },
+                          std::get<Is>(t.inputs)..., std::forward<Ts>(ts)...);
+}
+}
+template <behavior_flag_enum F, class FunT, class EleT, class ShapeT, class OpT,
+          class InputT, class... InputTs, class... Ts>
+constexpr bool for_each_element(
+    behavior_flag<F> f, FunT fun,
+    const ewise_op_result<EleT, ShapeT, OpT, InputT, InputTs...> &t,
+    Ts &&... ts) {
+  return details::_for_each_element_in_ewise_op_result_seq(
+      f, fun, t, make_const_sequence_for<InputT, InputTs...>(),
+      std::forward<Ts>(ts)...);
 }
 
 // most ewise binray ops apply on two tensors (except certain ops like below)
