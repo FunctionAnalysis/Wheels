@@ -17,7 +17,7 @@ template <class ET, class ShapeT, class T, class MapFunT,
 class remap_result;
 
 // remap
-namespace details {
+namespace detail {
 // w. outlier
 template <class ToST, class... ToSizeTs, class ET, class ShapeT, class T,
           class TT, class MapFunT, class ET2, interpolate_method_enum IPMethod>
@@ -38,9 +38,9 @@ template <class ToST, class... ToSizeTs, class T, class MapFunT, class ET,
 constexpr auto remap(T &&t, const tensor_shape<ToST, ToSizeTs...> &toshape,
                      MapFunT mapfun, ET &&outlier,
                      const interpolate_method<IPMethod> &m = {})
-    -> decltype(details::_remap(t, std::forward<T>(t), toshape, mapfun,
+    -> decltype(detail::_remap(t, std::forward<T>(t), toshape, mapfun,
                                 std::forward<ET>(outlier), m)) {
-  return details::_remap(t, std::forward<T>(t), toshape, mapfun,
+  return detail::_remap(t, std::forward<T>(t), toshape, mapfun,
                          std::forward<ET>(outlier), m);
 }
 // w.o outlier
@@ -48,11 +48,11 @@ template <class ToST, class... ToSizeTs, class T, class MapFunT,
           interpolate_method_enum IPMethod = linear_interpolate>
 constexpr auto remap(T &&t, const tensor_shape<ToST, ToSizeTs...> &toshape,
                      MapFunT mapfun, const interpolate_method<IPMethod> &m = {})
-    -> decltype(details::_remap(t, std::forward<T>(t), toshape, mapfun, m)) {
-  return details::_remap(t, std::forward<T>(t), toshape, mapfun, m);
+    -> decltype(detail::_remap(t, std::forward<T>(t), toshape, mapfun, m)) {
+  return detail::_remap(t, std::forward<T>(t), toshape, mapfun, m);
 }
 
-namespace details {
+namespace detail {
 template <class FromShapeT, class ToShapeT> struct _resample_map_functor;
 template <class FromShapeT, class ToShapeT>
 _resample_map_functor<FromShapeT, ToShapeT>
@@ -66,13 +66,13 @@ template <class ToST, class... ToSizeTs, class T,
 constexpr auto
 resample(T &&t, const tensor_shape<ToST, ToSizeTs...> &toshape,
          const interpolate_method<IPMethod> & = interpolate_method<IPMethod>())
-    -> decltype(details::_remap(t, std::forward<T>(t), toshape,
-                                details::_make_resample_map_functor(t.shape(),
+    -> decltype(detail::_remap(t, std::forward<T>(t), toshape,
+                                detail::_make_resample_map_functor(t.shape(),
                                                                     toshape),
                                 interpolate_method<IPMethod>())) {
-  return details::_remap(
+  return detail::_remap(
       t, std::forward<T>(t), toshape,
-      details::_make_resample_map_functor(t.shape(), toshape),
+      detail::_make_resample_map_functor(t.shape(), toshape),
       interpolate_method<IPMethod>());
 }
 }

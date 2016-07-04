@@ -69,7 +69,7 @@ constexpr auto map(const tensor_shape<ST, SizeTs...> &shape, E *mem) {
 }
 
 // from raw array
-namespace details {
+namespace detail {
 template <class E> struct _raw_array_info {
   using ele_t = E;
   static auto shape() { return tensor_shape<size_t>(); }
@@ -82,7 +82,7 @@ template <class E, size_t N> struct _raw_array_info<E[N]> {
 };
 }
 template <class E, size_t N> constexpr auto map(E (&arr)[N]) {
-  using info_t = details::_raw_array_info<E[N]>;
+  using info_t = detail::_raw_array_info<E[N]>;
   return map(info_t::shape(), (typename info_t::ele_t *)arr);
 }
 

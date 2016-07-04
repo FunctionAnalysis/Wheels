@@ -9,7 +9,7 @@ template <class ET, class ShapeT, class IndexTensorT, class InputTensorT>
 class index_view;
 
 // at_indices
-namespace details {
+namespace detail {
 template <class InputShapeT, class InputET, class InputTensorT,
           class InputTensorTT, class IndexShapeT, class IndexET,
           class IndexTensorT, class IndexTensorTT>
@@ -21,10 +21,10 @@ _at_indices(const tensor_base<InputET, InputShapeT, InputTensorT> &,
 }
 template <class InputTensorT, class IndexTensorT>
 constexpr auto at_indices(InputTensorT &&input, IndexTensorT &&index)
-    -> decltype(details::_at_indices(input, std::forward<InputTensorT>(input),
+    -> decltype(detail::_at_indices(input, std::forward<InputTensorT>(input),
                                      index,
                                      std::forward<IndexTensorT>(index))) {
-  return details::_at_indices(input, std::forward<InputTensorT>(input), index,
+  return detail::_at_indices(input, std::forward<InputTensorT>(input), index,
                               std::forward<IndexTensorT>(index));
 }
 

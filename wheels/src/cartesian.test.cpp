@@ -3,11 +3,9 @@
 #include "block.hpp"
 #include "cartesian.hpp"
 #include "constants.hpp"
-#include "ewise.hpp"
 #include "iota.hpp"
 #include "matrix.hpp"
 #include "permute.hpp"
-#include "tensor.hpp"
 #include "vector.hpp"
 
 using namespace wheels;

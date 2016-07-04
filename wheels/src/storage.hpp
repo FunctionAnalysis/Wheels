@@ -5,7 +5,7 @@
 #include "storage_fwd.hpp"
 
 namespace wheels {
-namespace details {
+namespace detail {
 // init_std_array
 template <class T, size_t N, size_t... Is>
 constexpr auto _init_std_array_seq(const T &init, const_ints<size_t, Is...>) {
@@ -13,16 +13,16 @@ constexpr auto _init_std_array_seq(const T &init, const_ints<size_t, Is...>) {
 }
 }
 template <class T, size_t N> constexpr auto init_std_array(const T &init) {
-  return details::_init_std_array_seq<T, N>(
+  return detail::_init_std_array_seq<T, N>(
       init, make_const_sequence(const_size<N>()));
 }
 
 // uninitialized_default_fill_n (refering the same name function in msvc stl)
-namespace details {
+namespace detail {
 // for normal types initialization
-template <class IterT, class DiffT, class AllocT, class IgnoredT>
+template <class IterT, class DiffT, class AllocT>
 void _uninitialized_default_fill_n(IterT first, DiffT count, AllocT &alloc,
-                                   IgnoredT) {
+                                   no) {
   IterT next = first;
   wheels_try {
     for (; 0 < count; --count, (void)++first)
@@ -39,7 +39,7 @@ template <class IterT, class DiffT>
 void _uninitialized_default_fill_n(
     IterT first, DiffT count,
     std::allocator<typename std::iterator_traits<IterT>::value_type> &alloc,
-    std::true_type) {
+    yes) {
   memset(first, 0,
          count * sizeof(typename std::iterator_traits<IterT>::value_type));
 }
@@ -48,12 +48,11 @@ template <class IterT, class DiffT, class AllocT>
 inline void uninitialized_default_fill_n(IterT first, DiffT count,
                                          AllocT &alloc) {
   typedef typename std::iterator_traits<IterT>::value_type T;
-  details::_uninitialized_default_fill_n(
-      first, count, alloc,
-      typename std::conjunction<
-          std::is_pointer<IterT>, std::is_scalar<T>,
-          std::negation<std::is_volatile<T>>,
-          std::negation<std::is_member_pointer<T>>>::type{});
+  detail::_uninitialized_default_fill_n(
+      first, count, alloc, const_bool < std::is_pointer<IterT>::value &&
+                               std::is_scalar<T>::value &&
+                               !std::is_volatile<T>::value &&
+                               !std::is_member_pointer<T>::value > ());
 }
 
 template <class IterT, class DiffT, class AllocT, class ValT>

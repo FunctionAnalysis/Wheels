@@ -76,4 +76,12 @@ TEST(tensor, shape) {
                     types<tensor_shape<int, int, int, int, int>>(),
                 "");
 
+  ASSERT_TRUE(subscripts_are_valid(make_shape()));
+  ASSERT_TRUE(subscripts_are_valid(make_shape(1), 0));
+  ASSERT_TRUE(!subscripts_are_valid(make_shape(1), 1));
+  ASSERT_TRUE(!subscripts_are_valid(make_shape(1), 0, 0));
+  ASSERT_TRUE(subscripts_are_valid(make_shape(1_c), 0_c));
+  ASSERT_TRUE(subscripts_are_valid(make_shape(1_c, 2_c, 3_c), 0_c, 1_c, 2_c));
+  ASSERT_TRUE(!subscripts_are_valid(make_shape(1_c, 2_c, 3_c), 1_c, 1_c, 2_c));
+  ASSERT_TRUE(!subscripts_are_valid(make_shape(1_c, 2_c, 3_c), 0_c, 1_c, 3_c));
 }

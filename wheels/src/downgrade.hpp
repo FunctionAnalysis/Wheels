@@ -9,7 +9,7 @@
 
 namespace wheels {
 
-namespace details {
+namespace detail {
 template <class T1, class T2>
 struct _is_same_intrinsic : std::is_same<std::decay_t<T1>, std::decay_t<T2>> {};
 }
@@ -49,7 +49,7 @@ shape_of(const subtensor_view<ET, ShapeT, InputT, FixedRank> &b) {
 }
 
 // element_at
-namespace details {
+namespace detail {
 template <class SubTensorViewT, size_t... Is, class... SubTs>
 constexpr decltype(auto)
 _element_at_subtensor_view_seq(SubTensorViewT &b,
@@ -63,19 +63,21 @@ template <class ET, class ShapeT, class InputT, size_t FixedRank,
 constexpr decltype(auto)
 element_at(const subtensor_view<ET, ShapeT, InputT, FixedRank> &b,
            const SubTs &... subs) {
-  return details::_element_at_subtensor_view_seq(
+  assert(subscripts_are_valid(b.shape(), subs...));
+  return detail::_element_at_subtensor_view_seq(
       b, make_const_sequence(const_size<FixedRank>()), subs...);
 }
 template <class ET, class ShapeT, class InputT, size_t FixedRank,
           class... SubTs>
 decltype(auto) element_at(subtensor_view<ET, ShapeT, InputT, FixedRank> &b,
                           const SubTs &... subs) {
-  return details::_element_at_subtensor_view_seq(
+  assert(subscripts_are_valid(b.shape(), subs...));
+  return detail::_element_at_subtensor_view_seq(
       b, make_const_sequence(const_size<FixedRank>()), subs...);
 }
 
 // subtensor_at
-namespace details {
+namespace detail {
 // _cat_shape
 template <class ShapeT1, class ShapeT2> struct _cat_shape {};
 template <class T1, class... SizeT1s, class T2, class... SizeT2s>
@@ -130,13 +132,13 @@ constexpr auto _subtensor_at(const tensor_base<ET, ShapeT, T> &, TT &&input,
 template <class ET, class ShapeT, class InputT, size_t FixedRank>
 class downgrade_view
     : public tensor_view_base<
-          tensor<ET, details::_tail_of_shape_t<ShapeT, FixedRank>>,
-          details::_head_of_shape_t<ShapeT, FixedRank>,
+          tensor<ET, detail::_tail_of_shape_t<ShapeT, FixedRank>>,
+          detail::_head_of_shape_t<ShapeT, FixedRank>,
           downgrade_view<ET, ShapeT, InputT, FixedRank>, false> {
   static_assert(FixedRank <= ShapeT::rank, "fixed rank overflow");
   using _base_t =
-      tensor_view_base<tensor<ET, details::_tail_of_shape_t<ShapeT, FixedRank>>,
-                       details::_head_of_shape_t<ShapeT, FixedRank>,
+      tensor_view_base<tensor<ET, detail::_tail_of_shape_t<ShapeT, FixedRank>>,
+                       detail::_head_of_shape_t<ShapeT, FixedRank>,
                        downgrade_view<ET, ShapeT, InputT, FixedRank>, false>;
 
 public:
@@ -162,7 +164,7 @@ shape_of(const downgrade_view<ET, ShapeT, InputT, FixedRank> &t) {
 }
 
 // element_at
-namespace details {
+namespace detail {
 template <class SubTensorViewT, class SubwiseViewT, size_t... Is,
           class SubsTupleT>
 constexpr SubTensorViewT _element_at_downgrade_view_seq(
@@ -176,10 +178,11 @@ template <class ET, class ShapeT, class InputT, size_t FixedRank,
 constexpr auto
 element_at(const downgrade_view<ET, ShapeT, InputT, FixedRank> &t,
            const SubTs &... subs) {
+  assert(subscripts_are_valid(t.shape(), subs...));
   using const_subtensor_view_view_t =
-      subtensor_view<ET, details::_tail_of_shape_t<ShapeT, FixedRank>,
+      subtensor_view<ET, detail::_tail_of_shape_t<ShapeT, FixedRank>,
                      const InputT &, FixedRank>;
-  return details::_element_at_downgrade_view_seq<const_subtensor_view_view_t>(
+  return detail::_element_at_downgrade_view_seq<const_subtensor_view_view_t>(
       t, make_const_sequence(const_size<FixedRank>()),
       std::forward_as_tuple(subs...));
 }
@@ -188,16 +191,17 @@ template <class ET, class ShapeT, class InputT, size_t FixedRank,
           class... SubTs>
 auto element_at(downgrade_view<ET, ShapeT, InputT, FixedRank> &t,
                 const SubTs &... subs) {
+  assert(subscripts_are_valid(t.shape(), subs...));
   using subtensor_view_view_t =
-      subtensor_view<ET, details::_tail_of_shape_t<ShapeT, FixedRank>, InputT &,
+      subtensor_view<ET, detail::_tail_of_shape_t<ShapeT, FixedRank>, InputT &,
                      FixedRank>;
-  return details::_element_at_downgrade_view_seq<subtensor_view_view_t>(
+  return detail::_element_at_downgrade_view_seq<subtensor_view_view_t>(
       t, make_const_sequence(const_size<FixedRank>()),
       std::forward_as_tuple(subs...));
 }
 
 // downgrade
-namespace details {
+namespace detail {
 template <class ET, class ShapeT, class InputT, class TT, size_t FixedRank>
 constexpr auto _downgrade(const tensor_base<ET, ShapeT, InputT> &, TT &&input,
                           const const_size<FixedRank> &) {

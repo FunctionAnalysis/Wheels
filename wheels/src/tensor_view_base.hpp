@@ -5,7 +5,7 @@
 #include "tensor_base.hpp"
 
 namespace wheels {
-namespace details {
+namespace detail {
 template <class ET, class ShapeT, class T, bool IsContinuousData>
 struct _select_tensor_base;
 
@@ -24,7 +24,7 @@ using _select_tensor_base_t =
 
 template <class ET, class ShapeT, class T, bool IsContinuousData = false>
 class tensor_view_base
-    : public details::_select_tensor_base_t<ET, ShapeT, T, IsContinuousData> {
+    : public detail::_select_tensor_base_t<ET, ShapeT, T, IsContinuousData> {
 public:
   // operator=
   template <class AnotherShapeT, class AnotherT,

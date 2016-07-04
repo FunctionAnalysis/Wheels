@@ -10,7 +10,7 @@ namespace wheels {
 template <class ET, class ShapeT, size_t Axis, class T1, class T2>
 class cat_result;
 
-namespace details {
+namespace detail {
 template <size_t Axis, class ShapeT1, class ET1, class T1, class ShapeT2,
           class ET2, class T2, class TT1, class TT2>
 constexpr auto _cat_tensor_at(const const_index<Axis> &axis,
@@ -21,9 +21,9 @@ constexpr auto _cat_tensor_at(const const_index<Axis> &axis,
 
 template <size_t Axis, class T1, class T2>
 constexpr auto cat_at(const const_index<Axis> &axis, T1 &&in1, T2 &&in2)
-    -> decltype(details::_cat_tensor_at(axis, in1, in2, std::forward<T1>(in1),
+    -> decltype(detail::_cat_tensor_at(axis, in1, in2, std::forward<T1>(in1),
                                         std::forward<T2>(in2))) {
-  return details::_cat_tensor_at(axis, in1, in2, std::forward<T1>(in1),
+  return detail::_cat_tensor_at(axis, in1, in2, std::forward<T1>(in1),
                                  std::forward<T2>(in2));
 }
 

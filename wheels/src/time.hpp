@@ -16,7 +16,7 @@ auto time_cost(FunT &&fun) {
   return std::chrono::duration_cast<DurationT>(d);
 }
 
-namespace details {
+namespace detail {
 inline const char *_period_str(const std::nano &) { return "nanoseconds"; }
 inline const char *_period_str(const std::micro &) { return "microseconds"; }
 inline const char *_period_str(const std::milli &) { return "milliseconds"; }
@@ -32,6 +32,6 @@ inline std::string _period_str(const std::ratio<Nx, Dx> &) {
 template <class RepT, class PeriodT>
 std::ostream &operator<<(std::ostream &os,
                          const std::chrono::duration<RepT, PeriodT> &d) {
-  return print_to(os, d.count(), " ", details::_period_str(PeriodT()));
+  return print_to(os, d.count(), " ", detail::_period_str(PeriodT()));
 }
 }

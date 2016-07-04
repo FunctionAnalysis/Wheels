@@ -6,7 +6,7 @@
 
 namespace wheels {
 
-namespace details {
+namespace detail {
 template <class ShapeT1, class ShapeT2, size_t Axis, size_t... Is>
 constexpr auto _make_cat_shape_seq(const ShapeT1 &s1, const ShapeT2 &s2,
                                    const const_index<Axis> &axis,
@@ -33,7 +33,7 @@ public:
 
   constexpr cat_result(T1 &&in1, T2 &&in2)
       : _input1(std::forward<T1>(in1)), _input2(std::forward<T2>(in2)),
-        _shape(details::_make_cat_shape_seq(
+        _shape(detail::_make_cat_shape_seq(
             _input1.shape(), _input2.shape(), const_index<Axis>(),
             make_rank_sequence(_input1.shape()))) {}
 
@@ -48,14 +48,14 @@ private:
 };
 
 // cat_at
-namespace details {
+namespace detail {
 template <size_t Axis, class ShapeT1, class ET1, class T1, class ShapeT2,
           class ET2, class T2, class TT1, class TT2>
 constexpr auto _cat_tensor_at(const const_index<Axis> &axis,
                               const tensor_base<ET1, ShapeT1, T1> &,
                               const tensor_base<ET2, ShapeT2, T2> &, TT1 &&in1,
                               TT2 &&in2) {
-  using shape_t = decltype(details::_make_cat_shape_seq(
+  using shape_t = decltype(detail::_make_cat_shape_seq(
       in1.shape(), in2.shape(), const_index<Axis>(),
       make_rank_sequence(in1.shape())));
   using ele_t = std::common_type_t<ET1, ET2>;
@@ -72,28 +72,31 @@ shape_of(const cat_result<ET, ShapeT, Axis, T1, T2> &m) {
 }
 
 // element_at
-namespace details {
+namespace detail {
 template <class ET, class ShapeT, size_t Axis, class T1, class T2,
           class SubsTupleT, size_t... Is>
-constexpr ET
+inline ET
 _element_at_cat_result_seq(const cat_result<ET, ShapeT, Axis, T1, T2> &m,
                            SubsTupleT &&subs,
                            const const_ints<size_t, Is...> &) {
-  return (ET)conditional(
-      std::get<Axis>(subs) < m.input1().shape().at(const_index<Axis>()),
-      element_at(m.input1(), std::get<Is>(subs)...),
-      element_at(m.input2(),
-                 conditional(const_bool<Axis == Is>(),
-                             std::get<Axis>(subs) -
-                                 m.input1().shape().at(const_index<Axis>()),
-                             std::get<Is>(subs))...));
+  if (std::get<Axis>(subs) < m.input1().shape().at(const_index<Axis>())) {
+    return (ET)element_at(m.input1(), std::get<Is>(subs)...);
+  }
+  else {
+    return (ET)element_at(
+        m.input2(), conditional(const_bool<Axis == Is>(),
+                                std::get<Axis>(subs) -
+                                    m.input1().shape().at(const_index<Axis>()),
+                                std::get<Is>(subs))...);
+  }
 }
 }
 template <class ET, class ShapeT, size_t Axis, class T1, class T2,
           class... SubTs>
 constexpr ET element_at(const cat_result<ET, ShapeT, Axis, T1, T2> &m,
                         const SubTs &... subs) {
-  return details::_element_at_cat_result_seq(
+  assert(subscripts_are_valid(m.shape(), subs...));
+  return detail::_element_at_cat_result_seq(
       m, std::forward_as_tuple(subs...),
       make_rank_sequence(m.input2().shape()));
 }

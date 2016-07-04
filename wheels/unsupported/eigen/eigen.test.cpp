@@ -46,7 +46,7 @@ TEST(eigen, time_compare) {
   for (size_t i : iota(10)) {
     for (size_t j : iota(10)) {
       for (size_t k : iota(10)) {
-        size_t m = (i + 1) * 10, n = (i + 1 + j) * 10, p = (k + 1) * 10;
+        size_t m = (i + 1) * 30, n = (i + 1 + j) * 30, p = (k + 1) * 30;
         Eigen::MatrixXd A1 = Eigen::MatrixXd::Random(m, n);
         Eigen::MatrixXd B1 = Eigen::MatrixXd::Random(m, p);
         matx A2 = map(A1);

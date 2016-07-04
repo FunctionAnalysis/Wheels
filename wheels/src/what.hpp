@@ -23,7 +23,7 @@ template <class T> constexpr const T &it_is(const object_base<T> &o) {
   return o.derived();
 }
 
-namespace details {
+namespace detail {
 template <class T> constexpr const T &_gen_ref() { return *((const T *)(0)); }
 }
 
@@ -37,34 +37,34 @@ template <class T> struct arithmetic : scalar<T> {};
 template <class T> struct integral : arithmetic<T> {};
 template <class T, class = std::enable_if_t<std::is_integral<T>::value>>
 constexpr const integral<T> &it_is(const T &t) {
-  return details::_gen_ref<integral<T>>();
+  return detail::_gen_ref<integral<T>>();
 }
 
 // floating point
 template <class T> struct floating_point : arithmetic<T> {};
 template <class T, class = std::enable_if_t<std::is_floating_point<T>::value>>
 constexpr const floating_point<T> &it_is(const T &t) {
-  return details::_gen_ref<floating_point<T>>();
+  return detail::_gen_ref<floating_point<T>>();
 }
 
 // enumerate
 template <class T> struct enumerate : scalar<T> {};
 template <class T, class = std::enable_if_t<std::is_enum<T>::value>>
 constexpr const enumerate<T> &it_is(const T &t) {
-  return details::_gen_ref<enumerate<T>>();
+  return detail::_gen_ref<enumerate<T>>();
 }
 
 // pointer
 template <class T> struct pointer : scalar<T> {};
 template <class T, class = std::enable_if_t<std::is_pointer<T>::value>>
 constexpr const pointer<T> &it_is(const T &t) {
-  return details::_gen_ref<pointer<T>>();
+  return detail::_gen_ref<pointer<T>>();
 }
 
 // null_pointer
 template <class T> struct null_pointer : proxy_base<T> {};
 constexpr const null_pointer<nullptr_t> &it_is(nullptr_t) {
-  return details::_gen_ref<null_pointer<nullptr_t>>();
+  return detail::_gen_ref<null_pointer<nullptr_t>>();
 }
 
 // std_container
@@ -77,7 +77,7 @@ template <class T> struct is_std_container : is_std_sequence<T> {};
 template <class T, class CompT, class AllocT>
 constexpr const std_container<std::set<T, CompT, AllocT>> &
 it_is(const std::set<T, CompT, AllocT> &t) {
-  return details::_gen_ref<std_container<std::set<T, CompT, AllocT>>>();
+  return detail::_gen_ref<std_container<std::set<T, CompT, AllocT>>>();
 }
 template <class T, class CompT, class AllocT>
 struct is_std_container<std::set<T, CompT, AllocT>> : yes {};
@@ -96,7 +96,7 @@ struct is_std_container<std::unordered_set<T, HashT, EqT, AllocT>> : yes {};
 template <class T, class AllocT>
 constexpr const std_sequence<std::vector<T, AllocT>> &
 it_is(const std::vector<T, AllocT> &t) {
-  return details::_gen_ref<std_sequence<std::vector<T, AllocT>>>();
+  return detail::_gen_ref<std_sequence<std::vector<T, AllocT>>>();
 }
 template <class T, class AllocT>
 struct is_std_sequence<std::vector<T, AllocT>> : yes {};
@@ -105,7 +105,7 @@ struct is_std_sequence<std::vector<T, AllocT>> : yes {};
 template <class T, class AllocT>
 constexpr const std_sequence<std::list<T, AllocT>> &
 it_is(const std::list<T, AllocT> &t) {
-  return details::_gen_ref<std_sequence<std::list<T, AllocT>>>();
+  return detail::_gen_ref<std_sequence<std::list<T, AllocT>>>();
 }
 template <class T, class AllocT>
 struct is_std_sequence<std::list<T, AllocT>> : yes {};
@@ -114,7 +114,7 @@ struct is_std_sequence<std::list<T, AllocT>> : yes {};
 template <class T, class AllocT>
 constexpr const std_sequence<std::deque<T, AllocT>> &
 it_is(const std::deque<T, AllocT> &t) {
-  return details::_gen_ref<std_sequence<std::deque<T, AllocT>>>();
+  return detail::_gen_ref<std_sequence<std::deque<T, AllocT>>>();
 }
 template <class T, class AllocT>
 struct is_std_sequence<std::deque<T, AllocT>> : yes {};
@@ -123,14 +123,14 @@ struct is_std_sequence<std::deque<T, AllocT>> : yes {};
 template <class T, size_t N>
 constexpr const std_sequence<std::array<T, N>> &
 it_is(const std::array<T, N> &t) {
-  return details::_gen_ref<std_sequence<std::array<T, N>>>();
+  return detail::_gen_ref<std_sequence<std::array<T, N>>>();
 }
 template <class T, size_t N> struct is_std_sequence<std::array<T, N>> : yes {};
 
 // raw array
 template <class T, size_t N>
 constexpr const std_sequence<T[N]> &it_is(T const (&t)[N]) {
-  return details::_gen_ref<std_sequence<T[N]>>();
+  return detail::_gen_ref<std_sequence<T[N]>>();
 }
 template <class T, size_t N> struct is_std_sequence<T[N]> : yes {};
 
@@ -142,7 +142,7 @@ template <class T> struct is_std_tuplelike : no {};
 template <class... Ts>
 constexpr const std_tuplelike<std::tuple<Ts...>> &
 it_is(const std::tuple<Ts...> &t) {
-  return details::_gen_ref<std_tuplelike<std::tuple<Ts...>>>();
+  return detail::_gen_ref<std_tuplelike<std::tuple<Ts...>>>();
 }
 template <class... Ts> struct is_std_tuplelike<std::tuple<Ts...>> : yes {};
 
@@ -150,7 +150,7 @@ template <class... Ts> struct is_std_tuplelike<std::tuple<Ts...>> : yes {};
 template <class T1, class T2>
 constexpr const std_tuplelike<std::pair<T1, T2>> &
 it_is(const std::pair<T1, T2> &t) {
-  return details::_gen_ref<std_tuplelike<std::pair<T1, T2>>>();
+  return detail::_gen_ref<std_tuplelike<std::pair<T1, T2>>>();
 }
 template <class T1, class T2>
 struct is_std_tuplelike<std::pair<T1, T2>> : yes {};
@@ -163,7 +163,7 @@ template <class T,
               !std::is_scalar<T>::value && !is_std_container<T>::value &&
               !is_std_tuplelike<T>::value>>
 constexpr const unregistered<T> &it_is(const T &) {
-  return details::_gen_ref<unregistered<T>>();
+  return detail::_gen_ref<unregistered<T>>();
 }
 
 // what

@@ -37,6 +37,7 @@ constexpr decltype(auto) shape_of(const make_diag_result<ET, ShapeT, T> &t) {
 template <class ET, class ShapeT, class T, class SubT, class... SubTs>
 constexpr decltype(auto) element_at(const make_diag_result<ET, ShapeT, T> &t,
                                     const SubT &sub, const SubTs &... subs) {
+  assert(subscripts_are_valid(t.shape(), sub, subs...));
   return conditional(all_same(sub, subs...), element_at_index(t.input(), sub),
                      types<ET>::zero());
 }
@@ -104,7 +105,7 @@ constexpr decltype(auto) shape_of(const diag_view<ET, ShapeT, T> &t) {
 }
 
 // element_at_index
-namespace details {
+namespace detail {
 template <class DiagViewT, class IndexT, size_t... Is>
 constexpr decltype(auto)
 _element_at_index_diagview(DiagViewT &t, const IndexT &ind,
@@ -115,13 +116,15 @@ _element_at_index_diagview(DiagViewT &t, const IndexT &ind,
 template <class ET, class ShapeT, class T, class IndexT>
 constexpr decltype(auto) element_at_index(const diag_view<ET, ShapeT, T> &t,
                                           const IndexT &ind) {
-  return details::_element_at_index_diagview(
+  assert(is_between(ind, 0, (IndexT)t.numel()));
+  return detail::_element_at_index_diagview(
       t, ind, make_rank_sequence(t.input().shape()));
 }
 template <class ET, class ShapeT, class T, class IndexT>
 decltype(auto) element_at_index(diag_view<ET, ShapeT, T> &t,
                                 const IndexT &ind) {
-  return details::_element_at_index_diagview(
+  assert(is_between(ind, 0, (IndexT)t.numel()));
+  return detail::_element_at_index_diagview(
       t, ind, make_rank_sequence(t.input().shape()));
 }
 
@@ -129,17 +132,19 @@ decltype(auto) element_at_index(diag_view<ET, ShapeT, T> &t,
 template <class ET, class ShapeT, class T, class SubT>
 constexpr decltype(auto) element_at(const diag_view<ET, ShapeT, T> &t,
                                     const SubT &ind) {
-  return details::_element_at_index_diagview(
+  assert(subscripts_are_valid(t.shape(), ind));
+  return detail::_element_at_index_diagview(
       t, ind, make_rank_sequence(t.input().shape()));
 }
 template <class ET, class ShapeT, class T, class SubT>
 decltype(auto) element_at(diag_view<ET, ShapeT, T> &t, const SubT &ind) {
-  return details::_element_at_index_diagview(
+  assert(subscripts_are_valid(t.shape(), ind));
+  return detail::_element_at_index_diagview(
       t, ind, make_rank_sequence(t.input().shape()));
 }
 
 // make_diag
-namespace details {
+namespace detail {
 template <class ET, class ShapeT, class T, class TT, class NewShapeT>
 constexpr auto _make_diag(const tensor_base<ET, ShapeT, T> &, TT &&t,
                           const NewShapeT &nshape) {
@@ -162,7 +167,7 @@ template <class ET, class NT, class> constexpr auto eye(const NT &n) {
 }
 
 // diag
-namespace details {
+namespace detail {
 template <class ET, class ShapeT, class T, class TT>
 constexpr auto _diag(const tensor_base<ET, ShapeT, T> &, TT &&t) {
   using shape_t = decltype(make_shape(min_shape_size(t.shape())));

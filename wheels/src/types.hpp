@@ -9,7 +9,7 @@
 #include "what.hpp"
 
 namespace wheels {
-namespace details {
+namespace detail {
 
 // element helper
 template <size_t Idx, class... Ts> struct _types_element {};
@@ -29,7 +29,7 @@ template <class... Ts> struct types {
 
   template <class K, K Idx>
   constexpr auto operator[](const const_ints<K, Idx> &) const {
-    return types<typename details::_types_element<Idx, Ts...>::type>();
+    return types<typename detail::_types_element<Idx, Ts...>::type>();
   }
 
   template <class K> static constexpr auto is() {
@@ -161,7 +161,7 @@ constexpr auto cat2(const types<T1s...> &a, const types<T2s...> &b) {
   return types<T1s..., T2s...>();
 }
 
-namespace details {
+namespace detail {
 template <size_t Bytes> struct _int_of {};
 template <size_t Bytes> struct _uint_of {};
 
@@ -178,13 +178,13 @@ template <> struct _uint_of<8> { using type = uint64_t; };
 // int_type_of_bytes
 template <class T, T... Bs>
 constexpr auto int_type_of_bytes(const const_ints<T, Bs...> &) {
-  return types<typename details::_int_of<Bs>::type...>();
+  return types<typename detail::_int_of<Bs>::type...>();
 }
 
 // uint_type_of_bytes
 template <class T, T... Bs>
 constexpr auto uint_type_of_bytes(const const_ints<T, Bs...> &) {
-  return types<typename details::_uint_of<Bs>::type...>();
+  return types<typename detail::_uint_of<Bs>::type...>();
 }
 
 // is_complex
@@ -230,6 +230,20 @@ WHEELS_DECLARE_CASTER(by_reinterpret, reinterpret_cast<T>(v))
 WHEELS_DECLARE_CASTER(by_construct, T(v))
 WHEELS_DECLARE_CASTER(by_c_style, (T)v)
 #undef WHEELS_DECLARE_CASTER
+template <> struct caster<by_smart_static> {
+  template <class T, class K> static constexpr T perform(K &&v) {
+    return static_cast<T>(v);
+  }
+  template <class T, class K, K I>
+  static constexpr T perform(const_ints<K, I>) {
+    return static_cast<T>(I);
+  }
+  template <class T, class K, K I1, K... Is>
+  static constexpr T perform(const_ints<K, I1, Is...>) {
+    static_assert(always<bool, false, T, K>::value,
+                  "non scalar const_ints is not castible");
+  }
+};
 
 template <cast_type_enum cast_type, class T, class K> constexpr T cast(K &&v) {
   return caster<cast_type>::template perform<T>(v);

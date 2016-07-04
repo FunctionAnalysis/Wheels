@@ -29,7 +29,7 @@ constexpr auto shape_of(const permute_result<ET, ShapeT, T, Inds...> &m) {
 }
 
 // element_at
-namespace details {
+namespace detail {
 template <class ET, class ShapeT, class T, size_t... Inds, class SubsTupleT,
           size_t... Is>
 constexpr decltype(auto)
@@ -45,7 +45,8 @@ template <class ET, class ShapeT, class T, size_t... Inds, class... SubTs>
 constexpr decltype(auto)
 element_at(const permute_result<ET, ShapeT, T, Inds...> &m,
            const SubTs &... subs) {
-  return details::_element_at_permute_result_seq(
+  assert(subscripts_are_valid(m.shape(), subs...));
+  return detail::_element_at_permute_result_seq(
       m, std::forward_as_tuple(subs...), make_const_sequence_for<SubTs...>());
 }
 
@@ -102,7 +103,7 @@ constexpr bool any_of(const permute_result<ET, ShapeT, T, Inds...> &t) {
   return any_of(t.input);
 }
 
-namespace details {
+namespace detail {
 template <class ET, class ShapeT, class T, size_t... Inds>
 constexpr permute_result<ET, ShapeT, T, Inds...>
 _simplify_permute_impl(permute_result<ET, ShapeT, T, Inds...> &&p,
@@ -126,14 +127,14 @@ _simplify_permute(permute_result<ET, ShapeT, T, Inds...> &&p) {
 }
 
 // permute
-namespace details {
+namespace detail {
 template <class ET, class ShapeT, class T, class TT, class... IndexTs>
 constexpr decltype(auto) _permute(const tensor_base<ET, ShapeT, T> &, TT &&t,
                                   const IndexTs &...) {
   static_assert(sizeof...(IndexTs) == ShapeT::rank,
                 "invalid number of inds in permute");
   using shape_t = decltype(::wheels::permute(t.shape(), IndexTs()...));
-  return details::_simplify_permute(
+  return detail::_simplify_permute(
       permute_result<ET, shape_t, TT, IndexTs::value...>(std::forward<TT>(t)));
 }
 
@@ -148,7 +149,7 @@ _permute(const permute_result<ET, ShapeT, T, Inds...> &, TT &&t,
   return _permute(
       t.input, std::forward<TT>(t).input,
       const_index<(
-          details::_element<IndexTs::value, size_t, Inds...>::value)>()...);
+          detail::_element<IndexTs::value, size_t, Inds...>::value)>()...);
 }
 }
 }

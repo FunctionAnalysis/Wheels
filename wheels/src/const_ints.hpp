@@ -6,12 +6,12 @@
 
 #include "macros.hpp"
 
-#include "utility_fwd.hpp"
 #include "const_ints_fwd.hpp"
+#include "utility_fwd.hpp"
 
 namespace wheels {
 
-namespace details {
+namespace detail {
 // reduction helper
 template <class T, T... Vals> struct _reduction {};
 template <class T> struct _reduction<T> {
@@ -49,19 +49,22 @@ template <class T, T... Vals> struct const_ints {
   static constexpr auto to_array() { return std::array<T, length_v>{Vals...}; }
   static constexpr auto to_tuple() { return std::make_tuple(Vals...); }
 
-  static constexpr T sum_v = details::_reduction<T, Vals...>::sum;
-  static constexpr T prod_v = details::_reduction<T, Vals...>::prod;
-  static constexpr bool all_v = details::_reduction<T, Vals...>::all;
-  static constexpr bool any_v = details::_reduction<T, Vals...>::any;
-
-  static constexpr auto sum() { return const_ints<T, sum_v>(); }
-  static constexpr auto prod() { return const_ints<T, prod_v>(); }
-  static constexpr auto all() { return const_ints<bool, all_v>(); }
-  static constexpr auto any() { return const_ints<bool, any_v>(); }
+  static constexpr auto sum() {
+    return const_ints<T, detail::_reduction<T, Vals...>::sum>();
+  }
+  static constexpr auto prod() {
+    return const_ints<T, detail::_reduction<T, Vals...>::prod>();
+  }
+  static constexpr auto all() {
+    return const_ints<bool, detail::_reduction<T, Vals...>::all>();
+  }
+  static constexpr auto any() {
+    return const_ints<bool, detail::_reduction<T, Vals...>::any>();
+  }
 
   template <class K, K Idx>
   constexpr auto operator[](const const_ints<K, Idx> &) const {
-    return const_ints<T, details::_element<Idx, T, Vals...>::value>();
+    return const_ints<T, detail::_element<Idx, T, Vals...>::value>();
   }
 };
 
@@ -78,15 +81,10 @@ template <class T, T Val> struct const_ints<T, Val> {
   static constexpr auto to_array() { return std::array<T, length_v>{Val}; }
   static constexpr auto to_tuple() { return std::make_tuple(Val); }
 
-  static constexpr T sum_v = Val;
-  static constexpr T prod_v = Val;
-  static constexpr bool all_v = (bool)Val;
-  static constexpr bool any_v = (bool)Val;
-
-  static constexpr auto sum() { return const_ints<T, sum_v>(); }
-  static constexpr auto prod() { return const_ints<T, prod_v>(); }
-  static constexpr auto all() { return const_ints<bool, all_v>(); }
-  static constexpr auto any() { return const_ints<bool, any_v>(); }
+  static constexpr auto sum() { return const_ints<T, Val>(); }
+  static constexpr auto prod() { return const_ints<T, Val>(); }
+  static constexpr auto all() { return const_ints<bool, Val>(); }
+  static constexpr auto any() { return const_ints<bool, Val>(); }
 
   template <class K> constexpr auto operator[](const const_ints<K, 0> &) const {
     return const_ints<T, Val>();
@@ -162,7 +160,7 @@ inline std::ostream &operator<<(std::ostream &os,
   return print_sep_to(os, " ", Vals...);
 }
 
-namespace details {
+namespace detail {
 template <class T, char... Cs> struct _parse_int {};
 template <class T, char C> struct _parse_int<T, C> {
   static_assert(C >= '0' && C <= '9', "invalid character");
@@ -181,63 +179,63 @@ template <class T, char C, char... Cs> struct _parse_int<T, C, Cs...> {
 namespace literals {
 // ""_c
 template <char... Cs> constexpr auto operator"" _c() {
-  return const_ints<int, details::_parse_int<int, Cs...>::value>();
+  return const_ints<int, detail::_parse_int<int, Cs...>::value>();
 }
 
 // ""_uc
 template <char... Cs> constexpr auto operator"" _uc() {
   return const_ints<unsigned int,
-                    details::_parse_int<unsigned int, Cs...>::value>();
+                    detail::_parse_int<unsigned int, Cs...>::value>();
 }
 
 // ""_sizec
 template <char... Cs> constexpr auto operator"" _sizec() {
-  return const_ints<size_t, details::_parse_int<size_t, Cs...>::value>();
+  return const_ints<size_t, detail::_parse_int<size_t, Cs...>::value>();
 }
 
 // ""_indexc
 template <char... Cs> constexpr auto operator"" _indexc() {
-  return const_ints<size_t, details::_parse_int<size_t, Cs...>::value>();
+  return const_ints<size_t, detail::_parse_int<size_t, Cs...>::value>();
 }
 
 // ""_int8c
 template <char... Cs> constexpr auto operator"" _int8c() {
-  return const_ints<int8_t, details::_parse_int<int8_t, Cs...>::value>();
+  return const_ints<int8_t, detail::_parse_int<int8_t, Cs...>::value>();
 }
 
 // ""_int16c
 template <char... Cs> constexpr auto operator"" _int16c() {
-  return const_ints<int16_t, details::_parse_int<int16_t, Cs...>::value>();
+  return const_ints<int16_t, detail::_parse_int<int16_t, Cs...>::value>();
 }
 
 // ""_int32c
 template <char... Cs> constexpr auto operator"" _int32c() {
-  return const_ints<int32_t, details::_parse_int<int32_t, Cs...>::value>();
+  return const_ints<int32_t, detail::_parse_int<int32_t, Cs...>::value>();
 }
 
 // ""_int64c
 template <char... Cs> constexpr auto operator"" _int64c() {
-  return const_ints<int64_t, details::_parse_int<int64_t, Cs...>::value>();
+  return const_ints<int64_t, detail::_parse_int<int64_t, Cs...>::value>();
 }
 
 // ""_uint8c
 template <char... Cs> constexpr auto operator"" _uint8c() {
-  return const_ints<uint8_t, details::_parse_int<uint8_t, Cs...>::value>();
+  return const_ints<uint8_t, detail::_parse_int<uint8_t, Cs...>::value>();
 }
 
 // ""_uint16c
 template <char... Cs> constexpr auto operator"" _uint16c() {
-  return const_ints<uint16_t, details::_parse_int<uint16_t, Cs...>::value>();
+  return const_ints<uint16_t, detail::_parse_int<uint16_t, Cs...>::value>();
 }
 
 // ""_uint32c
 template <char... Cs> constexpr auto operator"" _uint32c() {
-  return const_ints<uint32_t, details::_parse_int<uint32_t, Cs...>::value>();
+  return const_ints<uint32_t, detail::_parse_int<uint32_t, Cs...>::value>();
 }
 
 // ""_uint64c
 template <char... Cs> constexpr auto operator"" _uint64c() {
-  return const_ints<uint64_t, details::_parse_int<uint64_t, Cs...>::value>();
+  return const_ints<uint64_t, detail::_parse_int<uint64_t, Cs...>::value>();
 }
 
 constexpr yes true_c;
@@ -335,7 +333,7 @@ conditional(const const_ints<T, Val> &, ThenT &&thenv, ElseT &&elsev) {
   return static_cast<ElseT &&>(elsev);
 }
 
-namespace details {
+namespace detail {
 template <class T, bool IsZero, T N, T... S>
 struct _make_seq : _make_seq<T, (N - 1 == 0), N - 1, N - 1, S...> {};
 template <class T, T V, T... S> struct _make_seq<T, true, V, S...> {
@@ -352,7 +350,7 @@ template <class T, T From, T... S> struct _make_seq_range<T, From, From, S...> {
 // make_const_sequence
 template <class T, T Size>
 constexpr auto make_const_sequence(const const_ints<T, Size> &) {
-  return typename details::_make_seq<T, Size == 0, Size>::type();
+  return typename detail::_make_seq<T, Size == 0, Size>::type();
 }
 
 // make_const_sequence_for
@@ -364,11 +362,11 @@ template <class... Ts> constexpr auto make_const_sequence_for() {
 template <class T, T From, T To>
 constexpr auto make_const_range(const const_ints<T, From> &from,
                                 const const_ints<T, To> &to) {
-  return typename details::_make_seq_range<T, From, To>::type();
+  return typename detail::_make_seq_range<T, From, To>::type();
 }
 
 // repeat
-namespace details {
+namespace detail {
 template <class T, T S, class SeqT> struct _repeat { using type = void; };
 template <class T, T Ret, class ArgT> struct _always_for_repeat {
   static constexpr T value = Ret;
@@ -382,13 +380,13 @@ struct _repeat<T, S, const_ints<size_t, Is...>> {
 template <class T, T Val, class K, K Times>
 constexpr auto repeat(const const_ints<T, Val> &v,
                       const const_ints<K, Times> &times) {
-  return typename details::_repeat<
-      T, Val, typename details::_make_seq<size_t, Times == 0,
-                                          (size_t)Times>::type>::type();
+  return typename detail::_repeat<
+      T, Val, typename detail::_make_seq<size_t, Times == 0,
+                                         (size_t)Times>::type>::type();
 }
 
 // count
-namespace details {
+namespace detail {
 template <class T, T S, T... Ss, T V>
 constexpr auto _count(const const_ints<T, S, Ss...> &seq,
                       const const_ints<T, V> &v);
@@ -416,11 +414,11 @@ constexpr auto _count(const const_ints<T> &, const const_ints<T, V> &) {
 template <class T, T... S, class K, K V>
 constexpr auto count(const const_ints<T, S...> &seq,
                      const const_ints<K, V> &v) {
-  return details::_count(seq, const_ints<T, (T)V>());
+  return detail::_count(seq, const_ints<T, (T)V>());
 }
 
 // find_first_of
-namespace details {
+namespace detail {
 template <class T, T S, T... Ss, T V, size_t NotFoundV>
 constexpr auto _find_first_of(const const_ints<T, S, Ss...> &seq,
                               const const_ints<T, V> &v,
@@ -459,8 +457,8 @@ constexpr auto _find_first_of(const const_ints<T> &seq,
 template <class T, T S, T... Ss, class K, K V>
 constexpr auto find_first_of(const const_ints<T, S, Ss...> &seq,
                              const const_ints<K, V> &v) {
-  return details::_find_first_of(seq, const_ints<T, (T)V>(),
-                                 const_index<1 + sizeof...(Ss)>());
+  return detail::_find_first_of(seq, const_ints<T, (T)V>(),
+                                const_index<1 + sizeof...(Ss)>());
 }
 
 // for_each

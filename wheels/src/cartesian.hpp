@@ -34,6 +34,7 @@ constexpr decltype(auto) shape_of(const meshgrid_result<ET, ShapeT, Axis> &t) {
 template <class ET, class ShapeT, size_t Axis, class... SubTs>
 constexpr ET element_at(const meshgrid_result<ET, ShapeT, Axis> &t,
                         const SubTs &... subs) {
+  assert(subscripts_are_valid(t.shape(), subs...));
   return (ET)std::get<Axis>(std::forward_as_tuple(subs...));
 }
 
@@ -45,7 +46,7 @@ constexpr auto meshgrid(const tensor_shape<ST, SizeTs...> &s,
 }
 
 // meshgrid
-namespace details {
+namespace detail {
 template <class ET, class ShapeT, size_t... Is>
 constexpr auto _meshgrid(const ShapeT &s, const const_ints<size_t, Is...> &) {
   return std::tuple<meshgrid_result<ET, ShapeT, Is>...>(
@@ -54,7 +55,7 @@ constexpr auto _meshgrid(const ShapeT &s, const const_ints<size_t, Is...> &) {
 }
 template <class ET, class ST, class... SizeTs>
 constexpr auto meshgrid(const tensor_shape<ST, SizeTs...> &s) {
-  return details::_meshgrid<ET>(s, make_const_sequence_for<SizeTs...>());
+  return detail::_meshgrid<ET>(s, make_const_sequence_for<SizeTs...>());
 }
 
 /// coordinate
@@ -82,6 +83,7 @@ constexpr decltype(auto) shape_of(const coordinate_result<ET, ShapeT> &t) {
 template <class ET, class ShapeT, class... SubTs>
 constexpr auto element_at(const coordinate_result<ET, ShapeT> &t,
                           const SubTs &... subs) {
+  assert(subscripts_are_valid(t.shape(), subs...));
   return tensor<ET, tensor_shape<size_t, const_size<ShapeT::rank>>>(
       (ET)subs...);
 }
@@ -106,7 +108,7 @@ public:
 };
 
 // shape_of
-namespace details {
+namespace detail {
 template <class CartProdT, size_t... Is>
 constexpr decltype(auto)
 _shape_of_cart_prod_result_seq(CartProdT &cp,
@@ -117,12 +119,12 @@ _shape_of_cart_prod_result_seq(CartProdT &cp,
 template <class TupleT, class ShapeT, class... Ts>
 constexpr decltype(auto)
 shape_of(const cart_prod_result<TupleT, ShapeT, Ts...> &t) {
-  return details::_shape_of_cart_prod_result_seq(
+  return detail::_shape_of_cart_prod_result_seq(
       t, make_const_sequence_for<Ts...>());
 }
 
 // element_at
-namespace details {
+namespace detail {
 template <class CartProdT, class SubsTupleT, size_t... Is>
 constexpr auto
 _element_at_cart_prod_result_seq(CartProdT &&t, SubsTupleT &&subs,
@@ -134,12 +136,13 @@ _element_at_cart_prod_result_seq(CartProdT &&t, SubsTupleT &&subs,
 template <class TupleT, class ShapeT, class... Ts, class... SubTs>
 constexpr auto element_at(const cart_prod_result<TupleT, ShapeT, Ts...> &t,
                           const SubTs &... subs) {
-  return details::_element_at_cart_prod_result_seq(
+  assert(subscripts_are_valid(t.shape(), subs...));
+  return detail::_element_at_cart_prod_result_seq(
       t, std::forward_as_tuple(subs...), make_const_sequence_for<Ts...>());
 }
 
 // cart_prod
-namespace details {
+namespace detail {
 template <class T> struct _get_value_type_helper {
   using _t = decltype(std::declval<T>().get_value_type());
   using type = std::decay_t<typename _t::type>;

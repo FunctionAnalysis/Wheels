@@ -12,21 +12,21 @@ template <class ET, class ShapeT, class T> class make_diag_result;
 template <class ET, class ShapeT, class T> class diag_view;
 
 // make_diag
-namespace details {
+namespace detail {
 template <class ET, class ShapeT, class T, class TT, class NewShapeT>
 constexpr auto _make_diag(const tensor_base<ET, ShapeT, T> &, TT &&t,
                           const NewShapeT &nshape);
 }
 template <class T, class ST, class... SizeTs>
 constexpr auto make_diag(T &&t, const tensor_shape<ST, SizeTs...> &ns)
-    -> decltype(details::_make_diag(t, std::forward<T>(t), ns)) {
-  return details::_make_diag(t, std::forward<T>(t), ns);
+    -> decltype(detail::_make_diag(t, std::forward<T>(t), ns)) {
+  return detail::_make_diag(t, std::forward<T>(t), ns);
 }
 template <class T>
 constexpr auto make_diag(T &&t)
-    -> decltype(details::_make_diag(t, std::forward<T>(t),
+    -> decltype(detail::_make_diag(t, std::forward<T>(t),
                                     make_shape(t.numel(), t.numel()))) {
-  return details::_make_diag(t, std::forward<T>(t),
+  return detail::_make_diag(t, std::forward<T>(t),
                              make_shape(t.numel(), t.numel()));
 }
 
@@ -40,14 +40,14 @@ template <class ET = double, class NT,
 constexpr auto eye(const NT &n);
 
 // diag
-namespace details {
+namespace detail {
 template <class ET, class ShapeT, class T, class TT>
 constexpr auto _diag(const tensor_base<ET, ShapeT, T> &, TT &&t);
 template <class ET, class ShapeT, class T, class TT>
 constexpr decltype(auto) _diag(const make_diag_result<ET, ShapeT, T> &, TT &&t);
 }
 template <class T>
-constexpr auto diag(T &&t) -> decltype(details::_diag(t, std::forward<T>(t))) {
-  return details::_diag(t, std::forward<T>(t));
+constexpr auto diag(T &&t) -> decltype(detail::_diag(t, std::forward<T>(t))) {
+  return detail::_diag(t, std::forward<T>(t));
 }
 }

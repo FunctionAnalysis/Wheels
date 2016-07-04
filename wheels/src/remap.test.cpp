@@ -1,9 +1,7 @@
 #include <gtest/gtest.h>
 
 #include "remap.hpp"
-#include "tensor.hpp"
 #include "cartesian.hpp"
-#include "ewise.hpp"
 #include "constants.hpp"
 
 using namespace wheels;

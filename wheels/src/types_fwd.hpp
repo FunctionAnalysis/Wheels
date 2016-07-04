@@ -16,7 +16,8 @@ enum cast_type_enum {
   by_dynamic,
   by_reinterpret,
   by_construct,
-  by_c_style
+  by_c_style,
+  by_smart_static
 };
 template <cast_type_enum cast_type, class T, class K> constexpr T cast(K &&v);
 

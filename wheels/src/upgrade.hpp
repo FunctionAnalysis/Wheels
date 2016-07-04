@@ -29,7 +29,7 @@ shape_of(const upgrade_result<ET, ShapeT, InputT, ExtShapeT, ExtFunT> &r) {
 }
 
 // element_at
-namespace details {
+namespace detail {
 template <class ExtendResultT, class SubsTupleT, size_t... OldIs,
           size_t... ExtendedIs>
 constexpr decltype(auto)
@@ -46,7 +46,8 @@ template <class ET, class ShapeT, class InputT, class ExtShapeT, class ExtFunT,
 constexpr decltype(auto)
 element_at(const upgrade_result<ET, ShapeT, InputT, ExtShapeT, ExtFunT> &r,
            const SubTs &... subs) {
-  return details::_element_at_upgrade_result_seq(
+  assert(subscripts_are_valid(r.shape(), subs...));
+  return detail::_element_at_upgrade_result_seq(
       r, std::forward_as_tuple(subs...), make_rank_sequence(r.input.shape()),
       make_rank_sequence(r.ext_shape));
 }
@@ -56,7 +57,8 @@ template <class ET, class ShapeT, class InputT, class ExtShapeT, class ExtFunT,
 decltype(auto)
 element_at(upgrade_result<ET, ShapeT, InputT, ExtShapeT, ExtFunT> &r,
            const SubTs &... subs) {
-  return details::_element_at_upgrade_result_seq(
+  assert(subscripts_are_valid(r.shape(), subs...));
+  return detail::_element_at_upgrade_result_seq(
       r, std::forward_as_tuple(subs...), make_rank_sequence(r.input.shape()),
       make_rank_sequence(r.ext_shape));
 }
@@ -80,7 +82,7 @@ struct as_subtensor {
 };
 }
 
-namespace details {
+namespace detail {
 template <class ET, class InputShapeT, class InputET, class InputT,
           class InputTT, class ExtShapeT, class ExtFunT, size_t... ExtIs>
 constexpr auto _upgrade_by(const tensor_base<InputET, InputShapeT, InputT> &,
@@ -96,7 +98,7 @@ constexpr auto _upgrade_by(const tensor_base<InputET, InputShapeT, InputT> &,
 }
 
 // upgrade_as_repeated
-namespace details {
+namespace detail {
 template <class ET, class ShapeT, class T, class InputT, class ST,
           class... SizeTs>
 constexpr auto _upgrade_as_repeated(const tensor_base<ET, ShapeT, T> &,
@@ -108,7 +110,7 @@ constexpr auto _upgrade_as_repeated(const tensor_base<ET, ShapeT, T> &,
 }
 
 // upgrade_all
-namespace details {
+namespace detail {
 template <class ET, class ShapeT, class T, class ET2, class ShapeT2, class T2,
           class InputT>
 constexpr decltype(auto)
@@ -130,7 +132,7 @@ _upgrade_as_subtensor(const subtensor_view<ET, ShapeT, T, FixedRank> &et,
 template <class InputT>
 constexpr decltype(auto) upgrade_all(InputT &&input) {
   assert(input.numel() > 0);
-  return details::_upgrade_as_subtensor(element_at_index(input, 0), input,
+  return detail::_upgrade_as_subtensor(element_at_index(input, 0), input,
                                         std::forward<InputT>(input));
 }
 }

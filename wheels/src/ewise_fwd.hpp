@@ -80,7 +80,7 @@ constexpr auto scalarize(T &&t)
 template <class EleT, class ShapeT, class OpT, class InputT, class... InputTs>
 class ewise_op_result;
 
-namespace details {
+namespace detail {
 template <class FirstTT, class... TTs, size_t... Is, class FirstEleT,
           class... EleTs, class FirstShapeT, class... ShapeTs, class FirstT,
           class... Ts>
@@ -94,14 +94,14 @@ constexpr auto _as_tuple_seq(std::tuple<FirstTT, TTs...> &&ts,
 struct binary_op_eq;
 struct binary_op_neq;
 struct binary_op_mul;
-namespace details {
+namespace detail {
 template <class T> struct _op_naturally_ewise : yes {};
 template <> struct _op_naturally_ewise<binary_op_eq> : no {};
 template <> struct _op_naturally_ewise<binary_op_neq> : no {};
 template <> struct _op_naturally_ewise<binary_op_mul> : no {};
 }
 template <class OpT,
-          class = std::enable_if_t<details::_op_naturally_ewise<OpT>::value>,
+          class = std::enable_if_t<detail::_op_naturally_ewise<OpT>::value>,
           class EleT, class ShapeT, class T, class... EleTs, class... ShapeTs,
           class... Ts>
 constexpr auto overload_as(const func_base<OpT> &op,
@@ -155,10 +155,10 @@ constexpr auto overload_as(const func_base<OpT> &op,
 // as_tuple
 template <class FirstT, class... Ts>
 constexpr auto as_tuple(FirstT &&t, Ts &&... ts)
-    -> decltype(details::_as_tuple_seq(
+    -> decltype(detail::_as_tuple_seq(
         std::forward_as_tuple(std::forward<FirstT>(t), std::forward<Ts>(ts)...),
         make_const_sequence_for<Ts...>(), t, ts...)) {
-  return details::_as_tuple_seq(
+  return detail::_as_tuple_seq(
       std::forward_as_tuple(std::forward<FirstT>(t), std::forward<Ts>(ts)...),
       make_const_sequence_for<Ts...>(), t, ts...);
 }

@@ -1,7 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <random>
-
 #include "constants.hpp"
 #include "permute.hpp"
 #include "tensor.hpp"

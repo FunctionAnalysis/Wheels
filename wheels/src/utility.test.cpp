@@ -31,9 +31,6 @@ TEST(core, utility) {
   static_assert(make_ordered_pair(5_c, 4_c) == std::make_pair(4_c, 5_c), "");
   static_assert(make_ordered_pair(4_c, 5_c) == std::make_pair(4_c, 5_c), "");
 
-  static_assert(close_bounded(0_c, 3_c, 5_c) == 3_c, "");
-  static_assert(close_bounded(4_c, 3_c, 5_c) == 4_c, "");
-  static_assert(close_bounded(6_c, 3_c, 5_c) == 5_c, "");
   static_assert(is_between(5_c, 0_c, 6_c), "");
   static_assert(!is_between(5_c, 0_c, 5_c), "");
   static_assert(is_between(0_c, 0_c, 5_c), "");

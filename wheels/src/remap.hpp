@@ -41,7 +41,7 @@ shape_of(const remap_result<ET, ShapeT, T, MapFunT, IPMethod> &r) {
   return r.shape();
 }
 
-namespace details {
+namespace detail {
 // _element_at_remap_result_seq using round_interpolate
 template <class ET, class ShapeT, class T, class MapFunT, size_t... Is,
           class... SubTs>
@@ -72,7 +72,7 @@ constexpr auto _linear_interpolated_sampling(const_size<Undetermined>,
                                              SamplerFunT &&samplerfun,
                                              DistToZeroFunT &&dist0fun,
                                              const SubTs &... subs) {
-  return details::_linear_interpolate(
+  return detail::_linear_interpolate(
       _linear_interpolated_sampling(const_size<Undetermined - 1>(), samplerfun,
                                     dist0fun, no(), subs...),
       _linear_interpolated_sampling(const_size<Undetermined - 1>(), samplerfun,
@@ -123,12 +123,13 @@ template <class ET, class ShapeT, class T, class MapFunT,
           interpolate_method_enum IPMethod, class... SubTs>
 constexpr ET element_at(const remap_result<ET, ShapeT, T, MapFunT, IPMethod> &r,
                         const SubTs &... subs) {
-  return details::_element_at_remap_result_seq(
+  assert(subscripts_are_valid(r.shape(), subs...));
+  return detail::_element_at_remap_result_seq(
       r, make_const_sequence_for<SubTs...>(), subs...);
 }
 
 // remap
-namespace details {
+namespace detail {
 template <class ToST, class... ToSizeTs, class ET, class ShapeT, class T,
           class TT, class MapFunT, class ET2, interpolate_method_enum IPMethod>
 constexpr auto _remap(const tensor_base<ET, ShapeT, T> &, TT &&t,
@@ -150,7 +151,7 @@ constexpr auto _remap(const tensor_base<ET, ShapeT, T> &, TT &&t,
 }
 }
 
-namespace details {
+namespace detail {
 template <class FromShapeT, class ToShapeT> struct _resample_map_functor {
   static_assert(FromShapeT::rank == ToShapeT::rank, "shape ranks mismatch!");
   FromShapeT from_shape;

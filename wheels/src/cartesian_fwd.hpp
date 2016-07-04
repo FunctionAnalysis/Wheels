@@ -23,12 +23,12 @@ constexpr auto coordinate(const tensor_shape<ST, SizeTs...> &s);
 // cart_prod
 template <class TupleT, class ShapeT, class... Ts> class cart_prod_result;
 
-namespace details {
+namespace detail {
 template <class... Ts, class... TTs> constexpr auto _cart_prod(TTs &&... tts);
 }
 template <class... TTs>
 constexpr auto cart_prod(TTs &&... ts)
-    -> decltype(details::_cart_prod(std::forward<TTs>(ts)...)) {
-  return details::_cart_prod(std::forward<TTs>(ts)...);
+    -> decltype(detail::_cart_prod(std::forward<TTs>(ts)...)) {
+  return detail::_cart_prod(std::forward<TTs>(ts)...);
 }
 }

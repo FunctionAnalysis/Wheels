@@ -3,10 +3,8 @@
 #include "cat.hpp"
 #include "constants.hpp"
 #include "downgrade.hpp"
-#include "ewise.hpp"
 #include "permute.hpp"
 #include "reformulate.hpp"
-#include "tensor.hpp"
 #include "upgrade.hpp"
 
 using namespace wheels;

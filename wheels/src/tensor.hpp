@@ -9,7 +9,7 @@
 
 namespace wheels {
 
-namespace details {
+namespace detail {
 template <class ShapeT, size_t... Is>
 constexpr std::enable_if_t<ShapeT::dynamic_size_num == 1, ShapeT>
 _make_shape_from_magnitude_seq(size_t magnitude, const_ints<size_t, Is...>) {
@@ -54,7 +54,7 @@ public:
   template <class EleT>
   constexpr tensor(std::initializer_list<EleT> ilist)
       : _storage(
-            details::_make_shape_from_magnitude_seq<ShapeT>(
+            detail::_make_shape_from_magnitude_seq<ShapeT>(
                 ilist.size(), make_const_sequence(const_size<ShapeT::rank>())),
             with_iterators, ilist.begin(), ilist.end()) {}
 
@@ -65,7 +65,7 @@ public:
   // tensor(begin, end)
   template <class IterT, class = std::enable_if_t<is_iterator<IterT>::value>>
   constexpr tensor(IterT begin, IterT end)
-      : _storage(details::_make_shape_from_magnitude_seq<ShapeT>(
+      : _storage(detail::_make_shape_from_magnitude_seq<ShapeT>(
                      std::distance(begin, end),
                      make_const_sequence(const_size<ShapeT::rank>())),
                  with_iterators, begin, end) {}

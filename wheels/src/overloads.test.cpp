@@ -2,7 +2,6 @@
 
 #include "what.hpp"
 #include "overloads.hpp"
-#include "types.hpp"
 #include "constants.hpp"
 
 using namespace wheels;
@@ -11,7 +10,7 @@ using namespace wheels::literals;
 template <class T> struct A : object_base<A<T>> {};
 
 namespace wheels {
-namespace details {
+namespace detail {
 struct _impl {
   constexpr _impl() {}
   template <class T> const char *operator()(A<T> &&v) const { return "rvalue"; }
@@ -25,7 +24,7 @@ struct _impl {
 };
 }
 template <class OpT, class T> auto overload_as(const OpT &, const A<T> &) {
-  return details::_impl();
+  return detail::_impl();
 }
 
 template <class T, class K>

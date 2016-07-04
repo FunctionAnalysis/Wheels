@@ -48,11 +48,13 @@ constexpr const ShapeT &shape_of(const reshape_view<ET, ShapeT, T> &t) {
 template <class ET, class ShapeT, class T, class... SubTs>
 constexpr decltype(auto) element_at(const reshape_view<ET, ShapeT, T> &t,
                                     const SubTs &... subs) {
+  assert(subscripts_are_valid(t.shape(), subs...));
   return element_at_index(t.input(), sub2ind(t.shape(), subs...));
 }
 template <class ET, class ShapeT, class T, class... SubTs>
 decltype(auto) element_at(reshape_view<ET, ShapeT, T> &t,
                           const SubTs &... subs) {
+  assert(subscripts_are_valid(t.shape(), subs...));
   return element_at_index(t.input(), sub2ind(t.shape(), subs...));
 }
 
@@ -60,16 +62,18 @@ decltype(auto) element_at(reshape_view<ET, ShapeT, T> &t,
 template <class ET, class ShapeT, class T, class IndexT>
 constexpr decltype(auto) element_at_index(const reshape_view<ET, ShapeT, T> &t,
                                           const IndexT &ind) {
+  assert(is_between(ind, 0, (IndexT)t.numel()));
   return element_at_index(t.input(), ind);
 }
 template <class ET, class ShapeT, class T, class IndexT>
 decltype(auto) element_at_index(reshape_view<ET, ShapeT, T> &t,
                                 const IndexT &ind) {
+  assert(is_between(ind, 0, (IndexT)t.numel()));
   return element_at_index(t.input(), ind);
 }
 
 // reshape
-namespace details {
+namespace detail {
 template <class ET, class OldShapeT, class T, class TT, class ShapeT>
 constexpr auto _reshape(const tensor_base<ET, OldShapeT, T> &, TT &&t,
                         const ShapeT &s) {
@@ -83,7 +87,7 @@ constexpr auto _reshape(const reshape_view<ET, OldShapeT, T> &, TT &&t,
 }
 
 // promote
-namespace details {
+namespace detail {
 template <class ET, class ST, class... SizeTs, class T, class TT, class K,
           K Times>
 constexpr auto _promote(const tensor_base<ET, tensor_shape<ST, SizeTs...>, T> &,

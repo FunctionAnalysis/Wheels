@@ -40,7 +40,7 @@ shape_of(const reformulate_result<ET, ShapeT, InputT, SubsMapFunT> &r) {
 }
 
 // element_at
-namespace details {
+namespace detail {
 template <class InputT, class SubsTupleT, size_t... Is>
 constexpr decltype(auto)
 _element_at_subs_seq(InputT &&input, SubsTupleT &&subs,
@@ -53,11 +53,12 @@ template <class ET, class ShapeT, class InputT, class SubsMapFunT,
 constexpr decltype(auto)
 element_at(const reformulate_result<ET, ShapeT, InputT, SubsMapFunT> &r,
            const SubTs &... subs) {
-  return details::_element_at_subs_seq(r.input(), r.subs_of_input(subs...),
+  assert(subscripts_are_valid(r.shape(), subs...));
+  return detail::_element_at_subs_seq(r.input(), r.subs_of_input(subs...),
                                        make_rank_sequence(r.input().shape()));
 }
 
-namespace details {
+namespace detail {
 template <class ET, class ShapeT, class T, class TT, class NewShapeT,
           class SubsMapFunT>
 constexpr auto _reformulate(const tensor_base<ET, ShapeT, T> &, TT &&t,
@@ -68,7 +69,7 @@ constexpr auto _reformulate(const tensor_base<ET, ShapeT, T> &, TT &&t,
 }
 
 // repeat
-namespace details {
+namespace detail {
 template <class ShapeT, class SubsTupleT, size_t... Is>
 constexpr auto _repeat_subs_seq(const ShapeT &shape, SubsTupleT &&subs,
                                 const const_ints<size_t, Is...> &) {

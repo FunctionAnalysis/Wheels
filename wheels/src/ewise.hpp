@@ -44,7 +44,7 @@ shape_of(const ewise_op_result<EleT, ShapeT, OpT, InputT, InputTs...> &ts) {
 }
 
 // element_at
-namespace details {
+namespace detail {
 template <class EwiseOpResultT, size_t... Is, class... SubTs>
 constexpr decltype(auto)
 _element_at_ewise_op_result_seq(EwiseOpResultT &&ts,
@@ -58,12 +58,13 @@ template <class EleT, class ShapeT, class OpT, class InputT, class... InputTs,
 constexpr decltype(auto)
 element_at(const ewise_op_result<EleT, ShapeT, OpT, InputT, InputTs...> &ts,
            const SubTs &... subs) {
-  return details::_element_at_ewise_op_result_seq(
+  assert(subscripts_are_valid(ts.shape(), subs...));
+  return detail::_element_at_ewise_op_result_seq(
       ts, make_const_sequence_for<InputT, InputTs...>(), subs...);
 }
 
 // element_at_index
-namespace details {
+namespace detail {
 template <class EwiseOpResultT, size_t... Is, class IndexT>
 constexpr decltype(auto)
 _element_at_index_ewise_op_result_seq(EwiseOpResultT &&ts,
@@ -77,7 +78,8 @@ template <class EleT, class ShapeT, class OpT, class InputT, class... InputTs,
 constexpr decltype(auto) element_at_index(
     const ewise_op_result<EleT, ShapeT, OpT, InputT, InputTs...> &ts,
     const IndexT &index) {
-  return details::_element_at_index_ewise_op_result_seq(
+  assert(is_between(index, 0, (typename int_traits<IndexT>::type)ts.numel()));
+  return detail::_element_at_index_ewise_op_result_seq(
       ts, make_const_sequence_for<InputT, InputTs...>(), index);
 }
 
@@ -206,7 +208,7 @@ constexpr auto overload_as(const func_base<OpT> &op,
   };
 }
 
-namespace details {
+namespace detail {
 // auto transform(ts)
 template <class EleT, class ShapeT, class T, class FunT>
 constexpr auto _transform(const tensor_base<EleT, ShapeT, T> &t, FunT &&fun) {
@@ -223,7 +225,7 @@ constexpr auto _transform(tensor_base<EleT, ShapeT, T> &&t, FunT &&fun) {
 }
 
 // equals & not_equals
-namespace details {
+namespace detail {
 
 // with tensor
 template <class EleT1, class ShapeT1, class T1, class T2, class TT1, class TT2>
@@ -267,7 +269,7 @@ template <class AnotherT>
 inline constexpr auto
 tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::equals(
     AnotherT &&t) const & {
-  return details::_ewise_equals(this->derived(), what(t), this->derived(),
+  return detail::_ewise_equals(this->derived(), what(t), this->derived(),
                                 std::forward<AnotherT>(t));
 }
 
@@ -275,7 +277,7 @@ template <class EleT, class ShapeT, class T>
 template <class AnotherT>
 inline auto tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::equals(
     AnotherT &&t) & {
-  return details::_ewise_equals(this->derived(), what(t), this->derived(),
+  return detail::_ewise_equals(this->derived(), what(t), this->derived(),
                                 std::forward<AnotherT>(t));
 }
 
@@ -283,7 +285,7 @@ template <class EleT, class ShapeT, class T>
 template <class AnotherT>
 inline auto tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::equals(
     AnotherT &&t) && {
-  return details::_ewise_equals(this->derived(), what(t),
+  return detail::_ewise_equals(this->derived(), what(t),
                                 std::move(this->derived()),
                                 std::forward<AnotherT>(t));
 }
@@ -293,7 +295,7 @@ template <class AnotherT>
 inline constexpr auto
 tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::not_equals(
     AnotherT &&t) const & {
-  return details::_ewise_not_equals(this->derived(), what(t), this->derived(),
+  return detail::_ewise_not_equals(this->derived(), what(t), this->derived(),
                                     std::forward<AnotherT>(t));
 }
 
@@ -302,7 +304,7 @@ template <class AnotherT>
 inline auto
 tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::not_equals(
     AnotherT &&t) & {
-  return details::_ewise_not_equals(this->derived(), what(t), this->derived(),
+  return detail::_ewise_not_equals(this->derived(), what(t), this->derived(),
                                     std::forward<AnotherT>(t));
 }
 
@@ -311,7 +313,7 @@ template <class AnotherT>
 inline auto
 tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::not_equals(
     AnotherT &&t) && {
-  return details::_ewise_not_equals(this->derived(), what(t),
+  return detail::_ewise_not_equals(this->derived(), what(t),
                                     std::move(this->derived()),
                                     std::forward<AnotherT>(t));
 }
@@ -322,21 +324,21 @@ template <class FunT>
 inline constexpr auto
 tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::transform(
     FunT &&fun) const & {
-  return details::_transform(this->derived(), std::forward<FunT>(fun));
+  return detail::_transform(this->derived(), std::forward<FunT>(fun));
 }
 template <class EleT, class ShapeT, class T>
 template <class FunT>
 inline auto
 tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::transform(
     FunT &&fun) & {
-  return details::_transform(this->derived(), std::forward<FunT>(fun));
+  return detail::_transform(this->derived(), std::forward<FunT>(fun));
 }
 template <class EleT, class ShapeT, class T>
 template <class FunT>
 inline auto
 tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::transform(
     FunT &&fun) && {
-  return details::_transform(std::move(this->derived()),
+  return detail::_transform(std::move(this->derived()),
                              std::forward<FunT>(fun));
 }
 
@@ -345,7 +347,7 @@ template <class EleT, class ShapeT, class T>
 template <cast_type_enum cast_type, class TargetEleT>
 inline constexpr auto
 tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::cast() const & {
-  return details::_transform(this->derived(), [](const auto &e) -> TargetEleT {
+  return detail::_transform(this->derived(), [](const auto &e) -> TargetEleT {
     return ::wheels::cast<cast_type, TargetEleT>(e);
   });
 }
@@ -353,14 +355,14 @@ template <class EleT, class ShapeT, class T>
 template <cast_type_enum cast_type, class TargetEleT>
 inline auto
 tensor_extension_base<extension_tag_ewise, EleT, ShapeT, T>::cast() && {
-  return details::_transform(std::move(this->derived()),
+  return detail::_transform(std::move(this->derived()),
                              [](auto &&e) -> TargetEleT {
                                return ::wheels::cast<cast_type, TargetEleT>(e);
                              });
 }
 
 // _as_tuple_seq
-namespace details {
+namespace detail {
 template <class FirstTT, class... TTs, size_t... Is, class FirstEleT,
           class... EleTs, class FirstShapeT, class... ShapeTs, class FirstT,
           class... Ts>

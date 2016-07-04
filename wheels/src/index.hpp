@@ -45,6 +45,7 @@ template <class ET, class ShapeT, class IndexTensorT, class InputTensorT,
 constexpr decltype(auto)
 element_at(const index_view<ET, ShapeT, IndexTensorT, InputTensorT> &ir,
            const SubTs &... subs) {
+  assert(subscripts_are_valid(ir.shape(), subs...));
   return element_at_index(ir.input_tensor,
                           element_at(ir.index_tensor, subs...));
 }
@@ -55,12 +56,13 @@ template <class ET, class ShapeT, class IndexTensorT, class InputTensorT,
 constexpr decltype(auto)
 element_at_index(const index_view<ET, ShapeT, IndexTensorT, InputTensorT> &ir,
                  const IndexT &ind) {
+  assert(is_between(ind, 0, ir.numel()));
   return element_at_index(ir.input_tensor,
                           element_at_index(ir.index_tensor, ind));
 }
 
 // at_indices
-namespace details {
+namespace detail {
 template <class InputShapeT, class InputET, class InputTensorT,
           class InputTensorTT, class IndexShapeT, class IndexET,
           class IndexTensorT, class IndexTensorTT>

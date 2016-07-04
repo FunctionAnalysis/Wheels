@@ -78,17 +78,17 @@ template <class T, T Val, class... ArgTs> struct always {
   static constexpr T value = Val;
 };
 // - type by size_t's
-namespace details {
+namespace detail {
 template <class T, size_t... ArgIs> struct _always_t { using type = T; };
 }
 template <class T, size_t... ArgIs>
-using always_t = typename details::_always_t<T, ArgIs...>::type;
+using always_t = typename detail::_always_t<T, ArgIs...>::type;
 // - type by types
-namespace details {
+namespace detail {
 template <class T, class... ArgTs> struct _always2_t { using type = T; };
 }
 template <class T, class... ArgTs>
-using always2_t = typename details::_always2_t<T, ArgTs...>::type;
+using always2_t = typename detail::_always2_t<T, ArgTs...>::type;
 // - functor returning const value
 template <class T> struct always_f {
   constexpr always_f(const T &v) : val(v) {}

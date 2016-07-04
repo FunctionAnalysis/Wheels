@@ -22,4 +22,6 @@ TEST(core, type) {
   int kk = 0;
   int & k = kk;
   decltype(auto) kd = wheels_forward(k);
+
+  double ddddd = cast<by_smart_static, double>(1_c);
 }

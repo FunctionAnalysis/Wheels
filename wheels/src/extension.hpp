@@ -21,7 +21,7 @@ public:
   T host;
 };
 
-namespace details {
+namespace detail {
 template <class ExtensionT, class EleT, class ShapeT, class T, class TT>
 constexpr auto _extend(const tensor_base<EleT, ShapeT, T> &, TT &&host) {
   return tensor_extension_wrapper<ExtensionT, EleT, ShapeT, TT>(
@@ -42,12 +42,14 @@ template <class ExtensionT, class EleT, class ShapeT, class T, class... SubTs>
 constexpr decltype(auto)
 element_at(const tensor_extension_wrapper<ExtensionT, EleT, ShapeT, T> &t,
            const SubTs &... subs) {
+  assert(subscripts_are_valid(t.shape(), subs...));
   return element_at(t.host, subs...);
 }
 template <class ExtensionT, class EleT, class ShapeT, class T, class... SubTs>
 decltype(auto)
 element_at(tensor_extension_wrapper<ExtensionT, EleT, ShapeT, T> &t,
            const SubTs &... subs) {
+  assert(subscripts_are_valid(t.shape(), subs...));
   return element_at(t.host, subs...);
 }
 
@@ -56,12 +58,14 @@ template <class ExtensionT, class EleT, class ShapeT, class T, class IndexT>
 constexpr decltype(auto)
 element_at_index(const tensor_extension_wrapper<ExtensionT, EleT, ShapeT, T> &t,
                  const IndexT &ind) {
+  assert(is_between(ind, 0, (IndexT)t.numel()));
   return element_at_index(t.host, ind);
 }
 template <class ExtensionT, class EleT, class ShapeT, class T, class IndexT>
 decltype(auto)
 element_at_index(tensor_extension_wrapper<ExtensionT, EleT, ShapeT, T> &t,
                  const IndexT &ind) {
+  assert(is_between(ind, 0, (IndexT)t.numel()));
   return element_at_index(t.host, ind);
 }
 

@@ -3,9 +3,8 @@
 #include "tensor_base_fwd.hpp"
 
 namespace wheels {
-
 // constant_result
-template <class ET, class ShapeT, class OpT> class constant_result;
+template <class ET, class ShapeT> class constant_result;
 
 // constants
 template <class ET, class ST, class... SizeTs>

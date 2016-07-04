@@ -8,7 +8,7 @@ namespace wheels {
 template <class ET, class ShapeT, class InputT, class ExtShapeT, class ExtFunT>
 class upgrade_result;
 
-namespace details {
+namespace detail {
 template <class ET, class InputShapeT, class InputET, class InputT,
           class InputTT, class ExtShapeT, class ExtFunT, size_t... ExtIs>
 constexpr auto _upgrade_by(const tensor_base<InputET, InputShapeT, InputT> &,
@@ -21,14 +21,14 @@ constexpr auto _upgrade_by(const tensor_base<InputET, InputShapeT, InputT> &,
 template <class ET, class InputT, class ST, class... SizeTs, class ExtFunT>
 constexpr auto upgrade_by(InputT &&input, const tensor_shape<ST, SizeTs...> &es,
                           ExtFunT ef)
-    -> decltype(details::_upgrade_by<ET>(input, std::forward<InputT>(input), es,
+    -> decltype(detail::_upgrade_by<ET>(input, std::forward<InputT>(input), es,
                                          ef, make_rank_sequence(es))) {
-  return details::_upgrade_by<ET>(input, std::forward<InputT>(input), es, ef,
+  return detail::_upgrade_by<ET>(input, std::forward<InputT>(input), es, ef,
                                   make_rank_sequence(es));
 }
 
 // upgrade_as_repeated
-namespace details {
+namespace detail {
 template <class ET, class ShapeT, class T, class InputT, class ST,
           class... SizeTs>
 constexpr auto _upgrade_as_repeated(const tensor_base<ET, ShapeT, T> &,
@@ -39,7 +39,7 @@ constexpr auto _upgrade_as_repeated(const tensor_base<ET, ShapeT, T> &,
 template <class InputT, class ST, class... SizeTs>
 constexpr auto upgrade_as_repeated(InputT &&input,
                                    const tensor_shape<ST, SizeTs...> &es) {
-  return details::_upgrade_as_repeated(input, std::forward<InputT>(input), es);
+  return detail::_upgrade_as_repeated(input, std::forward<InputT>(input), es);
 }
 
 // upgrade_all

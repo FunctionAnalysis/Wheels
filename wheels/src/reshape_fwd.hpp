@@ -5,7 +5,7 @@
 namespace wheels {
 template <class ET, class ShapeT, class T> class reshape_view;
 
-namespace details {
+namespace detail {
 template <class ET, class OldShapeT, class T, class TT, class ShapeT>
 constexpr auto _reshape(const tensor_base<ET, OldShapeT, T> &, TT &&t,
                         const ShapeT &s);
@@ -16,11 +16,11 @@ constexpr auto _reshape(const reshape_view<ET, OldShapeT, T> &, TT &&t,
 // reshape
 template <class T, class ST, class... SizeTs>
 constexpr auto reshape(T &&t, const tensor_shape<ST, SizeTs...> &s)
-    -> decltype(details::_reshape(t, std::forward<T>(t), s)) {
-  return details::_reshape(t, std::forward<T>(t), s);
+    -> decltype(detail::_reshape(t, std::forward<T>(t), s)) {
+  return detail::_reshape(t, std::forward<T>(t), s);
 }
 
-namespace details {
+namespace detail {
 template <class ET, class ST, class... SizeTs, class T, class TT, class K,
           K Times>
 constexpr auto _promote(const tensor_base<ET, tensor_shape<ST, SizeTs...>, T> &,
@@ -34,12 +34,12 @@ constexpr auto _promote(const const_ints<K, Times> &,
 // promote
 template <class T, class K, K Times>
 constexpr auto promote(T &&t, const const_ints<K, Times> &rank)
-    -> decltype(details::_promote(t, std::forward<T>(t), rank)) {
-  return details::_promote(t, std::forward<T>(t), rank);
+    -> decltype(detail::_promote(t, std::forward<T>(t), rank)) {
+  return detail::_promote(t, std::forward<T>(t), rank);
 }
 template <class T, class K, K Times>
 constexpr auto promote(const const_ints<K, Times> &rank, T &&t)
-    -> decltype(details::_promote(rank, t, std::forward<T>(t))) {
-  return details::_promote(rank, t, std::forward<T>(t));
+    -> decltype(detail::_promote(rank, t, std::forward<T>(t))) {
+  return detail::_promote(rank, t, std::forward<T>(t));
 }
 }

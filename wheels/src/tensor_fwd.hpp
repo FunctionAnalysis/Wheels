@@ -99,7 +99,7 @@ template <class T> using gu16str = gvecx_<char16_t, T>;
 template <class T> using gu32str = gvecx_<char32_t, T>;
 
 // tensor_of_rank
-namespace details {
+namespace detail {
 template <class T, class SeqT> struct _make_tensor_of_rank_seq {
   using type = void;
 };
@@ -109,7 +109,7 @@ struct _make_tensor_of_rank_seq<T, const_ints<size_t, Is...>> {
 };
 }
 template <class T, size_t Rank>
-using tensor_of_rank = typename details::_make_tensor_of_rank_seq<
+using tensor_of_rank = typename detail::_make_tensor_of_rank_seq<
     T, decltype(make_const_sequence(const_size<Rank>()))>::type;
 
 template <class ET = double, class ST, class... SizeTs, class RNG>

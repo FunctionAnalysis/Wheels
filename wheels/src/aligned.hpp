@@ -31,7 +31,7 @@ public:
   }
 };
 
-namespace details {
+namespace detail {
 template <class ET, class ShapeT, class T, size_t... Is, class... SubTs>
 constexpr auto
 _mem_offset_at_seq(const tensor_aligned_data_base<ET, ShapeT, T> &t,
@@ -46,13 +46,15 @@ template <class ET, class ShapeT, class T, class... SubTs>
 constexpr decltype(auto)
 element_at(const tensor_aligned_data_base<ET, ShapeT, T> &t,
            const SubTs &... subs) {
-  return t.ptr()[details::_mem_offset_at_seq(
+  assert(subscripts_are_valid(t.shape(), subs...));
+  return t.ptr()[detail::_mem_offset_at_seq(
       t, make_const_sequence_for<SubTs...>(), subs...)];
 }
 template <class ET, class ShapeT, class T, class... SubTs>
 inline decltype(auto) element_at(tensor_aligned_data_base<ET, ShapeT, T> &t,
                                  const SubTs &... subs) {
-  return t.ptr()[details::_mem_offset_at_seq(
+  assert(subscripts_are_valid(t.shape(), subs...));
+  return t.ptr()[detail::_mem_offset_at_seq(
       t, make_const_sequence_for<SubTs...>(), subs...)];
 }
 
@@ -63,14 +65,14 @@ class tensor_continuous_data_base
 
 // sub_scale_of
 template <class ET, class ShapeT, class T>
-constexpr auto
+constexpr const_size<1>
 sub_scale_of(const tensor_continuous_data_base<ET, ShapeT, T> &) {
   return const_size<1>();
 }
 
 // sub_offset_of
 template <class ET, class ShapeT, class T>
-constexpr auto
+constexpr const_size<0>
 sub_offset_of(const tensor_continuous_data_base<ET, ShapeT, T> &) {
   return const_size<0>();
 }
@@ -80,11 +82,13 @@ template <class ET, class ShapeT, class T, class... SubTs>
 constexpr decltype(auto)
 element_at(const tensor_continuous_data_base<ET, ShapeT, T> &t,
            const SubTs &... subs) {
+  assert(subscripts_are_valid(t.shape(), subs...));
   return t.ptr()[sub2ind(t.shape(), subs...)];
 }
 template <class ET, class ShapeT, class T, class... SubTs>
 inline decltype(auto) element_at(tensor_continuous_data_base<ET, ShapeT, T> &t,
                                  const SubTs &... subs) {
+  assert(subscripts_are_valid(t.shape(), subs...));
   return t.ptr()[sub2ind(t.shape(), subs...)];
 }
 
@@ -93,12 +97,14 @@ template <class ET, class ShapeT, class T, class IndexT>
 constexpr decltype(auto)
 element_at_index(const tensor_continuous_data_base<ET, ShapeT, T> &t,
                  const IndexT &index) {
+  assert(is_between(index, 0, (IndexT)t.numel()));
   return t.ptr()[index];
 }
 template <class ET, class ShapeT, class T, class IndexT>
 inline decltype(auto)
 element_at_index(tensor_continuous_data_base<ET, ShapeT, T> &t,
                  const IndexT &index) {
+  assert(is_between(index, 0, (IndexT)t.numel()));
   return t.ptr()[index];
 }
 

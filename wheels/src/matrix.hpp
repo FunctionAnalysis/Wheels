@@ -313,6 +313,7 @@ template <class EleT, class ShapeT, class A, class B, bool AIsMat, bool BIsMat,
 constexpr decltype(auto)
 element_at(const matrix_mul_result<EleT, ShapeT, A, B, AIsMat, BIsMat> &m,
            const SubTs &... subs) {
+  assert(subscripts_are_valid(m.shape(), subs...));
   return m.at_subs(subs...);
 }
 

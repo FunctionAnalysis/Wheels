@@ -41,7 +41,7 @@ template <size_t Idx> struct const_arg : const_expr_base<const_arg<Idx>> {
 namespace literals {
 // ""_arg
 template <char... Cs> constexpr auto operator"" _arg() {
-  return const_arg<details::_parse_int<size_t, Cs...>::value>();
+  return const_arg<detail::_parse_int<size_t, Cs...>::value>();
 }
 }
 
@@ -65,7 +65,7 @@ template <class T> struct const_coeff : const_expr_base<const_coeff<T>> {
 
 // as_const_coeff
 // wrap a non const expr type as a const expr
-namespace details {
+namespace detail {
 template <class TT, class T>
 constexpr TT &&_as_const_coeff_impl(TT &&v, const const_expr_base<T> &) {
   return static_cast<TT &&>(v);
@@ -80,7 +80,7 @@ constexpr const_coeff<TT> _as_const_coeff_impl(TT &&v, const proxy_base<T> &) {
 }
 }
 template <class T> constexpr decltype(auto) as_const_coeff(T &&v) {
-  return details::_as_const_coeff_impl(std::forward<T>(v), what(v));
+  return detail::_as_const_coeff_impl(std::forward<T>(v), what(v));
 }
 
 // invoke_const_expr_impl
@@ -110,7 +110,7 @@ constexpr auto make_const_call_list(FunT &&f, RecordedExprArgTs &&... as) {
       std::forward<FunT>(f), std::forward<RecordedExprArgTs>(as)...);
 }
 
-namespace details {
+namespace detail {
 template <size_t... Is, class EE, class... ArgTs>
 decltype(auto) _invoke_const_call_list_seq(const const_ints<size_t, Is...> &,
                                            EE &&e, ArgTs &&... args) {
@@ -126,7 +126,7 @@ template <class FunT, class... RecordedExprArgTs, class EE, class... ArgTs>
 decltype(auto)
 invoke_const_expr_impl(const const_call_list<FunT, RecordedExprArgTs...> &,
                        EE &&e, ArgTs &&... args) {
-  return details::_invoke_const_call_list_seq(
+  return detail::_invoke_const_call_list_seq(
       make_const_sequence_for<RecordedExprArgTs...>(), std::forward<EE>(e),
       std::forward<ArgTs>(args)...);
 }
@@ -170,7 +170,7 @@ decltype(auto) invoke_const_expr(E &&e, ArgTs &&... args) {
 }
 
 // has_const_expr
-namespace details {
+namespace detail {
 template <class T, class... ArgTs>
 constexpr yes _has_const_expr_impl(const const_expr_base<T> &,
                                    const ArgTs &...);
@@ -192,10 +192,10 @@ constexpr auto _has_const_expr_impl(const proxy_base<T> &,
 constexpr no _has_const_expr_impl() { return no(); }
 }
 template <class... ArgTs> constexpr auto has_const_expr(const ArgTs &... args) {
-  return details::_has_const_expr_impl(what(args)...);
+  return detail::_has_const_expr_impl(what(args)...);
 }
 
-namespace details {
+namespace detail {
 // _smart_invoke
 template <class FunT, class... ArgTs>
 constexpr auto _smart_invoke(FunT &&fun, yes there_are_const_exprs,
@@ -215,7 +215,7 @@ constexpr decltype(auto) _smart_invoke(FunT &&fun, no there_are_const_exprs,
 // migrate const_exprs into arguments
 template <class FunT, class... ArgTs>
 constexpr decltype(auto) smart_invoke(FunT &&fun, ArgTs &&... args) {
-  return details::_smart_invoke(std::forward<FunT>(fun),
+  return detail::_smart_invoke(std::forward<FunT>(fun),
                                 has_const_expr(args...),
                                 std::forward<ArgTs>(args)...);
 }
