@@ -1,6 +1,7 @@
 cmake_minimum_required (VERSION 3.0)
 PROJECT (Wheels VERSION 0.1 LANGUAGES CXX)
 
+option (USE_OPENCL "use opencl" on)
 option (USE_AUXMATH "use auxmath module" off)
 option (USE_MATLAB "use matlab module" off)
 option (USE_OPENCV "use opencv module" off)
@@ -32,6 +33,19 @@ elseif (${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
 endif()
 
 add_subdirectory(ext)
+
+if (${USE_OPENCL})
+find_package(OpenCL)
+if (${OpenCL_FOUND})
+    list (APPEND DEPENDENCY_INCLUDES ${OPENCL_INCLUDE_DIRS})
+    list (APPEND DEPENDENCY_LIBS ${OPENCL_LIBRARIES})
+    if (MSVC)
+        add_definitions ( "/Dwheels_with_opencl" )
+    else ()
+        add_definitions ( "-Dwheels_with_opencl" )
+    endif ()
+endif ()
+endif ()
 
 if (${USE_AUXMATH})
 find_package(OpenBLAS)
