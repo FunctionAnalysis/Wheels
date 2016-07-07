@@ -1,14 +1,39 @@
+/* * *
+ * The MIT License (MIT)
+ * 
+ * Copyright (c) 2016 Hao Yang (yangh2007@gmail.com)
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * * */
+
 #pragma once
 
 #include "aligned.hpp"
 #include "ewise.hpp"
 #include "storage.hpp"
+#include "tensor_view_base.hpp"
 
 #include "tensor_fwd.hpp"
 
 namespace wheels {
 
-namespace details {
+namespace detail {
 template <class ShapeT, size_t... Is>
 constexpr std::enable_if_t<ShapeT::dynamic_size_num == 1, ShapeT>
 _make_shape_from_magnitude_seq(size_t magnitude, const_ints<size_t, Is...>) {
@@ -27,8 +52,9 @@ _make_shape_from_magnitude_seq(size_t magnitude, const_ints<size_t, Is...>) {
 
 // tensor
 template <class ET, class ShapeT>
-class tensor
-    : public tensor_continuous_data_base<ET, ShapeT, tensor<ET, ShapeT>> {
+class tensor : public tensor_view_base<ET, ShapeT, tensor<ET, ShapeT>, true> {
+  using _base_t = tensor_view_base<ET, ShapeT, tensor<ET, ShapeT>, true>;
+
 public:
   using value_type = ET;
   using shape_type = ShapeT;
@@ -52,7 +78,7 @@ public:
   template <class EleT>
   constexpr tensor(std::initializer_list<EleT> ilist)
       : _storage(
-            details::_make_shape_from_magnitude_seq<ShapeT>(
+            detail::_make_shape_from_magnitude_seq<ShapeT>(
                 ilist.size(), make_const_sequence(const_size<ShapeT::rank>())),
             with_iterators, ilist.begin(), ilist.end()) {}
 
@@ -63,7 +89,7 @@ public:
   // tensor(begin, end)
   template <class IterT, class = std::enable_if_t<is_iterator<IterT>::value>>
   constexpr tensor(IterT begin, IterT end)
-      : _storage(details::_make_shape_from_magnitude_seq<ShapeT>(
+      : _storage(detail::_make_shape_from_magnitude_seq<ShapeT>(
                      std::distance(begin, end),
                      make_const_sequence(const_size<ShapeT::rank>())),
                  with_iterators, begin, end) {}
@@ -87,15 +113,19 @@ public:
   tensor &operator=(const tensor &) = default;
   tensor &operator=(tensor &&) = default;
 
-  template <class AnotherT>
-  constexpr tensor(const tensor_core<AnotherT> &another)
+  template <class AnotherShapeT, class AnotherT,
+            class = std::enable_if_t<AnotherShapeT::rank == ShapeT::rank>>
+  constexpr tensor(const tensor_base<ET, AnotherShapeT, AnotherT> &another)
       : _storage(another.shape()) {
     assign_elements(*this, another.derived());
   }
-  template <class AnotherT>
-  tensor &operator=(const tensor_core<AnotherT> &another) {
-    assign_elements(*this, another.derived());
-    return *this;
+  template <class AnotherET, class AnotherShapeT, class AnotherT,
+            class = std::enable_if_t<!std::is_same<ET, AnotherET>::value &&
+                                     AnotherShapeT::rank == ShapeT::rank>>
+  constexpr explicit tensor(
+      const tensor_base<AnotherET, AnotherShapeT, AnotherT> &another)
+      : _storage(another.shape()) {
+    assign_elements_forced(*this, another.derived());
   }
 
   constexpr const ET *ptr() const { return _storage.data(); }
@@ -103,23 +133,11 @@ public:
   constexpr decltype(auto) shape() const { return _storage.shape(); }
   void reshape(const shape_type &s) { _storage.reshape(s); }
 
-  template <class ArcT> void serialize(ArcT &ar) { ar(_storage); }
-  template <class V> decltype(auto) fields(V &&visitor) {
-    return visitor(_storage);
-  }
-
-  // +=
-  template <class T> tensor &operator+=(const tensor_core<T> &t) {
-    assert(this->shape() == t.shape());
-    *this = *this + t.derived();
-    return *this;
-  }
-  // -=
-  template <class T> tensor &operator-=(const tensor_core<T> &t) {
-    assert(this->shape() == t.shape());
-    *this = *this - t.derived();
-    return *this;
-  }
+  using _base_t::operator=;
+  using _base_t::operator+=;
+  using _base_t::operator-=;
+  using _base_t::operator*=;
+  using _base_t::operator/=;
 
 private:
   storage<value_type, shape_type> _storage;

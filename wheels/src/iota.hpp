@@ -1,3 +1,27 @@
+/* * *
+ * The MIT License (MIT)
+ * 
+ * Copyright (c) 2016 Hao Yang (yangh2007@gmail.com)
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * * */
+
 #pragma once
 
 #include "const_expr.hpp"
@@ -38,6 +62,7 @@ shape_of(const iota_result<ET, ShapeT, StaticShape> &t) {
 template <class ET, class ShapeT, bool StaticShape, class IndexT>
 constexpr ET element_at_index(const iota_result<ET, ShapeT, StaticShape> &t,
                               const IndexT &i) {
+  assert(is_between(i, 0, (typename int_traits<IndexT>::type)t.numel()));
   return (ET)i;
 }
 
@@ -45,6 +70,7 @@ constexpr ET element_at_index(const iota_result<ET, ShapeT, StaticShape> &t,
 template <class ET, class ShapeT, bool StaticShape, class... SubTs>
 constexpr ET element_at(const iota_result<ET, ShapeT, StaticShape> &t,
                         const SubTs &... subs) {
+  assert(subscripts_are_valid(t.shape(), subs...));
   return (ET)sub2ind(t.shape(), subs...);
 }
 
@@ -135,7 +161,7 @@ norm_squared(const iota_result<ET, ShapeT, StaticShape> &t) {
 }
 
 // iota
-namespace details {
+namespace detail {
 template <class ET> struct _iota_impl {
   template <class ST, class... SizeTs>
   constexpr auto operator()(const tensor_shape<ST, SizeTs...> &s) const {
@@ -153,11 +179,11 @@ template <class ET> struct _iota_impl {
 };
 }
 template <class ET, class SizeT> constexpr auto iota(SizeT &&s) {
-  return smart_invoke(details::_iota_impl<ET>(), std::forward<SizeT>(s));
+  return smart_invoke(detail::_iota_impl<ET>(), std::forward<SizeT>(s));
 }
 
 // range
-namespace details {
+namespace detail {
 template <class T1, class T2>
 constexpr size_t
 _range_count(const T1 &t1, const T2 &t2,
@@ -196,12 +222,12 @@ struct _range_impl {
 }
 template <class BeginT, class StepT, class EndT>
 constexpr decltype(auto) range(BeginT &&b, StepT &&s, EndT &&e) {
-  return smart_invoke(details::_range_impl(), std::forward<BeginT>(b),
+  return smart_invoke(detail::_range_impl(), std::forward<BeginT>(b),
                       std::forward<StepT>(s), std::forward<EndT>(e));
 }
 template <class BeginT, class EndT>
 constexpr decltype(auto) range(BeginT &&b, EndT &&e) {
-  return smart_invoke(details::_range_impl(), std::forward<BeginT>(b),
+  return smart_invoke(detail::_range_impl(), std::forward<BeginT>(b),
                       std::forward<EndT>(e));
 }
 }

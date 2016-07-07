@@ -3,7 +3,6 @@
 #include "constants.hpp"
 #include "ewise.hpp"
 #include "matrix.hpp"
-#include "tensor.hpp"
 
 using namespace wheels;
 using namespace wheels::literals;

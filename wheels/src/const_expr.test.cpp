@@ -1,17 +1,17 @@
 #include <gtest/gtest.h>
 
 #include "const_expr.hpp"
-#include "object.hpp"
+#include "what.hpp"
 #include "types.hpp"
 
 using namespace wheels;
 using namespace wheels::literals;
 
 TEST(core, const_exprs) {
-  constexpr auto n1 = 0_arg;
+  auto n1 = 0_arg;
   auto nn1 = -n1;
 
-  constexpr auto n2 = 1_arg;
+  auto n2 = 1_arg;
   auto sum = -n1 + n2 * (n1 % 3_c) + 1_c - 5_c + 1_c;
 
   auto sumv = sum(5_c, 5_c);

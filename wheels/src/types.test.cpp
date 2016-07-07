@@ -22,18 +22,6 @@ TEST(core, type) {
   int kk = 0;
   int & k = kk;
   decltype(auto) kd = wheels_forward(k);
+
+  double ddddd = cast<by_smart_static, double>(1_c);
 }
-
-template <class T> struct identity {using type = T;};
-
-template <class T, class BaseT,
-          bool IsRValue = std::is_rvalue_reference<T>::value,
-          bool ValidBase = std::is_base_of<BaseT, std::decay_t<T>>::value>
-struct divided {};
-template <class T, class BaseT> struct divided<T, BaseT, true, true> {
-  using type = T;
-};
-template <class T, class BaseT> struct divided<T, BaseT, false, true> {
-  using type = T;
-};
-

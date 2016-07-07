@@ -1,3 +1,27 @@
+/* * *
+ * The MIT License (MIT)
+ * 
+ * Copyright (c) 2016 Hao Yang (yangh2007@gmail.com)
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * * */
+
 #pragma once
 
 #include "const_ints.hpp"
@@ -10,7 +34,7 @@ namespace wheels {
 template <class ET, class ShapeT, size_t Axis, class T1, class T2>
 class cat_result;
 
-namespace details {
+namespace detail {
 template <size_t Axis, class ShapeT1, class ET1, class T1, class ShapeT2,
           class ET2, class T2, class TT1, class TT2>
 constexpr auto _cat_tensor_at(const const_index<Axis> &axis,
@@ -21,9 +45,9 @@ constexpr auto _cat_tensor_at(const const_index<Axis> &axis,
 
 template <size_t Axis, class T1, class T2>
 constexpr auto cat_at(const const_index<Axis> &axis, T1 &&in1, T2 &&in2)
-    -> decltype(details::_cat_tensor_at(axis, in1, in2, std::forward<T1>(in1),
+    -> decltype(detail::_cat_tensor_at(axis, in1, in2, std::forward<T1>(in1),
                                         std::forward<T2>(in2))) {
-  return details::_cat_tensor_at(axis, in1, in2, std::forward<T1>(in1),
+  return detail::_cat_tensor_at(axis, in1, in2, std::forward<T1>(in1),
                                  std::forward<T2>(in2));
 }
 

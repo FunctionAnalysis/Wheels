@@ -21,10 +21,57 @@
     <Expand/>
   </Type>
 
-  <Type Name="wheels::const_symbol&lt;*&gt;">
-    <DisplayString>symbol{$T1}</DisplayString>
+  <Type Name="wheels::unary_op_minus">
+    <DisplayString>-</DisplayString>
+  </Type>
+  <Type Name="wheels::unary_op_not">
+    <DisplayString>!</DisplayString>
+  </Type>
+  <Type Name="wheels::unary_op_bitwise_not">
+    <DisplayString>~</DisplayString>
+  </Type>
+  <Type Name="wheels::binary_op_plus">
+    <DisplayString>+</DisplayString>
+  </Type>
+  <Type Name="wheels::binary_op_minus">
+    <DisplayString>-</DisplayString>
+  </Type>
+  <Type Name="wheels::binary_op_mul">
+    <DisplayString>*</DisplayString>
+  </Type>
+  <Type Name="wheels::binary_op_div">
+    <DisplayString>/</DisplayString>
+  </Type>
+  <Type Name="wheels::binary_op_mod">
+    <DisplayString>%</DisplayString>
+  </Type>
+  <Type Name="wheels::std_func_max">
+    <DisplayString>max</DisplayString>
+  </Type>
+  <Type Name="wheels::std_func_min">
+    <DisplayString>min</DisplayString>
+  </Type>
+
+  <Type Name="wheels::const_arg&lt;*&gt;">
+    <DisplayString>arg{$T1}</DisplayString>
     <Expand/>
   </Type>
+  <Type Name="wheels::const_arg&lt;*&gt;&amp;">
+    <DisplayString>arg{$T1}</DisplayString>
+    <Expand/>
+  </Type>
+
+  <Type Name="wheels::const_coeff&lt;*&gt;">
+    <DisplayString>{this->val}</DisplayString>
+  </Type>
+  
+  <Type Name="wheels::const_call_list&lt;*,*&gt;">
+    <DisplayString>({this->functor}{this->bind_expr_args._Myfirst._Val})</DisplayString>
+  </Type>
+  <Type Name="wheels::const_call_list&lt;*,*,*&gt;">
+    <DisplayString>({this->bind_expr_args._Myfirst._Val}{this->functor}{((std::tuple&lt;$T3&gt;*)(&amp;(this->bind_expr_args)))->_Myfirst._Val})</DisplayString>
+  </Type>
+  
 
   <Type Name="wheels::tensor_shape&lt;*&gt;">
     <DisplayString ExcludeView="noparens">empty shape</DisplayString>
@@ -79,12 +126,86 @@
     <DisplayString>{$T3} x ...</DisplayString>
   </Type>
 
-  <Type Name="wheels::storage&lt;*,*,true&gt;">
-    <DisplayString>{{ size={$T2} }}</DisplayString>
+  <!-- static sized vector -->
+  <Type Name="wheels::tensor&lt;*, wheels::tensor_shape&lt;unsigned __int64, wheels::const_ints&lt;unsigned __int64,*&gt;&gt;&gt;">
+    <DisplayString>{{size={$T2}}}</DisplayString>
     <Expand>
       <ArrayItems>
         <Size>$T2</Size>
-        <ValuePointer>_Elems</ValuePointer>
+        <ValuePointer>this->_storage._data._Elems</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+  
+  <!-- dynamic sized vector -->
+  <Type Name="wheels::tensor&lt;*, wheels::tensor_shape&lt;unsigned __int64,unsigned __int64&gt;&gt;">
+    <DisplayString>{{size={this->_storage._shape._val}}}</DisplayString>
+    <Expand>
+      <Item Name="[capacity]">this->_storage._capacity</Item>
+      <ArrayItems>
+        <Size>this->_storage._shape._val</Size>
+        <ValuePointer>this->_storage._data</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+  
+  <!-- mapped vector -->
+  <Type Name="wheels::tensor_map&lt;*,wheels::tensor_shape&lt;unsigned __int64,unsigned __int64&gt;&gt;">
+    <DisplayString>{this->_storage._ptr}</DisplayString>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">this->_storage._shape._val</Item>
+      <ArrayItems>
+        <Size>this->_storage._shape._val</Size>
+        <ValuePointer>this->_storage._ptr</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+  
+  <!--string-->
+  <Type Name="wheels::tensor_map&lt;char const,wheels::tensor_shape&lt;unsigned __int64,unsigned __int64&gt;&gt;">
+    <DisplayString>{this->_storage._ptr}</DisplayString>
+    <StringView>this->_storage._shape._val,this->_storage._ptr</StringView>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">this->_storage._shape._val</Item>
+      <ArrayItems>
+        <Size>this->_storage._shape._val</Size>
+        <ValuePointer>this->_storage._ptr</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="wheels::tensor_map&lt;wchar_t const,wheels::tensor_shape&lt;unsigned __int64,unsigned __int64&gt;&gt;">
+    <DisplayString>{this->_storage._ptr}</DisplayString>
+    <StringView>this->_storage._shape._val,this->_storage._ptr</StringView>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">this->_storage._shape._val</Item>
+      <ArrayItems>
+        <Size>this->_storage._shape._val</Size>
+        <ValuePointer>this->_storage._ptr</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="wheels::tensor_map&lt;char16_t const,wheels::tensor_shape&lt;unsigned __int64,unsigned __int64&gt;&gt;">
+    <DisplayString>{this->_storage._ptr}</DisplayString>
+    <StringView>this->_storage._shape._val,this->_storage._ptr</StringView>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">this->_storage._shape._val</Item>
+      <ArrayItems>
+        <Size>this->_storage._shape._val</Size>
+        <ValuePointer>this->_storage._ptr</ValuePointer>
+      </ArrayItems>
+    </Expand>
+  </Type>
+
+  <Type Name="wheels::tensor_map&lt;char32_t const,wheels::tensor_shape&lt;unsigned __int64,unsigned __int64&gt;&gt;">
+    <DisplayString>{this->_storage._ptr}</DisplayString>
+    <StringView>this->_storage._shape._val,this->_storage._ptr</StringView>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">this->_storage._shape._val</Item>
+      <ArrayItems>
+        <Size>this->_storage._shape._val</Size>
+        <ValuePointer>this->_storage._ptr</ValuePointer>
       </ArrayItems>
     </Expand>
   </Type>

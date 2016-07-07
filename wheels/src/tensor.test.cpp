@@ -4,7 +4,7 @@
 #include "constants.hpp"
 #include "ewise.hpp"
 #include "index.hpp"
-#include "map.hpp"
+#include "tensor_map.hpp"
 #include "matrix.hpp"
 #include "permute.hpp"
 #include "reformulate.hpp"
@@ -18,10 +18,6 @@ using namespace wheels::tags;
 TEST(tensor, tensor) {
   static_assert(std::is_standard_layout<mat2>::value, "");
   static_assert(!std::is_standard_layout<matx>::value, "");
-
-  std::max(1, 2);
-
-  constexpr auto sss = sizeof(vec3);
 
   vec3().for_each([](double e) { ASSERT_EQ(e, 0.0); });
   vec3(5, 5, 5).for_each([](double e) { ASSERT_EQ(e, 5.0); });
@@ -61,7 +57,7 @@ TEST(tensor, tensor) {
   static_assert(tensor_of_rank<double, 5>::rank == 5, "");
   auto t =
       zeros(3, 3, 3, 3, 3).ewised().transform([](double e) { return e + 1; });
-  auto tt = std::move(t).ewised().cast<int>();
+  auto tt = std::move(t).ewised().cast<by_static, int>();
   tt.eval().for_each([](int e) { ASSERT_EQ(e, 1); });
 }
 

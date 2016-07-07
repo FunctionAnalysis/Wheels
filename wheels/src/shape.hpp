@@ -1,3 +1,27 @@
+/* * *
+ * The MIT License (MIT)
+ * 
+ * Copyright (c) 2016 Hao Yang (yangh2007@gmail.com)
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * * */
+
 #pragma once
 
 #include "const_ints.hpp"
@@ -290,7 +314,7 @@ template <class T, class... SizeTs>
 struct is_tensor_shape<tensor_shape<T, SizeTs...>> : yes {};
 
 // shape_of_rank
-namespace details {
+namespace detail {
 template <class T, class SeqT> struct _make_shape_of_rank_seq {
   using type = void;
 };
@@ -300,7 +324,7 @@ struct _make_shape_of_rank_seq<T, const_ints<size_t, Is...>> {
 };
 }
 template <class T, size_t Rank>
-using shape_of_rank = typename details::_make_shape_of_rank_seq<
+using shape_of_rank = typename detail::_make_shape_of_rank_seq<
     T, decltype(make_const_sequence(const_size<Rank>()))>::type;
 
 // sub2ind
@@ -437,8 +461,30 @@ for_each_subscript_until(const tensor_shape<T, SizeT, SizeTs...> &shape,
   }
 }
 
+// subscripts_are_valid
+template <class T> constexpr yes subscripts_are_valid(const tensor_shape<T> &) {
+  return yes();
+}
+template <class T, class SubT, class... SubTs>
+constexpr no subscripts_are_valid(const tensor_shape<T> &, const SubT &,
+                                  const SubTs &...) {
+  return no();
+}
+template <class T, class SizeT, class... SizeTs>
+constexpr no subscripts_are_valid(const tensor_shape<T, SizeT, SizeTs...> &) {
+  return no();
+}
+template <class T, class SizeT, class... SizeTs, class SubT, class... SubTs>
+constexpr auto
+subscripts_are_valid(const tensor_shape<T, SizeT, SizeTs...> &shape,
+                     const SubT &sub, const SubTs &... subs) {
+  return const_ints<typename int_traits<SubT>::type, 0>() <= sub &&
+         sub < (typename int_traits<SubT>::type)shape.value() &&
+         subscripts_are_valid(shape.rest(), subs...);
+}
+
 // same_rank
-namespace details {
+namespace detail {
 template <class T1, class... SizeT1s, class T2, class... SizeT2s>
 constexpr auto _same_rank2(const tensor_shape<T1, SizeT1s...> &,
                            const tensor_shape<T2, SizeT2s...> &) {
@@ -448,11 +494,11 @@ constexpr auto _same_rank2(const tensor_shape<T1, SizeT1s...> &,
 template <class T1, class... SizeT1s, class... ShapeTs>
 constexpr auto same_rank(const tensor_shape<T1, SizeT1s...> &shape1,
                          const ShapeTs &... shapes) {
-  return all(details::_same_rank2(shape1, shapes)...);
+  return all(detail::_same_rank2(shape1, shapes)...);
 }
 
 // max_shape_size
-namespace details {
+namespace detail {
 template <class ShapeT, size_t... Is>
 constexpr auto _max_shape_size_seq(const ShapeT &shape,
                                    const_ints<size_t, Is...>) {
@@ -461,12 +507,12 @@ constexpr auto _max_shape_size_seq(const ShapeT &shape,
 }
 template <class T, class SizeT, class... SizeTs>
 constexpr auto max_shape_size(const tensor_shape<T, SizeT, SizeTs...> &shape) {
-  return details::_max_shape_size_seq(
+  return detail::_max_shape_size_seq(
       shape, make_const_sequence(const_size<1 + sizeof...(SizeTs)>()));
 }
 
 // min_shape_size
-namespace details {
+namespace detail {
 template <class ShapeT, size_t... Is>
 constexpr auto _min_shape_size_seq(const ShapeT &shape,
                                    const_ints<size_t, Is...>) {
@@ -475,7 +521,7 @@ constexpr auto _min_shape_size_seq(const ShapeT &shape,
 }
 template <class T, class SizeT, class... SizeTs>
 constexpr auto min_shape_size(const tensor_shape<T, SizeT, SizeTs...> &shape) {
-  return details::_min_shape_size_seq(
+  return detail::_min_shape_size_seq(
       shape, make_const_sequence(const_size<1 + sizeof...(SizeTs)>()));
 }
 
@@ -504,7 +550,7 @@ constexpr bool operator!=(const tensor_shape<T1, SizeT1s...> &s1,
   return !(s1 == s2);
 }
 
-namespace details {
+namespace detail {
 template <class T, class K,
           class = std::enable_if_t<std::is_integral<K>::value>>
 constexpr T _to_size_rep(const K &s) {
@@ -517,7 +563,7 @@ constexpr auto _to_size_rep(const const_ints<K, Val> &) {
 }
 
 // make_shape
-namespace details {
+namespace detail {
 template <class T = size_t> constexpr auto _make_shape() {
   return tensor_shape<T>();
 }
@@ -525,18 +571,18 @@ template <class SizeT, class... SizeTs>
 constexpr auto _make_shape(const SizeT &s, const SizeTs &... sizes) {
   using value_t = std::common_type_t<typename int_traits<SizeT>::type,
                                      typename int_traits<SizeTs>::type...>;
-  return tensor_shape<value_t, decltype(details::_to_size_rep<value_t>(s)),
-                      decltype(details::_to_size_rep<value_t>(sizes))...>(
-      details::_to_size_rep<value_t>(s),
-      details::_to_size_rep<value_t>(sizes)...);
+  return tensor_shape<value_t, decltype(detail::_to_size_rep<value_t>(s)),
+                      decltype(detail::_to_size_rep<value_t>(sizes))...>(
+      detail::_to_size_rep<value_t>(s),
+      detail::_to_size_rep<value_t>(sizes)...);
 }
 }
 template <class... SizeTs> constexpr auto make_shape(const SizeTs &... sizes) {
-  return details::_make_shape(sizes...);
+  return detail::_make_shape(sizes...);
 }
 
 // cat2
-namespace details {
+namespace detail {
 template <class ShapeT1, size_t... I1s, class ShapeT2, size_t... I2s>
 constexpr auto _cat_shape_seq(const ShapeT1 &s1, const ShapeT2 &s2,
                               const_ints<size_t, I1s...>,
@@ -547,7 +593,7 @@ constexpr auto _cat_shape_seq(const ShapeT1 &s1, const ShapeT2 &s2,
 template <class T, class K, class... S1s, class... S2s>
 constexpr auto cat2(const tensor_shape<T, S1s...> &t1,
                     const tensor_shape<K, S2s...> &t2) {
-  return details::_cat_shape_seq(t1, t2,
+  return detail::_cat_shape_seq(t1, t2,
                                  make_const_sequence(const_size_of<S1s...>()),
                                  make_const_sequence(const_size_of<S2s...>()));
 }
@@ -571,7 +617,7 @@ constexpr auto cat2(const IntT &a, const tensor_shape<T, Ss...> &b) {
 }
 
 // repeat_shape
-namespace details {
+namespace detail {
 template <class SizeT>
 constexpr auto _repeat_shape(const SizeT &s, const_size<0>) {
   return tensor_shape<typename int_traits<SizeT>::type>();
@@ -597,7 +643,7 @@ constexpr auto _repeat_shape(const ShapeOrSizeT &s, const_size<Times>) {
 template <class ShapeOrSizeT, class T, T Times>
 constexpr auto repeat_shape(const ShapeOrSizeT &s,
                             const const_ints<T, Times> &times) {
-  return details::_repeat_shape(s, const_size<(size_t)Times>());
+  return detail::_repeat_shape(s, const_size<(size_t)Times>());
 }
 
 // permute
@@ -608,7 +654,7 @@ constexpr auto permute(const tensor_shape<T, SizeTs...> &shape,
 }
 
 // stream
-namespace details {
+namespace detail {
 template <class ShapeT, size_t... Is>
 inline std::ostream &_stream_seq(std::ostream &os, const ShapeT &shape,
                                  std::index_sequence<Is...>) {
@@ -618,13 +664,12 @@ inline std::ostream &_stream_seq(std::ostream &os, const ShapeT &shape,
 template <class T, class... SizeTs>
 inline std::ostream &operator<<(std::ostream &os,
                                 const tensor_shape<T, SizeTs...> &shape) {
-  return details::_stream_seq(os, shape,
+  return detail::_stream_seq(os, shape,
                               std::make_index_sequence<sizeof...(SizeTs)>());
 }
 }
 
 namespace std {
-
 // std::get
 template <size_t Idx, class T, class... SizeTs>
 constexpr decltype(auto) get(const wheels::tensor_shape<T, SizeTs...> &shape) {

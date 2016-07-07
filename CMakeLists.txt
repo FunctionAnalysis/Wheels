@@ -1,9 +1,11 @@
 cmake_minimum_required (VERSION 3.0)
 PROJECT (Wheels VERSION 0.1 LANGUAGES CXX)
 
-option (USE_OPENBLAS "use OpenBLAS" off)
-option (USE_MATLAB "use MATLAB" off)
-option (USE_OPENCV "use OpenCV" off)
+option (USE_AUXMATH "use auxmath module" off)
+option (USE_MATLAB "use matlab module" off)
+option (USE_OPENCV "use opencv module" off)
+option (USE_EIGEN "use eigen module" on)
+option (USE_IMAGE "use image module" on)
 
 option (BuildUnitTest "build UnitTest" on)
 
@@ -31,7 +33,7 @@ endif()
 
 add_subdirectory(ext)
 
-if (${USE_OPENBLAS})
+if (${USE_AUXMATH})
 find_package(OpenBLAS)
 if (${OpenBLAS_FOUND})
 	list (APPEND DEPENDENCY_INCLUDES ${OpenBLAS_INCLUDE_DIR})
@@ -46,7 +48,7 @@ endif()
 endif()
 
 if (${USE_MATLAB})
-find_package(MATLAB)
+find_package(MATLAB REQUIRED)
 if (${MATLAB_FOUND})
     #  MATLAB_INCLUDE_DIR: include path for mex.h, engine.h
     #  MATLAB_LIBRARIES:   required libraries: libmex, etc
@@ -67,7 +69,7 @@ endif()
 endif()
 
 if (${USE_OPENCV})
-find_package(OpenCV)
+find_package(OpenCV REQUIRED)
 if (${OpenCV_FOUND})
     list (APPEND DEPENDENCY_INCLUDES ${OpenCV_INCLUDE_DIRS})
     list (APPEND DEPENDENCY_LIBS ${OpenCV_LIBS})
@@ -89,9 +91,5 @@ else ()
 	add_definitions ( "-D_USE_MATH_DEFINES" )
     add_definitions ( "-Dwheels_data_dir_str=\"${wheels_data_dir}\"" )
 endif ()
-
-foreach (i ${TEST_DEPENDENCY_LIBS})
-    message(STATUS "TEST_DEPENDENCY_LIBS: ${i}")
-endforeach()
 
 add_subdirectory (wheels)

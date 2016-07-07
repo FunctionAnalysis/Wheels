@@ -1,3 +1,27 @@
+/* * *
+ * The MIT License (MIT)
+ * 
+ * Copyright (c) 2016 Hao Yang (yangh2007@gmail.com)
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * * */
+
 #pragma once
 
 #if !defined(NDEBUG)
@@ -45,3 +69,21 @@
   claz &operator=(const claz &) = delete;
 
 #define wheels_forward(v) std::forward<decltype(v)>(v)
+
+#ifndef wheels_no_exception
+#define wheels_no_exception false
+#endif
+
+#if wheels_no_exception
+#define wheels_try if(true)
+#define wheels_catch(x) else
+#define wheels_catch_all else
+#define wheels_throw(x) (0)
+#define wheels_rethrow (0)
+#else
+#define wheels_try try
+#define wheels_catch(x) catch(x)
+#define wheels_catch_all catch(...)
+#define wheels_throw(x) throw x
+#define wheels_rethrow throw
+#endif

@@ -2,7 +2,6 @@
 
 #include "constants.hpp"
 #include "index.hpp"
-#include "tensor.hpp"
 
 using namespace wheels;
 using namespace wheels::tags;

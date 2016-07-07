@@ -1,3 +1,27 @@
+/* * *
+ * The MIT License (MIT)
+ * 
+ * Copyright (c) 2016 Hao Yang (yangh2007@gmail.com)
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * * */
+
 #pragma once
 
 #include <cassert>
@@ -14,19 +38,19 @@
 #include "ewise_fwd.hpp"
 #include "index_fwd.hpp"
 #include "iota_fwd.hpp"
-#include "map_fwd.hpp"
 #include "permute_fwd.hpp"
 #include "remap_fwd.hpp"
 #include "reshape_fwd.hpp"
 #include "tensor_fwd.hpp"
+#include "tensor_map_fwd.hpp"
 #include "upgrade_fwd.hpp"
 
 #include "const_expr.hpp"
 #include "const_ints.hpp"
 #include "iterators.hpp"
-#include "object.hpp"
 #include "parallel.hpp"
 #include "types.hpp"
+#include "what.hpp"
 
 #include "shape.hpp"
 
@@ -39,35 +63,34 @@ static const auto length = const_arg<0>();
 static const auto last = length - const_int<1>();
 }
 
-namespace details {
-
+namespace detail {
 template <class T, class E, class SizeT>
-constexpr decltype(auto) _eval_index_expr_impl(T &&e, const const_expr_base<E> &,
-                                          const SizeT &sz) {
+constexpr decltype(auto)
+_eval_index_expr_impl(T &&e, const const_expr_base<E> &, const SizeT &sz) {
   return invoke_const_expr(std::forward<T>(e), sz);
 }
 template <class T, class E, class SizeT>
-constexpr T &&_eval_index_expr_impl(T &&t, const tensor_core<E> &,
-                               const SizeT &) {
+constexpr T &&_eval_index_expr_impl(T &&t, const object_base<E> &,
+                                    const SizeT &) {
   return static_cast<T &&>(t);
 }
 template <class T, class E, class SizeT>
-constexpr T &&_eval_index_expr_impl(T &&t, const category::other<E> &,
-                               const SizeT &) {
+constexpr T &&_eval_index_expr_impl(T &&t, const proxy_base<E> &,
+                                    const SizeT &) {
   return static_cast<T &&>(t);
 }
 
 // _eval_index_expr
-// const_expr -> invoke with sz
-// other -> pass
+// const_expr -> returns the result by invoking with sz
+// other -> do nothing
 template <class T, class SizeT>
 constexpr decltype(auto) _eval_index_expr(T &&e, const SizeT &sz) {
-  return _eval_index_expr_impl(std::forward<T>(e), category::identify(e), sz);
+  return _eval_index_expr_impl(std::forward<T>(e), what(e), sz);
 }
 
 // _brackets
 template <class T, class E, class EE>
-constexpr decltype(auto) _brackets_impl(T &&t, const category::other<E> &,
+constexpr decltype(auto) _brackets_impl(T &&t, const proxy_base<E> &,
                                         EE &&ind) {
   return element_at_index(std::forward<T>(t), std::forward<EE>(ind));
 }
@@ -80,38 +103,38 @@ constexpr auto _brackets_impl(T &&t, const tensor_core<TensorT> &id,
 
 template <class T, class TensorTT>
 constexpr decltype(auto) _brackets(T &&t, TensorTT &&inds) {
-  return _brackets_impl(std::forward<T>(t), category::identify(inds),
+  return _brackets_impl(std::forward<T>(t), what(inds),
                         std::forward<TensorTT>(inds));
 }
 
 // _all_as_tensor
 template <class E, class EE>
-constexpr auto _all_as_tensor_impl(const category::other<E> &id, EE &&s) {
-  return ::wheels::constants(make_shape(), std::forward<EE>(s));
+constexpr constant_result<E, tensor_shape<size_t>>
+_all_as_tensor_impl(const proxy_base<E> &id, EE &&s) {
+  return constants(make_shape(), std::forward<EE>(s));
 }
 template <class TensorT, class TensorTT>
 constexpr TensorTT &&_all_as_tensor_impl(const tensor_core<TensorT> &id,
                                          TensorTT &&inds) {
   return static_cast<TensorTT &&>(inds);
 }
-template <class T>
-constexpr auto _all_as_tensor(T &&t) {
-  return _all_as_tensor_impl(category::identify(t), std::forward<T>(t));
+template <class T> constexpr auto _all_as_tensor(T &&t) {
+  return _all_as_tensor_impl(what(t), std::forward<T>(t));
 }
 
 // _block_seq
 template <class T, size_t... Is, class... SubsTensorOrIntTs>
 constexpr auto _block_seq(T &&t, const const_ints<size_t, Is...> &,
                           SubsTensorOrIntTs &&... subs) {
-  return ::wheels::at_block(std::forward<T>(t),
-                            _all_as_tensor(_eval_index_expr(
-                                std::forward<SubsTensorOrIntTs>(subs),
-                                (int64_t)size_at(t, const_index<Is>())))...);
+  return at_block(std::forward<T>(t),
+                  _all_as_tensor(_eval_index_expr(
+                      std::forward<SubsTensorOrIntTs>(subs),
+                      (int64_t)size_at(t, const_index<Is>())))...);
 }
 }
 
 // tensor_core
-template <class T> struct tensor_core : category::object<T> {
+template <class T> struct tensor_core : object_base<T> {
   const tensor_core &core() const { return *this; }
 
   constexpr auto shape() const { return shape_of(this->derived()); }
@@ -152,42 +175,50 @@ template <class T> struct tensor_core : category::object<T> {
 
   // operator[](index/{index tensor})
   template <class E> constexpr decltype(auto) operator[](E &&e) const & {
-    return details::_brackets(
+    return detail::_brackets(
         this->derived(),
-        details::_eval_index_expr(std::forward<E>(e), this->numel()));
+        detail::_eval_index_expr(std::forward<E>(e), this->numel()));
   }
   template <class E> decltype(auto) operator[](E &&e) & {
-    return details::_brackets(
+    return detail::_brackets(
         this->derived(),
-        details::_eval_index_expr(std::forward<E>(e), this->numel()));
+        detail::_eval_index_expr(std::forward<E>(e), this->numel()));
   }
   template <class E> decltype(auto) operator[](E &&e) && {
-    return details::_brackets(
+    return detail::_brackets(
         std::move(this->derived()),
-        details::_eval_index_expr(std::forward<E>(e), this->numel()));
+        detail::_eval_index_expr(std::forward<E>(e), this->numel()));
   }
 
-  // ewise
+  // ewised
   constexpr decltype(auto) ewised() const & { return ewise(this->derived()); }
   decltype(auto) ewised() & { return ewise(this->derived()); }
   decltype(auto) ewised() && { return ewise(std::move(this->derived())); }
 
+  // scalarized
+  constexpr decltype(auto) scalarized() const & {
+    return scalarize(this->derived());
+  }
+  decltype(auto) scalarized() & { return scalarize(this->derived()); }
+  decltype(auto) scalarized() && {
+    return scalarize(std::move(this->derived()));
+  }
 
   // block
   template <class... TensorOrIndexTs>
   constexpr auto block(TensorOrIndexTs &&... tois) const & {
-    return details::_block_seq(this->derived(),
+    return detail::_block_seq(this->derived(),
                                make_const_sequence_for<TensorOrIndexTs...>(),
                                std::forward<TensorOrIndexTs>(tois)...);
   }
   template <class... TensorOrIndexTs> auto block(TensorOrIndexTs &&... tois) & {
-    return details::_block_seq(this->derived(),
+    return detail::_block_seq(this->derived(),
                                make_const_sequence_for<TensorOrIndexTs...>(),
                                std::forward<TensorOrIndexTs>(tois)...);
   }
   template <class... TensorOrIndexTs>
   auto block(TensorOrIndexTs &&... tois) && {
-    return details::_block_seq(std::move(this->derived()),
+    return detail::_block_seq(std::move(this->derived()),
                                make_const_sequence_for<TensorOrIndexTs...>(),
                                std::forward<TensorOrIndexTs>(tois)...);
   }
@@ -204,7 +235,7 @@ template <class T> struct tensor_core : category::object<T> {
                      std::move(this->derived()));
   }
 
-  // reshape
+  // reshaped
   template <class ST, class... SizeTs>
   constexpr auto reshaped(const tensor_shape<ST, SizeTs...> &ns) const & {
     return reshape(this->derived(), ns);
@@ -216,6 +247,22 @@ template <class T> struct tensor_core : category::object<T> {
   template <class ST, class... SizeTs>
   auto reshaped(const tensor_shape<ST, SizeTs...> &ns) && {
     return reshape(std::move(this->derived()), ns);
+  }
+
+  // resampled
+  template <interpolate_method_enum IPMethod = linear_interpolate, class ST,
+            class... SizeTs>
+  constexpr auto resampled(const tensor_shape<ST, SizeTs...> &ns,
+                           const interpolate_method<IPMethod> &method =
+                               interpolate_method<IPMethod>()) const & {
+    return resample(this->derived(), ns, method);
+  }
+  template <interpolate_method_enum IPMethod = linear_interpolate, class ST,
+            class... SizeTs>
+  auto resampled(const tensor_shape<ST, SizeTs...> &ns,
+                 const interpolate_method<IPMethod> &method =
+                     interpolate_method<IPMethod>()) && {
+    return resample(std::move(this->derived()), ns, method);
   }
 
   // vectorized
@@ -282,7 +329,6 @@ template <class T> struct tensor_core : category::object<T> {
   // none
   constexpr bool none() const { return !any_of(this->derived()); }
 
-
   // begin/end
   constexpr tensor_iterator<const T> begin() const {
     return tensor_iterator<const T>(this->derived(), 0);
@@ -299,9 +345,9 @@ private:
   template <class... SubEs, size_t... Is>
   constexpr bool _valid_subs_seq(const_ints<size_t, Is...> seq,
                                  const SubEs &... subes) const {
-    return ::wheels::all(::wheels::is_between(
-        details::_eval_index_expr(subes, this->size(const_size<Is>())), 0,
-        size(const_size<Is>()))...);
+    return subscripts_are_valid(
+        this->shape(),
+        detail::_eval_index_expr(subes, this->size(const_size<Is>()))...);
   }
   template <class E, class... SubEs, size_t... Is>
   constexpr decltype(auto) _at_or_seq(E &&otherwise,
@@ -315,8 +361,8 @@ private:
   constexpr decltype(auto) _parenthesis_seq(const_ints<size_t, Is...> seq,
                                             const SubEs &... subes) const {
     assert(_valid_subs_seq(seq, subes...));
-    return element_at(
-        this->derived(), details::_eval_index_expr(subes, size(const_size<Is>()))...);
+    return element_at(this->derived(), detail::_eval_index_expr(
+                                           subes, size(const_size<Is>()))...);
   }
   template <class... SubEs, size_t... Is>
   decltype(auto) _parenthesis_seq(const_ints<size_t, Is...> seq,
@@ -324,9 +370,14 @@ private:
     assert(_valid_subs_seq(seq, subes...));
     return element_at(
         this->derived(),
-        details::_eval_index_expr(subes, this->size(const_size<Is>()))...);
+        detail::_eval_index_expr(subes, this->size(const_size<Is>()))...);
   }
 };
+
+// detail::_eval
+template <class T, class K> auto eval_what(const K &v, const tensor_core<T> &) {
+  return v.eval();
+}
 
 template <class T1, class T2>
 constexpr bool operator==(const tensor_core<T1> &a, const tensor_core<T2> &b) {
@@ -377,7 +428,9 @@ template <class T> struct tensor_iterator {
 template <class ET, class ShapeT> class tensor;
 
 // tensor_base<ET, ShapeT, T>
-template <class ET, class ShapeT, class T> struct tensor_base : tensor_core<T> {
+template <class ET, class ShapeT, class T>
+class tensor_base : public tensor_core<T> {
+public:
   using value_type = ET;
   using shape_type = ShapeT;
   static constexpr size_t rank = ShapeT::rank;
@@ -397,7 +450,8 @@ template <class ET, class ShapeT, class T> struct tensor_base : tensor_core<T> {
 
 // 0 dimensional tensor (scalar)
 template <class ET, class ST, class T>
-struct tensor_base<ET, tensor_shape<ST>, T> : tensor_core<T> {
+class tensor_base<ET, tensor_shape<ST>, T> : public tensor_core<T> {
+public:
   using value_type = ET;
   using shape_type = tensor_shape<ST>;
   static constexpr size_t rank = 0;
@@ -461,12 +515,14 @@ template <class T> constexpr auto numel_of(const tensor_core<T> &t) {
 template <class T, class IndexT>
 constexpr decltype(auto) element_at_index(const tensor_core<T> &t,
                                           const IndexT &ind) {
+  assert(is_between(ind, 0, (IndexT)t.numel()));
   return invoke_with_subs(shape_of(t.derived()), ind, [&t](auto &&... subs) {
     return element_at(t.derived(), subs...);
   });
 }
 template <class T, class IndexT>
 decltype(auto) element_at_index(tensor_core<T> &t, const IndexT &ind) {
+  assert(is_between(ind, 0, (IndexT)t.numel()));
   return invoke_with_subs(shape_of(t.derived()), ind, [&t](auto &&... subs) {
     return element_at(t.derived(), subs...);
   });
@@ -499,7 +555,7 @@ bool for_each_element(behavior_flag<index_ascending>, FunT fun,
 }
 
 // unordered
-namespace details {
+namespace detail {
 template <class FunT, class T, class... Ts>
 void _for_each_element_unordered_default(yes staticShape, FunT fun, T &&t,
                                          Ts &&... ts) {
@@ -522,7 +578,7 @@ template <class FunT, class T, class... Ts>
 void _for_each_element_unordered_default(no staticShape, FunT fun, T &&t,
                                          Ts &&... ts) {
   assert(all_same(t.shape(), ts.shape()...));
-  if (t.numel() < _numel_parallel_thres) {
+  if (true) { // if (t.numel() < _numel_parallel_thres) { // FIXME
     for_each_element(behavior_flag<index_ascending>(), fun, std::forward<T>(t),
                      std::forward<Ts>(ts)...);
   } else {
@@ -534,7 +590,7 @@ void _for_each_element_unordered_default(no staticShape, FunT fun, T &&t,
 template <class FunT, class T, class... Ts>
 bool for_each_element(behavior_flag<unordered>, FunT fun,
                       const tensor_core<T> &t, Ts &&... ts) {
-  details::_for_each_element_unordered_default(
+  detail::_for_each_element_unordered_default(
       const_bool<std::decay_t<decltype(t.shape())>::is_static>(), fun,
       t.derived(), ts.derived()...);
   return true;
@@ -543,7 +599,7 @@ bool for_each_element(behavior_flag<unordered>, FunT fun,
 template <class FunT, class T, class... Ts>
 bool for_each_element(behavior_flag<unordered>, FunT fun, tensor_core<T> &t,
                       Ts &&... ts) {
-  details::_for_each_element_unordered_default(
+  detail::_for_each_element_unordered_default(
       const_bool<std::decay_t<decltype(t.shape())>::is_static>(), fun,
       t.derived(), ts.derived()...);
   return true;
@@ -619,6 +675,21 @@ void assign_elements(tensor_core<ToT> &to, const tensor_core<FromT> &from) {
                      auto e = from_e;
                      to_e = e;
                    },
+                   to.derived(), from.derived());
+}
+template <class ToET, class ToShapeT, class ToT, class FromET, class FromShapeT,
+          class FromT>
+void assign_elements_forced(
+    tensor_base<ToET, ToShapeT, ToT> &to,
+    const tensor_base<FromET, FromShapeT, FromT> &from) {
+  static_assert(ToShapeT::rank == FromShapeT::rank, "shape ranks mismatch!");
+
+  decltype(auto) s = from.shape();
+  if (to.shape() != s) {
+    reserve_shape(to.derived(), s);
+  }
+  for_each_element(behavior_flag<unordered>(),
+                   [](auto &&to_e, auto &&from_e) { to_e = ToET(from_e); },
                    to.derived(), from.derived());
 }
 
@@ -697,7 +768,7 @@ ET sum_of(const tensor_base<ET, ShapeT, T> &t) {
 }
 
 // ostream
-namespace details {
+namespace detail {
 template <class ET, class ShapeT, class T>
 inline std::ostream &_stream_impl(std::ostream &os,
                                   const tensor_base<ET, ShapeT, T> &t,
@@ -757,7 +828,7 @@ inline std::ostream &_stream_impl(std::ostream &os,
 template <class ET, class ShapeT, class T>
 inline std::ostream &operator<<(std::ostream &os,
                                 const tensor_base<ET, ShapeT, T> &t) {
-  return details::_stream_impl(os, t.derived(), const_size<ShapeT::rank>());
+  return detail::_stream_impl(os, t.derived(), const_size<ShapeT::rank>());
 }
 
 // is_zero

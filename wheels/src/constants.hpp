@@ -1,3 +1,27 @@
+/* * *
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2016 Hao Yang (yangh2007@gmail.com)
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * * */
+
 #pragma once
 
 #include "const_ints.hpp"
@@ -9,9 +33,9 @@
 namespace wheels {
 
 // constant_result
-template <class ET, class ShapeT, class OpT>
+template <class ET, class ShapeT>
 class constant_result
-    : public tensor_base<ET, ShapeT, constant_result<ET, ShapeT, OpT>> {
+    : public tensor_base<ET, ShapeT, constant_result<ET, ShapeT>> {
 public:
   using shape_type = ShapeT;
   using value_type = ET;
@@ -28,29 +52,30 @@ private:
 };
 
 // shape_of
-template <class ET, class ShapeT, class OpT>
-constexpr const ShapeT &shape_of(const constant_result<ET, ShapeT, OpT> &t) {
+template <class ET, class ShapeT>
+constexpr const ShapeT &shape_of(const constant_result<ET, ShapeT> &t) {
   return t.shape();
 }
 
 // element_at
-template <class ET, class ShapeT, class OpT, class... SubTs>
-constexpr const ET &element_at(const constant_result<ET, ShapeT, OpT> &t,
+template <class ET, class ShapeT, class... SubTs>
+constexpr const ET &element_at(const constant_result<ET, ShapeT> &t,
                                const SubTs &... subs) {
   return t.value();
 }
 
 // element_at_index
-template <class ET, class ShapeT, class OpT, class IndexT>
-constexpr const ET &element_at_index(const constant_result<ET, ShapeT, OpT> &t,
+template <class ET, class ShapeT, class IndexT>
+constexpr const ET &element_at_index(const constant_result<ET, ShapeT> &t,
                                      const IndexT &ind) {
+  assert(is_between(ind, 0, (IndexT)t.numel()));
   return t.value();
 }
 
 // index_ascending, unordered
-template <behavior_flag_enum O, class FunT, class ET, class ShapeT, class OpT>
+template <behavior_flag_enum O, class FunT, class ET, class ShapeT>
 bool for_each_element(behavior_flag<O>, FunT fun,
-                      const constant_result<ET, ShapeT, OpT> &t) {
+                      const constant_result<ET, ShapeT> &t) {
   for (size_t i = 0; i < numel_of(t); i++) {
     fun(t.value());
   }
@@ -58,9 +83,9 @@ bool for_each_element(behavior_flag<O>, FunT fun,
 }
 
 // break_on_false
-template <class FunT, class ET, class ShapeT, class OpT>
+template <class FunT, class ET, class ShapeT>
 bool for_each_element(behavior_flag<break_on_false>, FunT fun,
-                      const constant_result<ET, ShapeT, OpT> &t) {
+                      const constant_result<ET, ShapeT> &t) {
   for (size_t i = 0; i < numel_of(t); i++) {
     if (!fun(t.value())) {
       return false;
@@ -70,26 +95,26 @@ bool for_each_element(behavior_flag<break_on_false>, FunT fun,
 }
 
 // nonzero_only
-template <class FunT, class ET, class ShapeT, class OpT, class... Ts>
+template <class FunT, class ET, class ShapeT, class... Ts>
 bool for_each_element(behavior_flag<nonzero_only> o, FunT fun,
-                      const constant_result<ET, ShapeT, OpT> &t, Ts &&... ts) {
+                      const constant_result<ET, ShapeT> &t, Ts &&... ts) {
   assert(all_same(shape_of(t), shape_of(ts)...));
   if (!is_zero(t.value())) {
-    return for_each_element(behavior_flag<unordered>(), std::forward<FunT>(fun), t,
-                            std::forward<Ts>(ts)...);
+    return for_each_element(behavior_flag<unordered>(), std::forward<FunT>(fun),
+                            t, std::forward<Ts>(ts)...);
   }
   return false;
 }
 
 // size_t nonzero_elements_count(t)
-template <class ET, class ShapeT, class OpT>
-size_t nonzero_elements_count(const constant_result<ET, ShapeT, OpT> &t) {
+template <class ET, class ShapeT>
+size_t nonzero_elements_count(const constant_result<ET, ShapeT> &t) {
   return is_zero(t.value()) ? 0 : numel_of(t);
 }
 
 // reduce_elements
-template <class ET, class ShapeT, class OpT, class E, class ReduceT>
-E reduce_elements(const constant_result<ET, ShapeT, OpT> &t, E initial,
+template <class ET, class ShapeT, class E, class ReduceT>
+E reduce_elements(const constant_result<ET, ShapeT> &t, E initial,
                   ReduceT &&red) {
   for (size_t i = 0; i < numel_of(t); i++) {
     initial = red(initial, t.value());
@@ -98,35 +123,35 @@ E reduce_elements(const constant_result<ET, ShapeT, OpT> &t, E initial,
 }
 
 // sum_of
-template <class ET, class ShapeT, class OpT>
+template <class ET, class ShapeT>
 std::enable_if_t<std::is_scalar<ET>::value, ET>
-sum_of(const constant_result<ET, ShapeT, OpT> &t) {
+sum_of(const constant_result<ET, ShapeT> &t) {
   return t.value() * numel_of(t);
 }
 
 // norm_squared
-template <class ET, class ShapeT, class OpT>
+template <class ET, class ShapeT>
 std::enable_if_t<std::is_scalar<ET>::value, ET>
-norm_squared(const constant_result<ET, ShapeT, OpT> &t) {
+norm_squared(const constant_result<ET, ShapeT> &t) {
   return t.value() * t.value() * numel_of(t);
 }
 
 // all_of
-template <class ET, class ShapeT, class OpT>
-constexpr bool all_of(const constant_result<ET, ShapeT, OpT> &t) {
+template <class ET, class ShapeT>
+constexpr bool all_of(const constant_result<ET, ShapeT> &t) {
   return !!t.value();
 }
 
 // any_of
-template <class ET, class ShapeT, class OpT>
-constexpr bool any_of(const constant_result<ET, ShapeT, OpT> &t) {
+template <class ET, class ShapeT>
+constexpr bool any_of(const constant_result<ET, ShapeT> &t) {
   return !!t.value();
 }
 
 // constants
 template <class ET, class ST, class... SizeTs>
 constexpr auto constants(const tensor_shape<ST, SizeTs...> &shape, ET &&v) {
-  return constant_result<std::decay_t<ET>, tensor_shape<ST, SizeTs...>, void>(
+  return constant_result<std::decay_t<ET>, tensor_shape<ST, SizeTs...>>(
       shape, std::forward<ET>(v));
 }
 
@@ -148,14 +173,5 @@ constexpr auto ones(const tensor_shape<ST, SizeTs...> &shape) {
 template <class ET, class... SizeTs>
 constexpr auto ones(const SizeTs &... sizes) {
   return constants<ET>(make_shape(sizes...), 1);
-}
-
-namespace details {
-template <class ET, class ST, class... SizeTs, class OpT>
-constexpr auto _constants(const tensor_shape<ST, SizeTs...> &shape, ET &&v,
-                          OpT &&) {
-  return constant_result<std::decay_t<ET>, tensor_shape<ST, SizeTs...>,
-                         std::decay_t<OpT>>(shape, std::forward<ET>(v));
-}
 }
 }

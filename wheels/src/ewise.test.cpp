@@ -8,6 +8,7 @@
 #include "iota.hpp"
 #include "tensor.hpp"
 #include "matrix.hpp"
+#include "diagonal.hpp"
 
 using namespace wheels;
 using namespace wheels::literals;
@@ -60,15 +61,28 @@ TEST(tensor, ewise_ops3) {
   auto result1 = fun(3, 2); // 0_arg->3, 1_arg->2, result1 = 4 of int
   ASSERT_EQ(result1, max(4, 4));
   auto result2 = fun(vec3(2, 3, 4).ewised(), ones(3).ewised() * 2); // 0_arg->vec3(2, 3, 4),
-  auto e0 = element_at(result2, 0ull);
-  auto e1 = element_at(result2, 1ull);
-  auto e2 = element_at(result2, 2ull);
-  auto f0 = result2(0ull);
-  auto f1 = result2(1ull);
-  auto f2 = result2(2ull);
   ASSERT_TRUE(result2 == vec3(4, 4, 5));
   std::cout << result2 << std::endl;
   auto t = result2.eval();
   std::cout << t << std::endl;
   ASSERT_TRUE(t == vec3(4, 4, 5));
+}
+
+TEST(tensor, ewise_ops4) {
+  std::default_random_engine rng;
+  matx_<mat3> mat_of_mats1 = rand<mat3>(make_shape(3, 3), rng);
+  matx_<mat3> mat_of_mats2 = rand<mat3>(make_shape(3, 3), rng);
+  auto sum1 = eval(mat_of_mats1 + mat_of_mats2);
+  auto sum2 = eval(mat_of_mats1.scalarized() + mat_of_mats2);
+  auto sum3 = eval(mat_of_mats1 + mat_of_mats2.scalarized());
+  ASSERT_TRUE(sum1.shape() == make_shape(3, 3));
+  ASSERT_TRUE(sum2.shape() == make_shape(3, 3));
+  ASSERT_TRUE(sum3.shape() == make_shape(3, 3));
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 3; j++) {
+      ASSERT_TRUE(sum1(i, j) == mat_of_mats1(i, j) + mat_of_mats2(i, j));
+      ASSERT_TRUE(sum2(i, j) == mat_of_mats1 + mat_of_mats2(i, j));
+      ASSERT_TRUE(sum3(i, j) == mat_of_mats1(i, j) + mat_of_mats2);
+    }
+  }
 }

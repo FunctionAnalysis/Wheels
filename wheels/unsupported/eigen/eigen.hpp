@@ -3,11 +3,11 @@
 #include <Eigen/Core>
 #include <Eigen/StdVector>
 
-#include "../../src/map.hpp"
+#include "../../src/tensor_map.hpp"
 #include "../../src/permute.hpp"
 
 namespace wheels {
-namespace details {
+namespace detail {
 template <class RowT, class ColT, class T>
 constexpr auto _map_eigen_matrix_conditionally(RowT rows, ColT cols, T *data,
                                                yes) {
@@ -24,7 +24,7 @@ constexpr auto _map_eigen_matrix_conditionally(RowT rows, ColT cols, T *data,
 template <class Scalar, int Rows, int Cols, int Options>
 constexpr auto
 map(const Eigen::Matrix<Scalar, Rows, Cols, Options, Rows, Cols> &m) {
-  return details::_map_eigen_matrix_conditionally(
+  return detail::_map_eigen_matrix_conditionally(
       conditional(const_bool<Rows == Eigen::Dynamic>(), m.rows(),
                   const_int<Rows>()),
       conditional(const_bool<Cols == Eigen::Dynamic>(), m.cols(),
@@ -35,7 +35,7 @@ map(const Eigen::Matrix<Scalar, Rows, Cols, Options, Rows, Cols> &m) {
 template <class Scalar, int Rows, int Cols, int Options, int MaxRows,
           int MaxCols>
 inline auto map(Eigen::Matrix<Scalar, Rows, Cols, Options, Rows, Cols> &m) {
-  return details::_map_eigen_matrix_conditionally(
+  return detail::_map_eigen_matrix_conditionally(
       conditional(const_bool<Rows == Eigen::Dynamic>(), m.rows(),
                   const_int<Rows>()),
       conditional(const_bool<Cols == Eigen::Dynamic>(), m.cols(),

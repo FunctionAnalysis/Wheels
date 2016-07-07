@@ -1,3 +1,27 @@
+/* * *
+ * The MIT License (MIT)
+ * 
+ * Copyright (c) 2016 Hao Yang (yangh2007@gmail.com)
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * * */
+
 #pragma once
 
 #include "tensor_base.hpp"
@@ -29,7 +53,7 @@ shape_of(const upgrade_result<ET, ShapeT, InputT, ExtShapeT, ExtFunT> &r) {
 }
 
 // element_at
-namespace details {
+namespace detail {
 template <class ExtendResultT, class SubsTupleT, size_t... OldIs,
           size_t... ExtendedIs>
 constexpr decltype(auto)
@@ -46,7 +70,8 @@ template <class ET, class ShapeT, class InputT, class ExtShapeT, class ExtFunT,
 constexpr decltype(auto)
 element_at(const upgrade_result<ET, ShapeT, InputT, ExtShapeT, ExtFunT> &r,
            const SubTs &... subs) {
-  return details::_element_at_upgrade_result_seq(
+  assert(subscripts_are_valid(r.shape(), subs...));
+  return detail::_element_at_upgrade_result_seq(
       r, std::forward_as_tuple(subs...), make_rank_sequence(r.input.shape()),
       make_rank_sequence(r.ext_shape));
 }
@@ -56,7 +81,8 @@ template <class ET, class ShapeT, class InputT, class ExtShapeT, class ExtFunT,
 decltype(auto)
 element_at(upgrade_result<ET, ShapeT, InputT, ExtShapeT, ExtFunT> &r,
            const SubTs &... subs) {
-  return details::_element_at_upgrade_result_seq(
+  assert(subscripts_are_valid(r.shape(), subs...));
+  return detail::_element_at_upgrade_result_seq(
       r, std::forward_as_tuple(subs...), make_rank_sequence(r.input.shape()),
       make_rank_sequence(r.ext_shape));
 }
@@ -80,7 +106,7 @@ struct as_subtensor {
 };
 }
 
-namespace details {
+namespace detail {
 template <class ET, class InputShapeT, class InputET, class InputT,
           class InputTT, class ExtShapeT, class ExtFunT, size_t... ExtIs>
 constexpr auto _upgrade_by(const tensor_base<InputET, InputShapeT, InputT> &,
@@ -96,7 +122,7 @@ constexpr auto _upgrade_by(const tensor_base<InputET, InputShapeT, InputT> &,
 }
 
 // upgrade_as_repeated
-namespace details {
+namespace detail {
 template <class ET, class ShapeT, class T, class InputT, class ST,
           class... SizeTs>
 constexpr auto _upgrade_as_repeated(const tensor_base<ET, ShapeT, T> &,
@@ -108,7 +134,7 @@ constexpr auto _upgrade_as_repeated(const tensor_base<ET, ShapeT, T> &,
 }
 
 // upgrade_all
-namespace details {
+namespace detail {
 template <class ET, class ShapeT, class T, class ET2, class ShapeT2, class T2,
           class InputT>
 constexpr decltype(auto)
@@ -130,7 +156,7 @@ _upgrade_as_subtensor(const subtensor_view<ET, ShapeT, T, FixedRank> &et,
 template <class InputT>
 constexpr decltype(auto) upgrade_all(InputT &&input) {
   assert(input.numel() > 0);
-  return details::_upgrade_as_subtensor(element_at_index(input, 0), input,
+  return detail::_upgrade_as_subtensor(element_at_index(input, 0), input,
                                         std::forward<InputT>(input));
 }
 }

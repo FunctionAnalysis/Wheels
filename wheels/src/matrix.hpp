@@ -1,3 +1,27 @@
+/* * *
+ * The MIT License (MIT)
+ * 
+ * Copyright (c) 2016 Hao Yang (yangh2007@gmail.com)
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * 
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ * 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ * * */
+
 #pragma once
 
 #include "tensor_base.hpp"
@@ -12,9 +36,13 @@
 namespace wheels {
 
 // matrix base
-template <class T> struct matrix_base : tensor_core<T> {
+template <class T> class matrix_base : public tensor_core<T> {
+public:
   constexpr auto rows() const { return this->size(const_index<0>()); }
   constexpr auto cols() const { return this->size(const_index<1>()); }
+
+  constexpr auto width() const { return cols(); }
+  constexpr auto height() const { return rows(); }
 
   constexpr decltype(auto) t() const & { return transpose(this->derived()); }
   decltype(auto) t() & { return transpose(this->derived()); }
@@ -50,7 +78,8 @@ template <class T> struct matrix_base : tensor_core<T> {
 
 // 2 dimensional tensor (matrix)
 template <class ET, class ST, class MT, class NT, class T>
-struct tensor_base<ET, tensor_shape<ST, MT, NT>, T> : matrix_base<T> {
+class tensor_base<ET, tensor_shape<ST, MT, NT>, T> : public matrix_base<T> {
+public:
   using value_type = ET;
   using shape_type = tensor_shape<ST, MT, NT>;
   static constexpr size_t rank = 2;
@@ -70,8 +99,9 @@ struct tensor_base<ET, tensor_shape<ST, MT, NT>, T> : matrix_base<T> {
 
 // col vec
 template <class ET, class ST, class MT, class T>
-struct tensor_base<ET, tensor_shape<ST, MT, const_ints<ST, (ST)1>>, T>
-    : matrix_base<T> {
+class tensor_base<ET, tensor_shape<ST, MT, const_ints<ST, (ST)1>>, T>
+    : public matrix_base<T> {
+public:
   using value_type = ET;
   using shape_type = tensor_shape<ST, MT, const_ints<ST, (ST)1>>;
   static constexpr size_t rank = 2;
@@ -140,8 +170,9 @@ struct tensor_base<ET, tensor_shape<ST, MT, const_ints<ST, (ST)1>>, T>
 
 // row vec
 template <class ET, class ST, class NT, class T>
-struct tensor_base<ET, tensor_shape<ST, const_ints<ST, (ST)1>, NT>, T>
-    : matrix_base<T> {
+class tensor_base<ET, tensor_shape<ST, const_ints<ST, (ST)1>, NT>, T>
+    : public matrix_base<T> {
+public:
   using value_type = ET;
   using shape_type = tensor_shape<ST, const_ints<ST, (ST)1>, NT>;
   static constexpr size_t rank = 2;
@@ -306,6 +337,7 @@ template <class EleT, class ShapeT, class A, class B, bool AIsMat, bool BIsMat,
 constexpr decltype(auto)
 element_at(const matrix_mul_result<EleT, ShapeT, A, B, AIsMat, BIsMat> &m,
            const SubTs &... subs) {
+  assert(subscripts_are_valid(m.shape(), subs...));
   return m.at_subs(subs...);
 }
 
