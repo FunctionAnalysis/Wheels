@@ -41,9 +41,9 @@ constexpr auto _make_cat_shape_seq(const ShapeT1 &s1, const ShapeT2 &s2,
                        Is == Axis...) &&
          "shape sizes should equal except at Axis when performing tensor cat");
   return make_shape(
-      ::wheels::conditional(axis == const_index<Is>(),
-                            s1.at(const_index<Is>()) + s2.at(const_index<Is>()),
-                            s1.at(const_index<Is>()))...);
+      conditional(axis == const_index<Is>(),
+                  s1.at(const_index<Is>()) + s2.at(const_index<Is>()),
+                  s1.at(const_index<Is>()))...);
 }
 }
 

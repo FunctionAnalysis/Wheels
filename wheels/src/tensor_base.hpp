@@ -70,7 +70,7 @@ _eval_index_expr_impl(T &&e, const const_expr_base<E> &, const SizeT &sz) {
   return invoke_const_expr(std::forward<T>(e), sz);
 }
 template <class T, class E, class SizeT>
-constexpr T &&_eval_index_expr_impl(T &&t, const tensor_core<E> &,
+constexpr T &&_eval_index_expr_impl(T &&t, const object_base<E> &,
                                     const SizeT &) {
   return static_cast<T &&>(t);
 }

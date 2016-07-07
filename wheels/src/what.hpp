@@ -42,6 +42,8 @@ template <class T> struct object_base {
   constexpr const T &derived() const & { return static_cast<const T &>(*this); }
   T &derived() & { return static_cast<T &>(*this); }
   T &&derived() && { return static_cast<T &&>(*this); }
+  T &&moved() & { return static_cast<T &&>(*this); }
+  T &&moved() && { return static_cast<T &&>(*this); }
 };
 template <class T> constexpr const T &it_is(const object_base<T> &o) {
   return o.derived();
